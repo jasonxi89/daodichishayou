@@ -45,22 +45,6 @@ export default function Index() {
 
   return (
     <View className='index'>
-      {/* 背景装饰 */}
-      <View className='bg-pattern'>
-        <Text className='bg-icon'>🍕</Text>
-        <Text className='bg-icon'>🍜</Text>
-        <Text className='bg-icon'>🍔</Text>
-        <Text className='bg-icon'>🧋</Text>
-        <Text className='bg-icon'>🍰</Text>
-        <Text className='bg-icon'>🍣</Text>
-        <Text className='bg-icon'>🥗</Text>
-        <Text className='bg-icon'>🍳</Text>
-        <Text className='bg-icon'>🍕</Text>
-        <Text className='bg-icon'>🍜</Text>
-        <Text className='bg-icon'>🍔</Text>
-        <Text className='bg-icon'>🧋</Text>
-      </View>
-
       {/* 主内容 */}
       <View className='content'>
         {/* 食物名称展示 */}
