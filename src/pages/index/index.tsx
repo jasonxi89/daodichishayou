@@ -1,6 +1,7 @@
-import { View, Text } from '@tarojs/components'
-import { useLoad } from '@tarojs/taro'
-import { useState, useCallback } from 'react'
+import { View, Text, ScrollView } from '@tarojs/components'
+import Taro, { useLoad } from '@tarojs/taro'
+import { useState, useCallback, useRef } from 'react'
+import { getLocalRecipe, fetchRecipeFromAPI, type Recipe } from '../../data/recipes'
 import './index.scss'
 
 const foodList: Record<string, string[]> = {
@@ -75,6 +76,11 @@ export default function Index() {
   const [isRolling, setIsRolling] = useState(false)
   const [count, setCount] = useState(1)
   const [resultList, setResultList] = useState<string[]>([])
+  const [showRecipe, setShowRecipe] = useState(false)
+  const [popupFoods, setPopupFoods] = useState<string[]>([])
+  const [activePopupIndex, setActivePopupIndex] = useState(0)
+  const [recipeLoading, setRecipeLoading] = useState(false)
+  const recipeCacheRef = useRef<Record<string, Recipe | null>>({})
 
   useLoad(() => {
     console.log('Page loaded.')
@@ -110,6 +116,55 @@ export default function Index() {
       }
     }, 100)
   }, [isRolling, activeCategory, count])
+
+  // 加载某个食物的菜谱
+  const loadRecipe = useCallback(async (food: string) => {
+    if (recipeCacheRef.current[food] !== undefined) {
+      setRecipeLoading(false)
+      return
+    }
+    setRecipeLoading(true)
+    let recipe = getLocalRecipe(food)
+    if (!recipe) {
+      recipe = await fetchRecipeFromAPI(food)
+    }
+    recipeCacheRef.current[food] = recipe
+    setRecipeLoading(false)
+  }, [])
+
+  const handleRecipeClick = useCallback(async () => {
+    // 收集所有已选食物
+    let foods: string[]
+    if (resultList.length > 0) {
+      foods = [...resultList]
+    } else if (currentFood !== '今天吃啥？') {
+      foods = [currentFood]
+    } else {
+      Taro.showToast({ title: '先选一个食物吧', icon: 'none' })
+      return
+    }
+
+    recipeCacheRef.current = {}
+    setPopupFoods(foods)
+    setActivePopupIndex(0)
+    setShowRecipe(true)
+    await loadRecipe(foods[0])
+  }, [resultList, currentFood, loadRecipe])
+
+  const handleSwitchFood = useCallback(async (index: number) => {
+    setActivePopupIndex(index)
+    await loadRecipe(popupFoods[index])
+  }, [popupFoods, loadRecipe])
+
+  const handleViewDetail = useCallback(() => {
+    const food = popupFoods[activePopupIndex]
+    const recipe = recipeCacheRef.current[food]
+    if (!recipe) return
+    setShowRecipe(false)
+    Taro.navigateTo({
+      url: `/pages/recipe/recipe?name=${encodeURIComponent(recipe.name)}`,
+    })
+  }, [popupFoods, activePopupIndex])
 
   return (
     <View className='index'>
@@ -171,17 +226,17 @@ export default function Index() {
         {/* 功能按钮 */}
         <View className='actions'>
           <View className='action-row'>
-            <View className='action-item'>
+            <View className='action-item disabled'>
               <Text className='action-icon'>🛵</Text>
               <Text className='action-text'>去点外卖</Text>
             </View>
-            <View className='action-item'>
+            <View className='action-item disabled'>
               <Text className='action-icon'>🔗</Text>
               <Text className='action-text'>分享美食</Text>
             </View>
           </View>
           <View className='action-row center'>
-            <View className='action-item'>
+            <View className='action-item' onClick={handleRecipeClick}>
               <Text className='action-icon'>📋</Text>
               <Text className='action-text'>万能炒菜公式</Text>
             </View>
@@ -234,6 +289,84 @@ export default function Index() {
           <Text className='link-text'>菜单下载</Text>
         </View>
       </View>
+
+      {/* 菜谱弹窗 */}
+      {showRecipe && (
+        <View className='recipe-overlay' onClick={() => setShowRecipe(false)}>
+          <View className='recipe-popup' onClick={(e) => e.stopPropagation()}>
+            {/* 多菜切换标签 */}
+            {popupFoods.length > 1 && (
+              <ScrollView scrollX className='recipe-tab-scroll'>
+                <View className='recipe-tabs'>
+                  {popupFoods.map((food, i) => (
+                    <View
+                      key={i}
+                      className={`recipe-tab ${i === activePopupIndex ? 'active' : ''}`}
+                      onClick={() => handleSwitchFood(i)}
+                    >
+                      <Text className={`recipe-tab-text ${i === activePopupIndex ? 'active' : ''}`}>{food}</Text>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
+
+            {/* 内容区 */}
+            {(() => {
+              const activeFoodName = popupFoods[activePopupIndex]
+              const activeRecipe = recipeCacheRef.current[activeFoodName]
+
+              if (recipeLoading && activeRecipe === undefined) {
+                return (
+                  <View className='recipe-popup-loading'>
+                    <Text className='recipe-popup-loading-text'>搜索菜谱中...</Text>
+                  </View>
+                )
+              }
+
+              if (!activeRecipe) {
+                return (
+                  <View className='recipe-popup-empty'>
+                    <Text className='recipe-popup-empty-icon'>🤷</Text>
+                    <Text className='recipe-popup-empty-text'>暂无「{activeFoodName}」的菜谱</Text>
+                    <View className='recipe-popup-close-btn' onClick={() => setShowRecipe(false)}>
+                      <Text className='recipe-popup-close-btn-text'>知道了</Text>
+                    </View>
+                  </View>
+                )
+              }
+
+              return (
+                <View className='recipe-popup-content'>
+                  {popupFoods.length <= 1 && (
+                    <Text className='recipe-popup-title'>{activeRecipe.name}</Text>
+                  )}
+                  <Text className='recipe-popup-summary'>{activeRecipe.summary}</Text>
+                  <View className='recipe-popup-ingredients'>
+                    <Text className='recipe-popup-label'>食材</Text>
+                    <View className='recipe-popup-tags'>
+                      {activeRecipe.ingredients.slice(0, 6).map((item, i) => (
+                        <Text key={i} className='recipe-popup-tag'>{item}</Text>
+                      ))}
+                      {activeRecipe.ingredients.length > 6 && (
+                        <Text className='recipe-popup-tag more'>+{activeRecipe.ingredients.length - 6}</Text>
+                      )}
+                    </View>
+                  </View>
+                  <View className='recipe-popup-actions'>
+                    <View className='recipe-popup-detail-btn' onClick={handleViewDetail}>
+                      <Text className='recipe-popup-detail-btn-text'>查看详细做法</Text>
+                    </View>
+                    <View className='recipe-popup-dismiss' onClick={() => setShowRecipe(false)}>
+                      <Text className='recipe-popup-dismiss-text'>关闭</Text>
+                    </View>
+                  </View>
+                </View>
+              )
+            })()}
+          </View>
+        </View>
+      )}
     </View>
   )
 }

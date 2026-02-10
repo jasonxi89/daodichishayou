@@ -1,0 +1,99 @@
+.recipe-page {
+  min-height: 100vh;
+  background-color: #f5f8fd;
+  padding: 32px;
+}
+
+.recipe-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.recipe-title {
+  font-size: 48px;
+  font-weight: bold;
+  color: #333;
+}
+
+.recipe-summary {
+  font-size: 28px;
+  color: #888;
+  margin-top: 12px;
+}
+
+/* 食材区域 */
+.recipe-section {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  padding: 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.section-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #f5a623;
+  margin-bottom: 24px;
+}
+
+/* 食材列表 */
+.ingredient-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.ingredient-tag {
+  font-size: 26px;
+  color: #555;
+  background: #fff3e0;
+  border-radius: 24px;
+  padding: 10px 24px;
+}
+
+/* 步骤列表 */
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.step-item {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5a623, #f7b84e);
+  color: #fff;
+  font-size: 26px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-text {
+  font-size: 28px;
+  color: #444;
+  line-height: 1.6;
+  padding-top: 8px;
+}
+
+/* 底部提示 */
+.recipe-footer {
+  text-align: center;
+  margin-top: 48px;
+  padding-bottom: 48px;
+}
+
+.footer-text {
+  font-size: 24px;
+  color: #bbb;
+}
