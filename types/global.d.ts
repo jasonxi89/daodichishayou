@@ -11,6 +11,9 @@ declare module '*.scss';
 declare module '*.sass';
 declare module '*.styl';
 
+/** Build-time injected API base URL (dev: internal NAS, prod: public domain) */
+declare const API_BASE: string
+
 declare namespace NodeJS {
   interface ProcessEnv {
     /** NODE 内置环境变量, 会影响到最终构建生成产物 */
