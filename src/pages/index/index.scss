@@ -96,12 +96,32 @@ $bg-svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30
   font-weight: 500;
 }
 
+/* 分享按钮（透明Button包装） */
+.share-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  line-height: normal;
+
+  &::after {
+    border: none;
+  }
+}
+
 /* 分类标签 */
+.categories-scroll {
+  width: 100%;
+  white-space: nowrap;
+  margin-bottom: 40px;
+}
+
 .categories {
-  display: flex;
+  display: inline-flex;
   justify-content: center;
   gap: 28px;
-  margin-bottom: 40px;
+  padding: 0 8px;
+  width: 100%;
 }
 
 .category-tag {
@@ -492,4 +512,219 @@ $bg-svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30
 .recipe-popup-dismiss-text {
   font-size: 26px;
   color: #999;
+}
+
+/* ===== 自定义菜单弹窗 ===== */
+.custom-menu-popup {
+  padding: 40px 40px 40px;
+}
+
+.custom-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.custom-menu-title {
+  font-size: 36px;
+  font-weight: bold;
+  color: #333;
+}
+
+.custom-menu-close {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f5f5f5;
+}
+
+.custom-menu-close-text {
+  font-size: 28px;
+  color: #999;
+}
+
+.custom-menu-body {
+  max-height: 55vh;
+}
+
+.custom-menu-empty {
+  padding: 48px 0;
+  text-align: center;
+}
+
+.custom-menu-empty-text {
+  font-size: 28px;
+  color: #bbb;
+}
+
+/* 分类区块 */
+.custom-cat-section {
+  background: #fafafa;
+  border-radius: 20px;
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.custom-cat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.custom-cat-info {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.custom-cat-name {
+  font-size: 30px;
+  font-weight: bold;
+  color: #333;
+}
+
+.custom-cat-count {
+  font-size: 22px;
+  color: #bbb;
+}
+
+.custom-cat-delete {
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: #fff0f0;
+}
+
+.custom-cat-delete-text {
+  font-size: 24px;
+  color: #e74c3c;
+}
+
+/* 食物标签 */
+.custom-food-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.custom-food-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff3e0;
+  border-radius: 24px;
+  padding: 8px 16px 8px 20px;
+}
+
+.custom-food-tag-text {
+  font-size: 24px;
+  color: #555;
+}
+
+.custom-food-tag-x {
+  font-size: 20px;
+  color: #ccc;
+  padding: 4px;
+}
+
+/* 添加食物输入 */
+.custom-add-food {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.custom-add-food-input {
+  flex: 1;
+  height: 64px;
+  background: #fff;
+  border-radius: 32px;
+  padding: 0 24px;
+  font-size: 26px;
+  color: #333;
+}
+
+.custom-add-food-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5a623, #f7b84e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.custom-add-food-btn-text {
+  font-size: 32px;
+  color: #fff;
+  font-weight: bold;
+  width: 56px;
+  height: 56px;
+  line-height: 56px;
+  text-align: center;
+}
+
+/* 添加新分类 */
+.custom-new-cat {
+  margin-top: 8px;
+}
+
+.custom-new-cat-input {
+  height: 72px;
+  background: #fff;
+  border-radius: 36px;
+  padding: 0 28px;
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 16px;
+  border: 2px solid #f5a623;
+}
+
+.custom-new-cat-actions {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.custom-new-cat-confirm {
+  padding: 12px 40px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #f5a623, #f7b84e);
+}
+
+.custom-new-cat-confirm-text {
+  font-size: 28px;
+  color: #fff;
+  font-weight: bold;
+}
+
+.custom-new-cat-cancel {
+  padding: 12px 40px;
+  border-radius: 28px;
+  background: #f0f0f0;
+}
+
+.custom-new-cat-cancel-text {
+  font-size: 28px;
+  color: #888;
+}
+
+.custom-add-cat-btn {
+  margin-top: 8px;
+  padding: 20px 0;
+  text-align: center;
+  border: 2px dashed #ddd;
+  border-radius: 20px;
+}
+
+.custom-add-cat-btn-text {
+  font-size: 28px;
+  color: #bbb;
+  font-weight: 500;
 }

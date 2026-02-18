@@ -1,10 +1,10 @@
-import { View, Text, ScrollView } from '@tarojs/components'
-import Taro, { useLoad } from '@tarojs/taro'
-import { useState, useCallback, useRef } from 'react'
+import { View, Text, ScrollView, Input, Button } from '@tarojs/components'
+import Taro, { useLoad, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { getLocalRecipe, fetchRecipeFromAPI, type Recipe } from '../../data/recipes'
 import './index.scss'
 
-const foodList: Record<string, string[]> = {
+const defaultFoodList: Record<string, string[]> = {
   随便: ['自制豆腐', '红烧肉', '番茄炒蛋', '宫保鸡丁', '麻婆豆腐', '糖醋排骨', '鱼香肉丝', '回锅肉', '水煮鱼', '酸菜鱼', '蛋炒饭', '兰州拉面', '黄焖鸡', '螺蛳粉', '沙县小吃', '烤鸭', '火锅', '串串香', '小龙虾', '炸鸡'],
   奶茶类: ['珍珠奶茶', '杨枝甘露', '芋泥波波', '椰椰芒芒', '草莓摇摇乐', '多肉葡萄', '生椰拿铁', '柠檬茶', '芝芝莓莓', '烧仙草'],
   瘦身餐: ['鸡胸肉沙拉', '藜麦饭', '蒸西兰花', '全麦三明治', '牛油果吐司', '水煮虾仁', '清蒸鱼', '凉拌黄瓜', '紫薯燕麦粥', '低脂酸奶碗'],
@@ -12,19 +12,7 @@ const foodList: Record<string, string[]> = {
   附近: ['沙县小吃', '兰州拉面', '黄焖鸡米饭', '麻辣烫', '炸酱面', '煎饼果子', '肉夹馍', '烧烤', '麻辣香锅', '米粉'],
 }
 
-const categories = ['随便', '奶茶类', '瘦身餐', '任性餐', '附近']
-
-function getRandomFood(category: string): string {
-  const list = foodList[category] || foodList['随便']
-  return list[Math.floor(Math.random() * list.length)]
-}
-
-function getRandomFoods(category: string, n: number): string[] {
-  const list = foodList[category] || foodList['随便']
-  const count = Math.min(n, list.length)
-  const shuffled = [...list].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, count)
-}
+const defaultCategories = ['随便', '奶茶类', '瘦身餐', '任性餐', '附近']
 
 // 食物图标沿问号路径排列（坐标为相对中心点的偏移，间距x1.2）
 const questionMarkIcons = [
@@ -82,40 +70,75 @@ export default function Index() {
   const [recipeLoading, setRecipeLoading] = useState(false)
   const recipeCacheRef = useRef<Record<string, Recipe | null>>({})
 
+  // 自定义菜单状态
+  const [customFoodList, setCustomFoodList] = useState<Record<string, string[]>>({})
+  const [showCustomMenu, setShowCustomMenu] = useState(false)
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newFoodInputs, setNewFoodInputs] = useState<Record<string, string>>({})
+
+  // 合并默认 + 自定义
+  const mergedFoodList = useMemo(() => ({ ...defaultFoodList, ...customFoodList }), [customFoodList])
+  const allCategories = useMemo(() => [...defaultCategories, ...Object.keys(customFoodList)], [customFoodList])
+
   useLoad(() => {
     console.log('Page loaded.')
+    const stored = Taro.getStorageSync('customFoodList')
+    if (stored && typeof stored === 'object') {
+      setCustomFoodList(stored)
+    }
+  })
+
+  // 分享到聊天
+  useShareAppMessage(() => {
+    const food = resultList.length > 0 ? resultList.join('、') : currentFood
+    return {
+      title: food !== '今天吃啥？' ? `今天吃：${food}` : '不知道吃啥？来随机一个！',
+      path: '/pages/index/index',
+    }
+  })
+
+  // 分享到朋友圈
+  useShareTimeline(() => {
+    const food = resultList.length > 0 ? resultList.join('、') : currentFood
+    return {
+      title: food !== '今天吃啥？' ? `今天吃：${food}` : '不知道吃啥？来随机一个！',
+    }
   })
 
   const handleRefreshItem = useCallback((index: number) => {
-    const list = foodList[activeCategory] || foodList['随便']
+    const list = mergedFoodList[activeCategory] || mergedFoodList['随便']
     const others = resultList.filter((_, i) => i !== index)
     const available = list.filter(f => !others.includes(f))
     if (available.length === 0) return
     const newFood = available[Math.floor(Math.random() * available.length)]
     setResultList(prev => prev.map((f, i) => i === index ? newFood : f))
-  }, [activeCategory, resultList])
+  }, [activeCategory, resultList, mergedFoodList])
 
   const handleStart = useCallback(() => {
     if (isRolling) return
     setIsRolling(true)
     setResultList([])
 
+    const list = mergedFoodList[activeCategory] || mergedFoodList['随便']
     let tick = 0
     const maxTick = 15
     const timer = setInterval(() => {
-      setCurrentFood(getRandomFood(activeCategory))
+      setCurrentFood(list[Math.floor(Math.random() * list.length)])
       tick++
       if (tick >= maxTick) {
         clearInterval(timer)
         if (count === 1) {
-          setCurrentFood(getRandomFood(activeCategory))
+          setCurrentFood(list[Math.floor(Math.random() * list.length)])
         } else {
-          setResultList(getRandomFoods(activeCategory, count))
+          const n = Math.min(count, list.length)
+          const shuffled = [...list].sort(() => Math.random() - 0.5)
+          setResultList(shuffled.slice(0, n))
         }
         setIsRolling(false)
       }
     }, 100)
-  }, [isRolling, activeCategory, count])
+  }, [isRolling, activeCategory, count, mergedFoodList])
 
   // 加载某个食物的菜谱
   const loadRecipe = useCallback(async (food: string) => {
@@ -165,6 +188,65 @@ export default function Index() {
       url: `/pages/recipe/recipe?name=${encodeURIComponent(recipe.name)}`,
     })
   }, [popupFoods, activePopupIndex])
+
+  // ===== 自定义菜单操作 =====
+  const saveCustomList = useCallback((newList: Record<string, string[]>) => {
+    setCustomFoodList(newList)
+    Taro.setStorageSync('customFoodList', newList)
+  }, [])
+
+  const handleAddCategory = useCallback(() => {
+    const name = newCategoryName.trim()
+    if (!name) {
+      Taro.showToast({ title: '分类名不能为空', icon: 'none' })
+      return
+    }
+    if (defaultCategories.includes(name) || customFoodList[name] !== undefined) {
+      Taro.showToast({ title: '分类已存在', icon: 'none' })
+      return
+    }
+    saveCustomList({ ...customFoodList, [name]: [] })
+    setNewCategoryName('')
+    setShowAddCategory(false)
+  }, [newCategoryName, customFoodList, saveCustomList])
+
+  const handleDeleteCategory = useCallback((name: string) => {
+    Taro.showModal({
+      title: '删除分类',
+      content: `确定删除「${name}」及其所有食物？`,
+      success: (res) => {
+        if (res.confirm) {
+          const newList = { ...customFoodList }
+          delete newList[name]
+          saveCustomList(newList)
+          if (activeCategory === name) {
+            setActiveCategory('随便')
+          }
+        }
+      },
+    })
+  }, [customFoodList, saveCustomList, activeCategory])
+
+  const handleAddFood = useCallback((category: string) => {
+    const food = (newFoodInputs[category] || '').trim()
+    if (!food) return
+    if (customFoodList[category]?.includes(food)) {
+      Taro.showToast({ title: '食物已存在', icon: 'none' })
+      return
+    }
+    saveCustomList({
+      ...customFoodList,
+      [category]: [...(customFoodList[category] || []), food],
+    })
+    setNewFoodInputs(prev => ({ ...prev, [category]: '' }))
+  }, [newFoodInputs, customFoodList, saveCustomList])
+
+  const handleDeleteFood = useCallback((category: string, food: string) => {
+    saveCustomList({
+      ...customFoodList,
+      [category]: customFoodList[category].filter(f => f !== food),
+    })
+  }, [customFoodList, saveCustomList])
 
   return (
     <View className='index'>
@@ -230,31 +312,35 @@ export default function Index() {
               <Text className='action-icon'>🛵</Text>
               <Text className='action-text'>去点外卖</Text>
             </View>
-            <View className='action-item disabled'>
-              <Text className='action-icon'>🔗</Text>
-              <Text className='action-text'>分享美食</Text>
-            </View>
+            <Button className='share-btn' openType='share'>
+              <View className='action-item'>
+                <Text className='action-icon'>🔗</Text>
+                <Text className='action-text'>分享美食</Text>
+              </View>
+            </Button>
           </View>
           <View className='action-row center'>
             <View className='action-item' onClick={handleRecipeClick}>
               <Text className='action-icon'>📋</Text>
-              <Text className='action-text'>万能炒菜公式</Text>
+              <Text className='action-text'>查看菜谱</Text>
             </View>
           </View>
         </View>
 
         {/* 分类标签 */}
-        <View className='categories'>
-          {categories.map((cat) => (
-            <Text
-              key={cat}
-              className={`category-tag ${activeCategory === cat ? 'active' : ''}`}
-              onClick={() => setActiveCategory(cat)}
-            >
-              {cat}
-            </Text>
-          ))}
-        </View>
+        <ScrollView scrollX className='categories-scroll'>
+          <View className='categories'>
+            {allCategories.map((cat) => (
+              <Text
+                key={cat}
+                className={`category-tag ${activeCategory === cat ? 'active' : ''}`}
+                onClick={() => setActiveCategory(cat)}
+              >
+                {cat}
+              </Text>
+            ))}
+          </View>
+        </ScrollView>
 
         {/* 数量选择器 */}
         <View className='count-selector'>
@@ -285,10 +371,98 @@ export default function Index() {
 
         {/* 底部链接 */}
         <View className='bottom-links'>
-          <Text className='link-text'>自定义菜单</Text>
+          <Text className='link-text' onClick={() => setShowCustomMenu(true)}>自定义菜单</Text>
           <Text className='link-text'>菜单下载</Text>
         </View>
       </View>
+
+      {/* 自定义菜单弹窗 */}
+      {showCustomMenu && (
+        <View className='recipe-overlay' onClick={() => setShowCustomMenu(false)}>
+          <View className='recipe-popup custom-menu-popup' onClick={(e) => e.stopPropagation()}>
+            {/* 标题栏 */}
+            <View className='custom-menu-header'>
+              <Text className='custom-menu-title'>我的菜单</Text>
+              <View className='custom-menu-close' onClick={() => setShowCustomMenu(false)}>
+                <Text className='custom-menu-close-text'>✕</Text>
+              </View>
+            </View>
+
+            <ScrollView scrollY className='custom-menu-body'>
+              {/* 自定义分类列表 */}
+              {Object.keys(customFoodList).length === 0 && !showAddCategory && (
+                <View className='custom-menu-empty'>
+                  <Text className='custom-menu-empty-text'>还没有自定义分类，点击下方添加</Text>
+                </View>
+              )}
+
+              {Object.entries(customFoodList).map(([catName, foods]) => (
+                <View key={catName} className='custom-cat-section'>
+                  <View className='custom-cat-header'>
+                    <View className='custom-cat-info'>
+                      <Text className='custom-cat-name'>{catName}</Text>
+                      <Text className='custom-cat-count'>{foods.length}个食物</Text>
+                    </View>
+                    <View className='custom-cat-delete' onClick={() => handleDeleteCategory(catName)}>
+                      <Text className='custom-cat-delete-text'>删除</Text>
+                    </View>
+                  </View>
+
+                  {/* 食物标签 */}
+                  <View className='custom-food-tags'>
+                    {foods.map((food) => (
+                      <View key={food} className='custom-food-tag'>
+                        <Text className='custom-food-tag-text'>{food}</Text>
+                        <Text className='custom-food-tag-x' onClick={() => handleDeleteFood(catName, food)}>✕</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* 添加食物输入 */}
+                  <View className='custom-add-food'>
+                    <Input
+                      className='custom-add-food-input'
+                      placeholder='添加食物...'
+                      value={newFoodInputs[catName] || ''}
+                      onInput={(e) => setNewFoodInputs(prev => ({ ...prev, [catName]: e.detail.value }))}
+                      onConfirm={() => handleAddFood(catName)}
+                    />
+                    <View className='custom-add-food-btn' onClick={() => handleAddFood(catName)}>
+                      <Text className='custom-add-food-btn-text'>+</Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+
+              {/* 添加新分类 */}
+              {showAddCategory ? (
+                <View className='custom-new-cat'>
+                  <Input
+                    className='custom-new-cat-input'
+                    placeholder='输入分类名...'
+                    value={newCategoryName}
+                    onInput={(e) => setNewCategoryName(e.detail.value)}
+                    onConfirm={handleAddCategory}
+                    focus
+                  />
+                  <View className='custom-new-cat-actions'>
+                    <View className='custom-new-cat-confirm' onClick={handleAddCategory}>
+                      <Text className='custom-new-cat-confirm-text'>确定</Text>
+                    </View>
+                    <View className='custom-new-cat-cancel' onClick={() => { setShowAddCategory(false); setNewCategoryName('') }}>
+                      <Text className='custom-new-cat-cancel-text'>取消</Text>
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View className='custom-add-cat-btn' onClick={() => setShowAddCategory(true)}>
+                  <Text className='custom-add-cat-btn-text'>+ 添加新分类</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      )}
 
       {/* 菜谱弹窗 */}
       {showRecipe && (
