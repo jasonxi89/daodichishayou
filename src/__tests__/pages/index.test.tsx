@@ -10,6 +10,13 @@ jest.mock('../../data/recipes', () => ({
   default: {},
 }))
 
+// ─── Mock API service ─────────────────────────────────────────────────────────
+jest.mock('../../services/api', () => ({
+  __esModule: true,
+  fetchTrending: jest.fn().mockResolvedValue({ total: 0, items: [] }),
+  fetchCategories: jest.fn().mockResolvedValue([]),
+}))
+
 const mockShowToast = taroMock.showToast as jest.Mock
 const mockShowModal = taroMock.showModal as jest.Mock
 const mockGetStorageSync = taroMock.getStorageSync as jest.Mock

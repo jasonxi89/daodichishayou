@@ -2,17 +2,24 @@ import { View, Text, ScrollView, Input, Button } from '@tarojs/components'
 import Taro, { useLoad, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback, useRef, useMemo } from 'react'
 import { getLocalRecipe, fetchRecipeFromAPI, type Recipe } from '../../data/recipes'
+import { fetchTrending, fetchCategories } from '../../services/api'
 import './index.scss'
 
 const defaultFoodList: Record<string, string[]> = {
-  随便: ['自制豆腐', '红烧肉', '番茄炒蛋', '宫保鸡丁', '麻婆豆腐', '糖醋排骨', '鱼香肉丝', '回锅肉', '水煮鱼', '酸菜鱼', '蛋炒饭', '兰州拉面', '黄焖鸡', '螺蛳粉', '沙县小吃', '烤鸭', '火锅', '串串香', '小龙虾', '炸鸡'],
-  奶茶类: ['珍珠奶茶', '杨枝甘露', '芋泥波波', '椰椰芒芒', '草莓摇摇乐', '多肉葡萄', '生椰拿铁', '柠檬茶', '芝芝莓莓', '烧仙草'],
-  瘦身餐: ['鸡胸肉沙拉', '藜麦饭', '蒸西兰花', '全麦三明治', '牛油果吐司', '水煮虾仁', '清蒸鱼', '凉拌黄瓜', '紫薯燕麦粥', '低脂酸奶碗'],
-  任性餐: ['芝士炸鸡', '奶油意面', '双层芝士汉堡', '烤肉拼盘', '披萨', '日式炸猪排', '冰淇淋火锅', '芝士焗龙虾', '甜甜圈', '提拉米苏'],
-  附近: ['沙县小吃', '兰州拉面', '黄焖鸡米饭', '麻辣烫', '炸酱面', '煎饼果子', '肉夹馍', '烧烤', '麻辣香锅', '米粉'],
+  随便: ['红烧肉', '番茄炒蛋', '火锅', '螺蛳粉', '烤肉', '麻辣烫', '黄焖鸡', '酸菜鱼', '烤鸭', '炸鸡', '披萨', '寿司', '煲仔饭', '兰州拉面', '小龙虾', '珍珠奶茶', '汉堡', '砂锅菜', '水煮鱼', '串串香', '肉夹馍', '咖喱饭', '生椰拿铁', '锅包肉', '热干面', '烤串', '石锅拌饭', '卤味拼盘', '冒菜', '提拉米苏'],
+  家常炒菜: ['番茄炒蛋', '红烧肉', '宫保鸡丁', '麻婆豆腐', '糖醋排骨', '鱼香肉丝', '回锅肉', '地三鲜', '可乐鸡翅', '酸菜鱼', '清蒸鲈鱼', '红烧茄子', '青椒肉丝', '西红柿牛腩', '蒜蓉大虾', '干煸四季豆', '油焖大虾', '蚝油生菜', '水煮肉片', '毛血旺', '口水鸡', '夫妻肺片', '蒜香骨', '四喜丸子', '香辣蟹', '松鼠鳜鱼', '白切鸡', '梅菜扣肉', '小炒黄牛肉', '辣椒炒肉', '剁椒鱼头', '啤酒鸭'],
+  粉面主食: ['兰州拉面', '螺蛳粉', '热干面', '酸辣粉', '重庆小面', '油泼面', '炸酱面', '刀削面', '担担面', '桂林米粉', '常德米粉', '过桥米线', '肠粉', '蛋炒饭', '煲仔饭', '卤肉饭', '黄焖鸡米饭', '米村拌饭', '猪脚饭', '生烫牛肉粉', '臊子面', 'BiangBiang面', '河南烩面', '延吉冷面', '宜宾燃面', '杭州片儿川', '云吞面', '南昌拌粉', '新疆炒米粉', '沙河粉', '花溪牛肉粉'],
+  火锅烫煮: ['四川火锅', '重庆九宫格', '潮汕牛肉锅', '酸汤火锅', '椰子鸡', '猪肚鸡', '羊蝎子', '铜锅涮肉', '旋转小火锅', '串串香', '麻辣烫', '冒菜', '关东煮', '砂锅菜', '啫啫煲', '菌菇火锅', '鸳鸯锅', '蛙锅', '牛蛙火锅', '东北酸菜白肉锅', '腊排骨火锅', '黑山羊火锅', '天麻火腿鸡', '打边炉', '鱼头火锅', '蟹煲', '花胶鸡', '豆捞火锅', '番茄锅', '骨汤锅'],
+  烧烤炸鸡: ['羊肉串', '烤肉', '韩式烤肉', '齐齐哈尔烤肉', '烤鱼', '烤生蚝', '中式炸鸡', '炸鸡汉堡', '炸鸡排', '铁板鱿鱼', '锡纸花甲', '烤猪蹄', '自助烧烤', '烤鸡翅', '烤鸡腿', '烤五花肉', '烤玉米', '烤茄子', '烤金针菇', '新疆红柳烤肉', '锦州烧烤', '淄博烧烤', '云南包浆豆腐', '烤脑花', '烤韭菜', '盐酥鸡', '炸鸡柳', '烤冷面', '烤面筋', '炸鸡锁骨'],
+  小吃街食: ['煎饼果子', '肉夹馍', '手抓饼', '臭豆腐', '鸡蛋灌饼', '锅贴', '生煎包', '灌汤包', '小笼包', '葱油饼', '章鱼小丸子', '鸡蛋仔', '钵钵鸡', '凉皮', '锅盔', '馄饨', '豆腐脑', '胡辣汤', '羊肉泡馍', '三大炮', '川北凉粉', '蚵仔煎', '冰糖葫芦', '卤煮火烧', '爆肚', '八宝饭', '驴打滚', '龙抄手', '叶儿粑', '钟水饺'],
+  异国料理: ['寿司', '日式拉面', '天妇罗', '烤鳗鱼', '咖喱饭', '石锅拌饭', '韩式炸鸡', '部队锅', '大酱汤', '紫菜包饭', '披萨', '意面', '汉堡', '牛排', '炸鱼薯条', '泰式炒河粉', '冬阴功汤', '芒果糯米饭', '越南河粉', '越南春卷', '墨西哥卷', '印度飞饼', '印度咖喱', '叻沙', '沙嗲', '印尼炒饭', '辣椒蟹', '法式蜗牛', '西班牙海鲜饭', '希腊沙拉'],
+  奶茶咖啡: ['珍珠奶茶', '杨枝甘露', '生椰拿铁', '多肉葡萄', '芋泥波波', '芝芝莓莓', '柠檬茶', '烧仙草', '美式咖啡', '拿铁', '椰椰芒芒', '茉莉奶绿', '咸奶茶', '抹茶拿铁', '羽衣甘蓝奶昔', '草莓摇摇乐', '桂花乌龙茶', '五谷奶茶', '红豆奶茶', '黑糖珍珠', '冰博克拿铁', '燕麦拿铁', '西柚茉莉', '青提椰椰', '酸奶紫米露', '手打柠檬茶', '菌菇养生茶', '龙井奶茶', '热红酒', '姜撞奶'],
+  甜品烘焙: ['提拉米苏', '双皮奶', '芒果班戟', '蛋挞', '冰淇淋', '舒芙蕾', '麻薯', '泡芙', '可颂', '肉桂卷', '红豆汤圆', '芋圆', '绿豆糕', '鲜果蛋糕', '黄油年糕', '瑞士卷', '可露丽', '贝果', '司康', '蛋黄酥', '桂花糕', '核桃马里奥', '北海道吐司', '千层蛋糕', '慕斯蛋糕', '铜锣烧', '芋泥麻薯', '草莓大福', '奶油小贝', '马卡龙'],
+  轻食简餐: ['鸡胸肉沙拉', '藜麦饭', '全麦三明治', '牛油果吐司', '水煮虾仁', '清蒸鱼', '杂粮饭', '蔬菜卷', '紫薯燕麦粥', '低脂酸奶碗', '鸡肉卷', '玉米杯', '凯撒沙拉', '金枪鱼三明治', '牛肉卷饼', '虾仁西兰花', '蒸蛋', '番茄豆腐汤', '白灼虾', '蒜蓉秋葵', '鸡蛋蔬菜饼', '红薯', '玉米', '南瓜粥', '小米粥', '山药排骨汤', '银耳莲子羹', '五谷杂粮粥', '清炒时蔬', '白水煮菜'],
+  夜宵卤味: ['小龙虾', '麻辣香锅', '烤串', '卤味拼盘', '鸭脖', '炒粉炒面', '馄饨', '锅贴', '泡面', '炸鸡', '凉拌毛豆', '酱鸭', '猪蹄', '螺蛳粉', '烤鱼', '卤鸡爪', '鸭翅', '鸭锁骨', '卤牛肉', '卤猪蹄', '卤藕片', '卤鸡蛋', '花毛一体', '拍黄瓜', '虎皮凤爪', '烤面筋', '铁板豆腐', '炒田螺', '烤脑花', '蒜蓉小龙虾'],
 }
 
-const defaultCategories = ['随便', '奶茶类', '瘦身餐', '任性餐', '附近']
+const defaultCategories = ['随便', '热门推荐', '家常炒菜', '粉面主食', '火锅烫煮', '烧烤炸鸡', '小吃街食', '异国料理', '奶茶咖啡', '甜品烘焙', '轻食简餐', '夜宵卤味']
 
 // 食物图标沿问号路径排列（坐标为相对中心点的偏移，间距x1.2）
 const questionMarkIcons = [
@@ -70,6 +77,10 @@ export default function Index() {
   const [recipeLoading, setRecipeLoading] = useState(false)
   const recipeCacheRef = useRef<Record<string, Recipe | null>>({})
 
+  // 后端热门数据
+  const [trendingFoods, setTrendingFoods] = useState<string[]>([])
+  const [backendCategories, setBackendCategories] = useState<string[]>([])
+
   // 自定义菜单状态
   const [customFoodList, setCustomFoodList] = useState<Record<string, string[]>>({})
   const [showCustomMenu, setShowCustomMenu] = useState(false)
@@ -77,9 +88,22 @@ export default function Index() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newFoodInputs, setNewFoodInputs] = useState<Record<string, string>>({})
 
-  // 合并默认 + 自定义
-  const mergedFoodList = useMemo(() => ({ ...defaultFoodList, ...customFoodList }), [customFoodList])
-  const allCategories = useMemo(() => [...defaultCategories, ...Object.keys(customFoodList)], [customFoodList])
+  // 合并默认 + 热门 + 自定义
+  const mergedFoodList = useMemo(() => {
+    const merged = { ...defaultFoodList, ...customFoodList }
+    if (trendingFoods.length > 0) {
+      merged['热门推荐'] = trendingFoods
+    }
+    return merged
+  }, [customFoodList, trendingFoods])
+  const allCategories = useMemo(() => {
+    const base = [...defaultCategories, ...Object.keys(customFoodList)]
+    // 追加后端独有的分类（不重复）
+    for (const cat of backendCategories) {
+      if (!base.includes(cat)) base.push(cat)
+    }
+    return base
+  }, [customFoodList, backendCategories])
 
   useLoad(() => {
     console.log('Page loaded.')
@@ -87,6 +111,13 @@ export default function Index() {
     if (stored && typeof stored === 'object') {
       setCustomFoodList(stored)
     }
+    // 从后端获取热门食物和分类（失败时静默降级到硬编码）
+    fetchTrending(30).then(res => {
+      setTrendingFoods(res.items.map(item => item.food_name))
+    }).catch(() => {})
+    fetchCategories().then(cats => {
+      setBackendCategories(cats)
+    }).catch(() => {})
   })
 
   // 分享到聊天
@@ -328,19 +359,17 @@ export default function Index() {
         </View>
 
         {/* 分类标签 */}
-        <ScrollView scrollX className='categories-scroll'>
-          <View className='categories'>
-            {allCategories.map((cat) => (
-              <Text
-                key={cat}
-                className={`category-tag ${activeCategory === cat ? 'active' : ''}`}
-                onClick={() => setActiveCategory(cat)}
-              >
-                {cat}
-              </Text>
-            ))}
-          </View>
-        </ScrollView>
+        <View className='categories'>
+          {allCategories.map((cat) => (
+            <Text
+              key={cat}
+              className={`category-tag ${activeCategory === cat ? 'active' : ''} ${cat === '热门推荐' ? 'hot' : ''}`}
+              onClick={() => setActiveCategory(cat)}
+            >
+              {cat}
+            </Text>
+          ))}
+        </View>
 
         {/* 数量选择器 */}
         <View className='count-selector'>

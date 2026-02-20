@@ -1,16 +1,18 @@
 .ingredient {
   min-height: 100vh;
   background-color: #f5f8fd;
+  box-sizing: border-box;
 }
 
 .ingredient-scroll {
   height: 100vh;
-  padding: 0 32px;
+  box-sizing: border-box;
 }
 
 /* 通用区块 */
 .section {
   margin-top: 32px;
+  padding: 0 32px;
 }
 
 .section-title {
@@ -57,6 +59,7 @@
 
 .ingredient-input {
   flex: 1;
+  min-width: 0;
   height: 72px;
   background: #fff;
   border-radius: 36px;
@@ -68,7 +71,7 @@
 
 .input-add-btn {
   height: 72px;
-  padding: 0 32px;
+  padding: 0 28px;
   background: linear-gradient(135deg, #f5a623, #f7b84e);
   border-radius: 36px;
   display: flex;
@@ -169,6 +172,7 @@
 /* 推荐按钮 */
 .recommend-btn-wrapper {
   margin-top: 40px;
+  padding: 0 32px;
   display: flex;
   justify-content: center;
 }
@@ -210,6 +214,7 @@
 /* 结果展示 */
 .results {
   margin-top: 48px;
+  padding: 0 32px;
 }
 
 .results-title {
@@ -235,6 +240,7 @@
 
 .dish-info {
   flex: 1;
+  min-width: 0;
 }
 
 .dish-name {
@@ -247,6 +253,7 @@
 .dish-summary {
   font-size: 24px;
   color: #999;
+  word-break: break-all;
 }
 
 .dish-meta {
@@ -341,6 +348,7 @@
 
 .dish-step-text {
   flex: 1;
+  min-width: 0;
   font-size: 26px;
   color: #555;
   line-height: 1.6;
