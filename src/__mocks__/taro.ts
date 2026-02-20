@@ -21,6 +21,11 @@ const useLaunch = jest.fn()
 const useDidShow = jest.fn()
 const switchTab = jest.fn()
 const getCurrentPages = jest.fn().mockReturnValue([{ route: 'pages/index/index' }])
+const eventCenter = {
+  on: jest.fn(),
+  off: jest.fn(),
+  trigger: jest.fn(),
+}
 
 const taroMock = {
   request,
@@ -31,6 +36,7 @@ const taroMock = {
   navigateTo,
   switchTab,
   getCurrentPages,
+  eventCenter,
   useLoad,
   useRouter,
   useDidShow,
@@ -49,6 +55,7 @@ export {
   navigateTo,
   switchTab,
   getCurrentPages,
+  eventCenter,
   useLoad,
   useRouter,
   useDidShow,

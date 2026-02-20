@@ -1,6 +1,6 @@
 import { View, Text, Image } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 import './index.scss'
 import tabHome from '../assets/tab-home.png'
@@ -42,30 +42,37 @@ const iconStyle: React.CSSProperties = {
   marginBottom: '6rpx',
 }
 
+function detectPage(): number {
+  try {
+    const pages = Taro.getCurrentPages()
+    const route = pages[pages.length - 1]?.route || ''
+    return route.includes('ingredient') ? 1 : 0
+  } catch {
+    return 0
+  }
+}
+
 export default function CustomTabBar() {
-  const [active, setActive] = useState(() => {
-    try {
-      const pages = Taro.getCurrentPages()
-      const current = pages[pages.length - 1]
-      return current?.route === 'pages/ingredient/ingredient' ? 1 : 0
-    } catch {
-      return 0
-    }
-  })
+  const [active, setActive] = useState(detectPage)
+
+  useEffect(() => {
+    // Detect on mount
+    setActive(detectPage())
+    // Listen for tab switch events from other instances
+    const handler = (index: number) => setActive(index)
+    Taro.eventCenter.on('switchTab', handler)
+    return () => { Taro.eventCenter.off('switchTab', handler) }
+  }, [])
 
   Taro.useDidShow(() => {
-    const pages = Taro.getCurrentPages()
-    const current = pages[pages.length - 1]
-    if (current.route === 'pages/ingredient/ingredient') {
-      setActive(1)
-    } else {
-      setActive(0)
-    }
+    setActive(detectPage())
   })
 
   const switchTo = (index: number, url: string) => {
     if (index === active) return
     setActive(index)
+    // Notify ALL tab bar instances (including the one on the destination page)
+    Taro.eventCenter.trigger('switchTab', index)
     Taro.switchTab({ url })
   }
 

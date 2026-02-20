@@ -403,6 +403,9 @@ export default function Index() {
           <Text className='link-text' onClick={() => setShowCustomMenu(true)}>自定义菜单</Text>
           <Text className='link-text'>菜单下载</Text>
         </View>
+
+        {/* TabBar占位 */}
+        <View className='tab-bar-spacer' />
       </View>
 
       {/* 自定义菜单弹窗 */}
