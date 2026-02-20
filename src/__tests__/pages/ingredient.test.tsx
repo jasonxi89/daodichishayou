@@ -357,7 +357,7 @@ describe('Ingredient page – recommend button', () => {
     fireEvent.click(screen.getByText('开始推荐'))
 
     await waitFor(() => {
-      expect(screen.getByText('AI 思考中...')).toBeInTheDocument()
+      expect(screen.getByText('我想想')).toBeInTheDocument()
     })
   })
 

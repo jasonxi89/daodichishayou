@@ -7,6 +7,7 @@
 .ingredient-scroll {
   height: 100vh;
   box-sizing: border-box;
+  padding-bottom: 120px;
 }
 
 /* 通用区块 */
@@ -169,6 +170,55 @@
   }
 }
 
+/* 思考动画 */
+.thinking-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.thinking-emoji {
+  font-size: 80px;
+  animation: wobble 1.5s ease-in-out infinite;
+}
+
+.thinking-dots {
+  display: flex;
+  align-items: baseline;
+  margin-top: 16px;
+}
+
+.thinking-text {
+  font-size: 32px;
+  color: #666;
+  font-weight: bold;
+}
+
+.dot {
+  font-size: 40px;
+  color: #f5a623;
+  font-weight: bold;
+  animation: bounce 1.4s ease-in-out infinite;
+}
+
+.dot1 { animation-delay: 0s; }
+.dot2 { animation-delay: 0.2s; }
+.dot3 { animation-delay: 0.4s; }
+.dot4 { animation-delay: 0.6s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
+  40% { transform: translateY(-12px); opacity: 1; }
+}
+
+@keyframes wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
 /* 推荐按钮 */
 .recommend-btn-wrapper {
   margin-top: 40px;
@@ -194,12 +244,6 @@
 
   &.disabled {
     opacity: 0.5;
-    pointer-events: none;
-  }
-
-  &.loading {
-    background: linear-gradient(135deg, #ccc, #ddd);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     pointer-events: none;
   }
 }
@@ -355,7 +399,7 @@
   padding-top: 6px;
 }
 
-/* 底部留白 */
+/* 底部留白 — 给自定义TabBar腾空间 */
 .bottom-spacer {
-  height: 40px;
+  height: 160px;
 }

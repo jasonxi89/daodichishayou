@@ -43,7 +43,15 @@ const iconStyle: React.CSSProperties = {
 }
 
 export default function CustomTabBar() {
-  const [active, setActive] = useState(0)
+  const [active, setActive] = useState(() => {
+    try {
+      const pages = Taro.getCurrentPages()
+      const current = pages[pages.length - 1]
+      return current?.route === 'pages/ingredient/ingredient' ? 1 : 0
+    } catch {
+      return 0
+    }
+  })
 
   Taro.useDidShow(() => {
     const pages = Taro.getCurrentPages()

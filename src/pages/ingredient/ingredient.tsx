@@ -167,17 +167,28 @@ export default function Ingredient() {
           </View>
         </View>
 
-        {/* 推荐按钮 */}
-        <View className='recommend-btn-wrapper'>
-          <View
-            className={`recommend-btn ${loading ? 'loading' : ''} ${selected.length === 0 ? 'disabled' : ''}`}
-            onClick={!loading ? handleRecommend : undefined}
-          >
-            <Text className='recommend-btn-text'>
-              {loading ? 'AI 思考中...' : '开始推荐'}
-            </Text>
+        {/* 推荐按钮 / Loading 动画 */}
+        {loading ? (
+          <View className='thinking-box'>
+            <Text className='thinking-emoji'>🤔</Text>
+            <View className='thinking-dots'>
+              <Text className='thinking-text'>我想想</Text>
+              <Text className='dot dot1'>.</Text>
+              <Text className='dot dot2'>.</Text>
+              <Text className='dot dot3'>.</Text>
+              <Text className='dot dot4'>.</Text>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View className='recommend-btn-wrapper'>
+            <View
+              className={`recommend-btn ${selected.length === 0 ? 'disabled' : ''}`}
+              onClick={handleRecommend}
+            >
+              <Text className='recommend-btn-text'>开始推荐</Text>
+            </View>
+          </View>
+        )}
 
         {/* 结果展示 */}
         {dishes.length > 0 && (
