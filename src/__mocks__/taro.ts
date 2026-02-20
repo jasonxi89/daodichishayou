@@ -17,6 +17,11 @@ const useShareAppMessage = jest.fn()
 const useShareTimeline = jest.fn()
 const useLaunch = jest.fn()
 
+// Tab bar related mocks
+const useDidShow = jest.fn()
+const switchTab = jest.fn()
+const getCurrentPages = jest.fn().mockReturnValue([{ route: 'pages/index/index' }])
+
 const taroMock = {
   request,
   showToast,
@@ -24,8 +29,11 @@ const taroMock = {
   getStorageSync,
   setStorageSync,
   navigateTo,
+  switchTab,
+  getCurrentPages,
   useLoad,
   useRouter,
+  useDidShow,
   useShareAppMessage,
   useShareTimeline,
   useLaunch,
@@ -39,8 +47,11 @@ export {
   getStorageSync,
   setStorageSync,
   navigateTo,
+  switchTab,
+  getCurrentPages,
   useLoad,
   useRouter,
+  useDidShow,
   useShareAppMessage,
   useShareTimeline,
   useLaunch,
