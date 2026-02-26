@@ -59,16 +59,16 @@ describe('Index page – initial render', () => {
     render(<IndexPage />)
     expect(screen.getByText('随便')).toBeInTheDocument()
     expect(screen.getByText('热门推荐')).toBeInTheDocument()
-    expect(screen.getByText('家常炒菜')).toBeInTheDocument()
-    expect(screen.getByText('粉面主食')).toBeInTheDocument()
-    expect(screen.getByText('火锅烫煮')).toBeInTheDocument()
-    expect(screen.getByText('烧烤炸鸡')).toBeInTheDocument()
-    expect(screen.getByText('小吃街食')).toBeInTheDocument()
-    expect(screen.getByText('异国料理')).toBeInTheDocument()
-    expect(screen.getByText('奶茶咖啡')).toBeInTheDocument()
-    expect(screen.getByText('甜品烘焙')).toBeInTheDocument()
-    expect(screen.getByText('轻食简餐')).toBeInTheDocument()
-    expect(screen.getByText('夜宵卤味')).toBeInTheDocument()
+    expect(screen.getByText('家常下饭')).toBeInTheDocument()
+    expect(screen.getByText('嗦粉吃面')).toBeInTheDocument()
+    expect(screen.getByText('火锅烫涮')).toBeInTheDocument()
+    expect(screen.getByText('烧烤撸串')).toBeInTheDocument()
+    expect(screen.getByText('街头小吃')).toBeInTheDocument()
+    expect(screen.getByText('异国风味')).toBeInTheDocument()
+    expect(screen.getByText('奶茶续命')).toBeInTheDocument()
+    expect(screen.getByText('甜品诱惑')).toBeInTheDocument()
+    expect(screen.getByText('轻食减脂')).toBeInTheDocument()
+    expect(screen.getByText('深夜食堂')).toBeInTheDocument()
   })
 
   it('renders the count selector with default value 1', () => {
@@ -164,7 +164,7 @@ describe('Index page – category selection', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    const hotpotTab = screen.getByText('火锅烫煮')
+    const hotpotTab = screen.getByText('火锅烫涮')
     fireEvent.click(hotpotTab)
 
     // The active class is applied; we verify via the className
@@ -183,7 +183,7 @@ describe('Index page – category selection', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    const bbqTab = screen.getByText('烧烤炸鸡')
+    const bbqTab = screen.getByText('烧烤撸串')
     fireEvent.click(bbqTab)
 
     const randomTab = screen.getByText('随便')
@@ -570,7 +570,7 @@ describe('Index page – trending integration', () => {
     // render the page and verify all 12 categories are present
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
-    const categories = ['随便', '家常炒菜', '粉面主食', '火锅烫煮', '烧烤炸鸡', '小吃街食', '异国料理', '奶茶咖啡', '甜品烘焙', '轻食简餐', '夜宵卤味']
+    const categories = ['随便', '家常下饭', '嗦粉吃面', '火锅烫涮', '烧烤撸串', '街头小吃', '异国风味', '奶茶续命', '甜品诱惑', '轻食减脂', '深夜食堂']
     categories.forEach(cat => {
       expect(screen.getByText(cat)).toBeInTheDocument()
     })
