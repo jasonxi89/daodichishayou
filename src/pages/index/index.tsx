@@ -66,7 +66,12 @@ const squareIcons = [
 ]
 
 export default function Index() {
-  const [activeCategory, setActiveCategory] = useState('随便')
+  const [activeCategory, _setActiveCategory] = useState('随便')
+  const activeCategoryRef = useRef(activeCategory)
+  const setActiveCategory = useCallback((cat: string) => {
+    activeCategoryRef.current = cat
+    _setActiveCategory(cat)
+  }, [])
   const [currentFood, setCurrentFood] = useState('今天吃啥？')
   const [isRolling, setIsRolling] = useState(false)
   const [count, setCount] = useState(1)
@@ -83,6 +88,7 @@ export default function Index() {
 
   // 自定义菜单状态
   const [customFoodList, setCustomFoodList] = useState<Record<string, string[]>>({})
+  const rollListRef = useRef<string[]>([])
   const [showCustomMenu, setShowCustomMenu] = useState(false)
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -138,20 +144,22 @@ export default function Index() {
   })
 
   const handleRefreshItem = useCallback((index: number) => {
-    const list = mergedFoodList[activeCategory] || mergedFoodList['随便']
+    const list = rollListRef.current
+    if (list.length === 0) return
     const others = resultList.filter((_, i) => i !== index)
     const available = list.filter(f => !others.includes(f))
     if (available.length === 0) return
     const newFood = available[Math.floor(Math.random() * available.length)]
     setResultList(prev => prev.map((f, i) => i === index ? newFood : f))
-  }, [activeCategory, resultList, mergedFoodList])
+  }, [resultList])
 
   const handleStart = useCallback(() => {
     if (isRolling) return
     setIsRolling(true)
     setResultList([])
 
-    const list = mergedFoodList[activeCategory] || mergedFoodList['随便']
+    const list = mergedFoodList[activeCategoryRef.current] || mergedFoodList['随便']
+    rollListRef.current = list
     let tick = 0
     const maxTick = 15
     const timer = setInterval(() => {
