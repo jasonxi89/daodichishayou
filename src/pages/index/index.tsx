@@ -348,40 +348,43 @@ export default function Index() {
       <View className='content'>
         {/* 食物名称展示 */}
         <View className='food-display'>
-          {/* 正方形边框食物图标 */}
-          {squareIcons.map((item, i) => (
-            <Text
-              key={`sq-${i}`}
-              className='qm-icon'
-              style={{
-                left: '50%',
-                top: '50%',
-                marginLeft: `${item.dx}rpx`,
-                marginTop: `${item.dy}rpx`,
-                transform: `translate(-50%, -50%) rotate(${item.rotate}deg)`,
-              }}
-            >
-              {item.icon}
-            </Text>
-          ))}
-          {/* 问号形状的食物图标 */}
-          {questionMarkIcons.map((item, i) => (
-            <Text
-              key={i}
-              className='qm-icon'
-              style={{
-                left: '50%',
-                top: '50%',
-                marginLeft: `${item.dx}rpx`,
-                marginTop: `${item.dy}rpx`,
-                transform: `translate(-50%, -50%) rotate(${item.rotate}deg)`,
-              }}
-            >
-              {item.icon}
-            </Text>
-          ))}
+          {/* 装饰图标：仅在未显示结果列表时展示 */}
+          {resultList.length <= 1 && (
+            <>
+              {squareIcons.map((item, i) => (
+                <Text
+                  key={`sq-${i}`}
+                  className='qm-icon'
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    marginLeft: `${item.dx}rpx`,
+                    marginTop: `${item.dy}rpx`,
+                    transform: `translate(-50%, -50%) rotate(${item.rotate}deg)`,
+                  }}
+                >
+                  {item.icon}
+                </Text>
+              ))}
+              {questionMarkIcons.map((item, i) => (
+                <Text
+                  key={i}
+                  className='qm-icon'
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    marginLeft: `${item.dx}rpx`,
+                    marginTop: `${item.dy}rpx`,
+                    transform: `translate(-50%, -50%) rotate(${item.rotate}deg)`,
+                  }}
+                >
+                  {item.icon}
+                </Text>
+              ))}
+            </>
+          )}
           {resultList.length > 1 ? (
-            <ScrollView scrollY className='result-list'>
+            <View className={`result-list ${resultList.length > 3 ? 'grid' : ''}`}>
               {resultList.map((food, i) => (
                 <View key={i} className='result-row'>
                   <View className='result-item'>
@@ -393,7 +396,7 @@ export default function Index() {
                   </View>
                 </View>
               ))}
-            </ScrollView>
+            </View>
           ) : (
             <Text className={`food-name ${isRolling ? 'rolling' : ''}`}>{currentFood}</Text>
           )}
