@@ -1,8 +1,9 @@
 import { View, Text, ScrollView, Input, Button } from '@tarojs/components'
 import Taro, { useLoad, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import { getLocalRecipe, fetchRecipeFromAPI, type Recipe } from '../../data/recipes'
-import { fetchTrending, fetchCategories } from '../../services/api'
+import type { Recipe } from '../../data/recipes'
+import { getLocalRecipe, fetchRecipeFromAPI } from '../../data/recipes'
+import { fetchTrending, fetchCategories, generateFoodsByCategory } from '../../services/api'
 import './index.scss'
 
 const defaultFoodList: Record<string, string[]> = {
@@ -94,6 +95,10 @@ export default function Index() {
   const [trendingByCategory, setTrendingByCategory] = useState<Record<string, string[]>>({})
   const [backendCategories, setBackendCategories] = useState<string[]>([])
 
+  // AI 分类缓存
+  const [aiCategoryCache, setAiCategoryCache] = useState<Record<string, string[]>>({})
+  const [categoryLoading, setCategoryLoading] = useState<string | null>(null)
+
   // 自定义菜单状态
   const [customFoodList, setCustomFoodList] = useState<Record<string, string[]>>({})
   const rollListRef = useRef<string[]>([])
@@ -102,7 +107,7 @@ export default function Index() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newFoodInputs, setNewFoodInputs] = useState<Record<string, string>>({})
 
-  // 合并默认 + 热门 + 后端分类 + 自定义
+  // 合并默认 + 热门 + 后端分类 + AI缓存 + 自定义
   const mergedFoodList = useMemo(() => {
     const merged = { ...defaultFoodList, ...customFoodList }
     if (trendingFoods.length > 0) {
@@ -113,16 +118,20 @@ export default function Index() {
         merged[cat] = foods
       }
     }
+    for (const [cat, foods] of Object.entries(aiCategoryCache)) {
+      if (!merged[cat] && foods.length > 0) {
+        merged[cat] = foods
+      }
+    }
     return merged
-  }, [customFoodList, trendingFoods, trendingByCategory])
+  }, [customFoodList, trendingFoods, trendingByCategory, aiCategoryCache])
   const allCategories = useMemo(() => {
     const base = [...defaultCategories, ...Object.keys(customFoodList)]
-    // 只追加有足够食物数据的后端分类
     for (const cat of backendCategories) {
-      if (!base.includes(cat) && mergedFoodList[cat]) base.push(cat)
+      if (!base.includes(cat)) base.push(cat)
     }
     return base
-  }, [customFoodList, backendCategories, mergedFoodList])
+  }, [customFoodList, backendCategories])
 
   useLoad(() => {
     console.log('Page loaded.')
@@ -148,6 +157,28 @@ export default function Index() {
       setBackendCategories(cats)
     }).catch(() => {})
   })
+
+  // 点击分类标签：切换分类 + 按需触发 AI 生成
+  const handleCategoryClick = useCallback((cat: string) => {
+    setActiveCategory(cat)
+    if (
+      (!mergedFoodList[cat] || mergedFoodList[cat].length === 0) &&
+      categoryLoading === null &&
+      !aiCategoryCache[cat]
+    ) {
+      setCategoryLoading(cat)
+      generateFoodsByCategory(cat)
+        .then(res => {
+          setAiCategoryCache(prev => ({ ...prev, [cat]: res.foods }))
+        })
+        .catch(() => {
+          Taro.showToast({ title: `"${cat}"分类生成失败`, icon: 'none' })
+        })
+        .finally(() => {
+          setCategoryLoading(null)
+        })
+    }
+  }, [mergedFoodList, categoryLoading, aiCategoryCache, setActiveCategory])
 
   // 分享到聊天
   useShareAppMessage(() => {
@@ -350,7 +381,7 @@ export default function Index() {
             </Text>
           ))}
           {resultList.length > 1 ? (
-            <View className='result-list'>
+            <ScrollView scrollY className='result-list'>
               {resultList.map((food, i) => (
                 <View key={i} className='result-row'>
                   <View className='result-item'>
@@ -362,7 +393,7 @@ export default function Index() {
                   </View>
                 </View>
               ))}
-            </View>
+            </ScrollView>
           ) : (
             <Text className={`food-name ${isRolling ? 'rolling' : ''}`}>{currentFood}</Text>
           )}
@@ -395,8 +426,8 @@ export default function Index() {
           {allCategories.map((cat) => (
             <Text
               key={cat}
-              className={`category-tag ${activeCategory === cat ? 'active' : ''} ${cat === '热门推荐' ? 'hot' : ''}`}
-              onClick={() => setActiveCategory(cat)}
+              className={`category-tag ${activeCategory === cat ? 'active' : ''} ${cat === '热门推荐' ? 'hot' : ''} ${categoryLoading === cat ? 'loading' : ''}`}
+              onClick={() => handleCategoryClick(cat)}
             >
               {cat}
             </Text>
@@ -425,7 +456,7 @@ export default function Index() {
 
         {/* 开始按钮 */}
         <View className='start-btn-wrapper'>
-          <View className={`start-btn ${isRolling ? 'disabled' : ''}`} onClick={handleStart}>
+          <View className={`start-btn ${isRolling || categoryLoading !== null ? 'disabled' : ''}`} onClick={handleStart}>
             <Text className='start-btn-text'>{isRolling ? '选择中...' : '开始'}</Text>
           </View>
         </View>

@@ -15,6 +15,7 @@ jest.mock('../../services/api', () => ({
   __esModule: true,
   fetchTrending: jest.fn().mockResolvedValue({ total: 0, items: [] }),
   fetchCategories: jest.fn().mockResolvedValue([]),
+  generateFoodsByCategory: jest.fn().mockResolvedValue({ foods: [], category: '' }),
 }))
 
 const mockShowToast = taroMock.showToast as jest.Mock
@@ -511,9 +512,8 @@ describe('Index page – trending integration', () => {
     expect(api.fetchCategories).toHaveBeenCalled()
   })
 
-  it('merges backend categories into tabs when API returns enough items', async () => {
+  it('merges backend categories into tabs regardless of food count', async () => {
     const api = require('../../services/api')
-    // Backend category needs >= 5 items to appear as a tab
     const items = Array.from({ length: 6 }, (_, i) => ({
       id: i + 1, food_name: `测试菜${i}`, source: 'test', heat_score: 100 - i,
       post_count: 10, category: '新品类A', image_url: null, updated_at: '',
@@ -528,10 +528,26 @@ describe('Index page – trending integration', () => {
     render(<IndexPage />)
 
     await waitFor(() => {
-      // 新品类A has 6 items (>=5), should appear
+      // Both categories should appear regardless of item count
       expect(screen.getByText('新品类A')).toBeInTheDocument()
-      // 新品类B has 0 items, should NOT appear
-      expect(screen.queryByText('新品类B')).not.toBeInTheDocument()
+      expect(screen.getByText('新品类B')).toBeInTheDocument()
+    })
+  })
+
+  it('displays backend categories without food count filter', async () => {
+    const api = require('../../services/api')
+    api.fetchTrending.mockResolvedValueOnce({ total: 0, items: [] })
+    api.fetchCategories.mockResolvedValueOnce(['空分类A', '空分类B'])
+
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('空分类A')).toBeInTheDocument()
+      expect(screen.getByText('空分类B')).toBeInTheDocument()
     })
   })
 

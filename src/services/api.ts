@@ -51,3 +51,17 @@ export async function fetchCategories(): Promise<string[]> {
 export async function fetchHealth(): Promise<{ status: string; version: string }> {
   return request('/api/health', { timeout: 5000 })
 }
+
+export async function generateFoodsByCategory(category: string, count = 30): Promise<{ foods: string[], category: string }> {
+  const res = await Taro.request({
+    url: `${API_BASE}/api/foods-by-category`,
+    method: 'POST',
+    header: { 'Content-Type': 'application/json' },
+    data: { category, count },
+    timeout: 30000,
+  })
+  if (res.statusCode !== 200) {
+    throw new Error(`API error: ${res.statusCode}`)
+  }
+  return res.data as { foods: string[], category: string }
+}
