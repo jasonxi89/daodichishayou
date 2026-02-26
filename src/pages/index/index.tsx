@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, Input, Button } from '@tarojs/components'
 import Taro, { useLoad, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { getLocalRecipe, fetchRecipeFromAPI, type Recipe } from '../../data/recipes'
 import { fetchTrending, fetchCategories } from '../../services/api'
 import './index.scss'
@@ -81,6 +81,13 @@ export default function Index() {
   const [activePopupIndex, setActivePopupIndex] = useState(0)
   const [recipeLoading, setRecipeLoading] = useState(false)
   const recipeCacheRef = useRef<Record<string, Recipe | null>>({})
+  const rollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (rollTimerRef.current) clearInterval(rollTimerRef.current)
+    }
+  }, [])
 
   // 后端热门数据
   const [trendingFoods, setTrendingFoods] = useState<string[]>([])
@@ -162,11 +169,12 @@ export default function Index() {
     rollListRef.current = list
     let tick = 0
     const maxTick = 15
-    const timer = setInterval(() => {
+    rollTimerRef.current = setInterval(() => {
       setCurrentFood(list[Math.floor(Math.random() * list.length)])
       tick++
       if (tick >= maxTick) {
-        clearInterval(timer)
+        if (rollTimerRef.current) clearInterval(rollTimerRef.current)
+        rollTimerRef.current = null
         if (count === 1) {
           setCurrentFood(list[Math.floor(Math.random() * list.length)])
         } else {
