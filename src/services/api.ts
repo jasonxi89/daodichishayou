@@ -23,7 +23,7 @@ export interface TrendingResponse {
 // === Generic request helper ===
 
 async function request<T>(path: string, options?: { timeout?: number }): Promise<T> {
-  const timeout = options?.timeout ?? 8000
+  const timeout = (options && options.timeout) || 8000
   const res = await Taro.request({
     url: `${API_BASE}${path}`,
     timeout,

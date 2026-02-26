@@ -261,7 +261,7 @@ export default function Index() {
   const handleAddFood = useCallback((category: string) => {
     const food = (newFoodInputs[category] || '').trim()
     if (!food) return
-    if (customFoodList[category]?.includes(food)) {
+    if (customFoodList[category] && customFoodList[category].includes(food)) {
       Taro.showToast({ title: '食物已存在', icon: 'none' })
       return
     }

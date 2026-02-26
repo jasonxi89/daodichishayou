@@ -45,7 +45,8 @@ const iconStyle: React.CSSProperties = {
 function detectPage(): number {
   try {
     const pages = Taro.getCurrentPages()
-    const route = pages[pages.length - 1]?.route || ''
+    const current = pages[pages.length - 1]
+    const route = (current && current.route) || ''
     return route.includes('ingredient') ? 1 : 0
   } catch {
     return 0

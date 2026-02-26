@@ -21,6 +21,7 @@ interface RecommendedDish {
   steps: string[]
   difficulty?: string
   cook_time?: string
+  extra_ingredients?: string[]
 }
 
 export default function Ingredient() {
@@ -31,6 +32,8 @@ export default function Ingredient() {
   const [loading, setLoading] = useState(false)
   const [dishes, setDishes] = useState<RecommendedDish[]>([])
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  const [allowExtra, setAllowExtra] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const addIngredient = useCallback((name: string) => {
     if (!name.trim()) return
@@ -67,6 +70,7 @@ export default function Ingredient() {
           ingredients: selected,
           count: 3,
           preferences: preference === '不限' ? null : preference,
+          allow_extra: allowExtra,
         },
         timeout: 30000,
       })
@@ -81,7 +85,35 @@ export default function Ingredient() {
     } finally {
       setLoading(false)
     }
-  }, [selected, preference])
+  }, [selected, preference, allowExtra])
+
+  const handleLoadMore = useCallback(async () => {
+    setLoadingMore(true)
+    try {
+      const res = await Taro.request({
+        url: `${API_BASE}/api/recommend`,
+        method: 'POST',
+        header: { 'Content-Type': 'application/json' },
+        data: {
+          ingredients: selected,
+          count: 3,
+          preferences: preference === '不限' ? null : preference,
+          allow_extra: allowExtra,
+          exclude_dishes: dishes.map(d => d.name),
+        },
+        timeout: 30000,
+      })
+      if (res.statusCode === 200 && res.data.dishes) {
+        setDishes(prev => [...prev, ...res.data.dishes])
+      } else {
+        Taro.showToast({ title: '加载失败，请重试', icon: 'none' })
+      }
+    } catch {
+      Taro.showToast({ title: '网络异常，请重试', icon: 'none' })
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [selected, preference, allowExtra, dishes])
 
   const toggleExpand = useCallback((index: number) => {
     setExpandedIndex(prev => prev === index ? null : index)
@@ -167,6 +199,19 @@ export default function Ingredient() {
           </View>
         </View>
 
+        {/* 额外买菜开关 */}
+        <View className='toggle-section'>
+          <View className='toggle-row'>
+            <View className='toggle-label'>
+              <Text className='toggle-title'>允许额外买菜</Text>
+              <Text className='toggle-subtitle'>AI可推荐需额外购买1-2种食材的菜</Text>
+            </View>
+            <View className={`toggle-switch ${allowExtra ? 'active' : ''}`} onClick={() => setAllowExtra(prev => !prev)}>
+              <View className='toggle-knob' />
+            </View>
+          </View>
+        </View>
+
         {/* 推荐按钮 / Loading 动画 */}
         {loading ? (
           <View className='thinking-box'>
@@ -214,10 +259,18 @@ export default function Ingredient() {
                     <View className='dish-ingredients'>
                       <Text className='dish-detail-label'>食材清单</Text>
                       <View className='dish-ingredient-tags'>
-                        {dish.ingredients.map((item, i) => (
-                          <Text key={i} className='dish-ingredient-tag'>{item}</Text>
-                        ))}
+                        {dish.ingredients.map((item, i) => {
+                          const isExtra = dish.extra_ingredients?.some(extra => item.includes(extra))
+                          return (
+                            <Text key={i} className={`dish-ingredient-tag ${isExtra ? 'extra' : ''}`}>
+                              {isExtra ? `🛒 ${item}` : item}
+                            </Text>
+                          )
+                        })}
                       </View>
+                      {dish.extra_ingredients && dish.extra_ingredients.length > 0 && (
+                        <Text className='extra-hint'>🛒 = 需额外购买</Text>
+                      )}
                     </View>
                     <View className='dish-steps'>
                       <Text className='dish-detail-label'>做法步骤</Text>
@@ -232,6 +285,11 @@ export default function Ingredient() {
                 )}
               </View>
             ))}
+            <View className={`load-more-btn ${loadingMore ? 'loading' : ''}`} onClick={handleLoadMore}>
+              <Text className='load-more-btn-text'>
+                {loadingMore ? '加载中...' : '加载更多 ▼'}
+              </Text>
+            </View>
           </View>
         )}
 

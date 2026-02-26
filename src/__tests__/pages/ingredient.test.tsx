@@ -532,3 +532,179 @@ describe('Ingredient page – dish card expand/collapse', () => {
     expect(screen.getByText('查看详情 ▼')).toBeInTheDocument()
   })
 })
+
+describe('Ingredient page – allow extra toggle', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('renders the allow extra toggle', () => {
+    const IngredientPage = loadIngredientPage()
+    render(<IngredientPage />)
+    expect(screen.getByText('允许额外买菜')).toBeInTheDocument()
+  })
+
+  it('toggle is off by default', () => {
+    const IngredientPage = loadIngredientPage()
+    render(<IngredientPage />)
+    // The toggle-switch should not have 'active' class
+    const toggleText = screen.getByText('允许额外买菜')
+    // Find the toggle switch in the same section
+    const section = toggleText.closest('.toggle-section') || toggleText.parentElement?.parentElement
+    const toggle = section?.querySelector('.toggle-switch')
+    expect(toggle?.className).not.toContain('active')
+  })
+
+  it('clicking toggle activates it', () => {
+    const IngredientPage = loadIngredientPage()
+    render(<IngredientPage />)
+    const toggleText = screen.getByText('允许额外买菜')
+    const section = toggleText.closest('.toggle-section') || toggleText.parentElement?.parentElement
+    const toggle = section?.querySelector('.toggle-switch') as HTMLElement
+    fireEvent.click(toggle)
+    expect(toggle?.className).toContain('active')
+  })
+})
+
+describe('Ingredient page – load more', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  const dishes = [
+    { name: '番茄炒蛋', summary: '经典家常', ingredients: ['番茄', '鸡蛋'], steps: ['炒'] },
+  ]
+
+  it('shows load more button after results', async () => {
+    mockRequest.mockResolvedValue({ statusCode: 200, data: { dishes } })
+    const IngredientPage = loadIngredientPage()
+    render(<IngredientPage />)
+
+    fireEvent.click(screen.getByText('番茄'))
+    fireEvent.click(screen.getByText('开始推荐'))
+
+    await waitFor(() => {
+      expect(screen.getByText('加载更多 ▼')).toBeInTheDocument()
+    })
+  })
+
+  it('clicking load more appends new dishes', async () => {
+    const moreDishes = [
+      { name: '番茄蛋汤', summary: '暖心汤品', ingredients: ['番茄', '鸡蛋'], steps: ['煮'] },
+    ]
+    mockRequest
+      .mockResolvedValueOnce({ statusCode: 200, data: { dishes } })
+      .mockResolvedValueOnce({ statusCode: 200, data: { dishes: moreDishes } })
+
+    const IngredientPage = loadIngredientPage()
+    render(<IngredientPage />)
+
+    fireEvent.click(screen.getByText('番茄'))
+    fireEvent.click(screen.getByText('开始推荐'))
+
+    await waitFor(() => {
+      expect(screen.getByText('番茄炒蛋')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('加载更多 ▼'))
+
+    await waitFor(() => {
+      expect(screen.getByText('番茄蛋汤')).toBeInTheDocument()
+      // Original dish should still be there
+      expect(screen.getByText('番茄炒蛋')).toBeInTheDocument()
+    })
+  })
+
+  it('load more sends exclude_dishes with existing dish names', async () => {
+    mockRequest
+      .mockResolvedValueOnce({ statusCode: 200, data: { dishes } })
+      .mockResolvedValueOnce({ statusCode: 200, data: { dishes: [] } })
+
+    const IngredientPage = loadIngredientPage()
+    render(<IngredientPage />)
+
+    fireEvent.click(screen.getByText('番茄'))
+    fireEvent.click(screen.getByText('开始推荐'))
+
+    await waitFor(() => {
+      expect(screen.getByText('番茄炒蛋')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('加载更多 ▼'))
+
+    await waitFor(() => {
+      const secondCall = mockRequest.mock.calls[1][0]
+      expect(secondCall.data.exclude_dishes).toEqual(['番茄炒蛋'])
+    })
+  })
+})
+
+describe('Ingredient page – extra ingredients highlight', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('highlights extra ingredients with extra class', async () => {
+    const dishesWithExtra = [
+      {
+        name: '番茄牛腩',
+        summary: '浓郁下饭',
+        ingredients: ['番茄 2个', '牛腩 500g', '盐 适量'],
+        steps: ['炖'],
+        extra_ingredients: ['牛腩'],
+      },
+    ]
+    mockRequest.mockResolvedValue({ statusCode: 200, data: { dishes: dishesWithExtra } })
+
+    const IngredientPage = loadIngredientPage()
+    render(<IngredientPage />)
+
+    fireEvent.click(screen.getByText('番茄'))
+    fireEvent.click(screen.getByText('开始推荐'))
+
+    await waitFor(() => {
+      expect(screen.getByText('番茄牛腩')).toBeInTheDocument()
+    })
+
+    // Expand the dish
+    fireEvent.click(screen.getByText('番茄牛腩'))
+
+    await waitFor(() => {
+      // 牛腩 500g should have 🛒 prefix and extra class
+      const extraTag = screen.getByText(/🛒 牛腩 500g/)
+      expect(extraTag.className).toContain('extra')
+      // 番茄 should not have extra class
+      const tomatoTag = screen.getByText('番茄 2个')
+      expect(tomatoTag.className).not.toContain('extra')
+    })
+  })
+
+  it('shows extra hint when dish has extra ingredients', async () => {
+    const dishesWithExtra = [
+      {
+        name: '番茄牛腩',
+        summary: '浓郁下饭',
+        ingredients: ['番茄 2个', '牛腩 500g'],
+        steps: ['炖'],
+        extra_ingredients: ['牛腩'],
+      },
+    ]
+    mockRequest.mockResolvedValue({ statusCode: 200, data: { dishes: dishesWithExtra } })
+
+    const IngredientPage = loadIngredientPage()
+    render(<IngredientPage />)
+
+    fireEvent.click(screen.getByText('番茄'))
+    fireEvent.click(screen.getByText('开始推荐'))
+
+    await waitFor(() => {
+      expect(screen.getByText('番茄牛腩')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('番茄牛腩'))
+
+    await waitFor(() => {
+      expect(screen.getByText('🛒 = 需额外购买')).toBeInTheDocument()
+    })
+  })
+})

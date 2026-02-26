@@ -290,7 +290,7 @@ export async function fetchRecipeFromAPI(name: string): Promise<Recipe | null> {
         num: 1,
       },
     })
-    if (res.data?.code === 200 && res.data?.result?.list?.length) {
+    if (res.data && res.data.code === 200 && res.data.result && res.data.result.list && res.data.result.list.length) {
       const item = res.data.result.list[0]
 
       // 解析食材：统一去编号，按分号/编号/换行拆分

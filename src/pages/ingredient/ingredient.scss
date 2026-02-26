@@ -399,6 +399,108 @@
   padding-top: 6px;
 }
 
+/* Toggle 开关 */
+.toggle-section {
+  margin-top: 32px;
+  padding: 0 32px;
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.toggle-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toggle-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #333;
+}
+
+.toggle-subtitle {
+  font-size: 22px;
+  color: #999;
+}
+
+.toggle-switch {
+  width: 88px;
+  height: 48px;
+  border-radius: 24px;
+  background: #ddd;
+  position: relative;
+  flex-shrink: 0;
+
+  &.active {
+    background: linear-gradient(135deg, #f5a623, #f7b84e);
+  }
+}
+
+.toggle-knob {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  transition: transform 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+  .active & {
+    transform: translateX(40px);
+  }
+}
+
+/* 额外食材高亮 */
+.dish-ingredient-tag.extra {
+  background: #ffe0d0;
+  color: #e65100;
+  border: 1px solid #ff8a65;
+}
+
+.extra-hint {
+  font-size: 22px;
+  color: #999;
+  margin-top: 8px;
+}
+
+/* 加载更多 */
+.load-more-btn {
+  margin: 24px auto 0;
+  padding: 16px 48px;
+  border-radius: 32px;
+  border: 2px solid #f5a623;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    opacity: 0.8;
+  }
+
+  &.loading {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+}
+
+.load-more-btn-text {
+  font-size: 26px;
+  color: #f5a623;
+  font-weight: bold;
+}
+
 /* 底部留白 — 给自定义TabBar腾空间 */
 .bottom-spacer {
   height: 160px;
