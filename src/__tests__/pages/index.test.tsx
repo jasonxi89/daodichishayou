@@ -507,12 +507,18 @@ describe('Index page – trending integration', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    expect(api.fetchTrending).toHaveBeenCalledWith(30)
+    expect(api.fetchTrending).toHaveBeenCalledWith(200)
     expect(api.fetchCategories).toHaveBeenCalled()
   })
 
-  it('merges backend categories into tabs when API returns data', async () => {
+  it('merges backend categories into tabs when API returns enough items', async () => {
     const api = require('../../services/api')
+    // Backend category needs >= 5 items to appear as a tab
+    const items = Array.from({ length: 6 }, (_, i) => ({
+      id: i + 1, food_name: `测试菜${i}`, source: 'test', heat_score: 100 - i,
+      post_count: 10, category: '新品类A', image_url: null, updated_at: '',
+    }))
+    api.fetchTrending.mockResolvedValueOnce({ total: items.length, items })
     api.fetchCategories.mockResolvedValueOnce(['新品类A', '新品类B'])
 
     const mockUseLoad = taroMock.useLoad as jest.Mock
@@ -522,8 +528,10 @@ describe('Index page – trending integration', () => {
     render(<IndexPage />)
 
     await waitFor(() => {
+      // 新品类A has 6 items (>=5), should appear
       expect(screen.getByText('新品类A')).toBeInTheDocument()
-      expect(screen.getByText('新品类B')).toBeInTheDocument()
+      // 新品类B has 0 items, should NOT appear
+      expect(screen.queryByText('新品类B')).not.toBeInTheDocument()
     })
   })
 

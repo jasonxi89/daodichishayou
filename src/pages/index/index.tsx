@@ -91,6 +91,7 @@ export default function Index() {
 
   // 后端热门数据
   const [trendingFoods, setTrendingFoods] = useState<string[]>([])
+  const [trendingByCategory, setTrendingByCategory] = useState<Record<string, string[]>>({})
   const [backendCategories, setBackendCategories] = useState<string[]>([])
 
   // 自定义菜单状态
@@ -101,22 +102,27 @@ export default function Index() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newFoodInputs, setNewFoodInputs] = useState<Record<string, string>>({})
 
-  // 合并默认 + 热门 + 自定义
+  // 合并默认 + 热门 + 后端分类 + 自定义
   const mergedFoodList = useMemo(() => {
     const merged = { ...defaultFoodList, ...customFoodList }
     if (trendingFoods.length > 0) {
       merged['热门推荐'] = trendingFoods
     }
+    for (const [cat, foods] of Object.entries(trendingByCategory)) {
+      if (!merged[cat] && foods.length >= 5) {
+        merged[cat] = foods
+      }
+    }
     return merged
-  }, [customFoodList, trendingFoods])
+  }, [customFoodList, trendingFoods, trendingByCategory])
   const allCategories = useMemo(() => {
     const base = [...defaultCategories, ...Object.keys(customFoodList)]
-    // 追加后端独有的分类（不重复）
+    // 只追加有足够食物数据的后端分类
     for (const cat of backendCategories) {
-      if (!base.includes(cat)) base.push(cat)
+      if (!base.includes(cat) && mergedFoodList[cat]) base.push(cat)
     }
     return base
-  }, [customFoodList, backendCategories])
+  }, [customFoodList, backendCategories, mergedFoodList])
 
   useLoad(() => {
     console.log('Page loaded.')
@@ -125,8 +131,18 @@ export default function Index() {
       setCustomFoodList(stored)
     }
     // 从后端获取热门食物和分类（失败时静默降级到硬编码）
-    fetchTrending(30).then(res => {
+    fetchTrending(200).then(res => {
       setTrendingFoods(res.items.map(item => item.food_name))
+      const grouped: Record<string, string[]> = {}
+      res.items.forEach(item => {
+        if (item.category) {
+          if (!grouped[item.category]) grouped[item.category] = []
+          if (!grouped[item.category].includes(item.food_name)) {
+            grouped[item.category].push(item.food_name)
+          }
+        }
+      })
+      setTrendingByCategory(grouped)
     }).catch(() => {})
     fetchCategories().then(cats => {
       setBackendCategories(cats)
