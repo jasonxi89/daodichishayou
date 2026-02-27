@@ -80,16 +80,20 @@ export default function CustomTabBar() {
   }, [])
 
   Taro.useDidShow(() => {
-    // Delay to ensure getCurrentPages() reflects the new page after switchTab
-    timerRef.current = setTimeout(() => {
-      setActive(detectPage())
-    }, 50)
+    // Primary: use _pendingTabIndex (set by switchTo before switchTab)
+    // Handles cached pages where useEffect doesn't fire again
+    if (_pendingTabIndex !== null) {
+      setActive(_pendingTabIndex)
+      _pendingTabIndex = null
+      return
+    }
+    // Fallback: detect from route
+    setActive(detectPage())
   })
 
   const switchTo = (index: number, url: string) => {
     if (index === active) return
-    setActive(index)
-    // Store intended index for the destination page's tab-bar instance
+    // Don't setActive on current instance — it'll show stale state when user returns
     _pendingTabIndex = index
     Taro.eventCenter.trigger('switchTab', index)
     Taro.switchTab({ url })

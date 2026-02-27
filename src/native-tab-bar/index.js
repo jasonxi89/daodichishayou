@@ -20,10 +20,15 @@ Component({
   },
   pageLifetimes: {
     show() {
-      var self = this
-      setTimeout(function () {
-        self._detectActive()
-      }, 50)
+      // Primary: use pendingTabIndex (set by switchTo before wx.switchTab)
+      // This handles cached pages where attached() doesn't fire again
+      if (pendingTabIndex !== null) {
+        this.setData({ active: pendingTabIndex })
+        pendingTabIndex = null
+        return
+      }
+      // Fallback: detect from route
+      this._detectActive()
     },
   },
   methods: {
@@ -38,13 +43,11 @@ Component({
     },
     switchToHome() {
       if (this.data.active === 0) return
-      this.setData({ active: 0 })
       pendingTabIndex = 0
       wx.switchTab({ url: '/pages/index/index' })
     },
     switchToIngredient() {
       if (this.data.active === 1) return
-      this.setData({ active: 1 })
       pendingTabIndex = 1
       wx.switchTab({ url: '/pages/ingredient/ingredient' })
     },
