@@ -202,10 +202,11 @@ export default function Index() {
   })
 
   // 同步 tabBar 选中态（官方推荐：每个 tab 页 onShow 时通过 getTabBar 设置）
+  // ⚠️ getCurrentInstance() 必须在顶层调用，不能在回调里调用
+  const pageCtx = Taro.getCurrentInstance().page
   useDidShow(() => {
-    const page = Taro.getCurrentInstance().page
-    if (page && typeof page.getTabBar === 'function') {
-      const tabBar = page.getTabBar()
+    if (pageCtx && typeof pageCtx.getTabBar === 'function') {
+      const tabBar = pageCtx.getTabBar()
       if (tabBar) tabBar.setData({ active: 0 })
     }
   })
