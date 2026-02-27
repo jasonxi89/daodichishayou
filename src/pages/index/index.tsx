@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Input, Button } from '@tarojs/components'
-import Taro, { useLoad, useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
+import Taro, { useLoad, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import type { Recipe } from '../../data/recipes'
 import { getLocalRecipe, fetchRecipeFromAPI } from '../../data/recipes'
@@ -199,16 +199,6 @@ export default function Index() {
     fetchCategories().then(cats => {
       setBackendCategories(cats)
     }).catch(() => {})
-  })
-
-  // 同步 tabBar 选中态（官方推荐：每个 tab 页 onShow 时通过 getTabBar 设置）
-  // ⚠️ getCurrentInstance() 必须在顶层调用，不能在回调里调用
-  const pageCtx = Taro.getCurrentInstance().page
-  useDidShow(() => {
-    if (pageCtx && typeof pageCtx.getTabBar === 'function') {
-      const tabBar = pageCtx.getTabBar()
-      if (tabBar) tabBar.setData({ active: 0 })
-    }
   })
 
   // 点击分类标签：切换分类 + 按需触发 AI 生成

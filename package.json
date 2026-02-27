@@ -15,7 +15,7 @@
     "prepare": "husky",
     "new": "taro new",
     "copy:tabbar": "node -e \"['index.wxml','index.wxss','index.js','index.json'].forEach(f=>require('fs').copyFileSync('src/native-tab-bar/'+f,'dist/custom-tab-bar/'+f))\"",
-    "build:weapp": "taro build --type weapp && npm run copy:tabbar",
+    "build:weapp": "taro build --type weapp",
     "build:swan": "taro build --type swan",
     "build:alipay": "taro build --type alipay",
     "build:tt": "taro build --type tt",

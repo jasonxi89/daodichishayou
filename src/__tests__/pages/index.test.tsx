@@ -33,7 +33,7 @@ function loadIndexPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe.skip('Index page – initial render', () => {
+describe('Index page – initial render', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({})
@@ -99,7 +99,7 @@ describe.skip('Index page – initial render', () => {
   })
 })
 
-describe.skip('Index page – count selector', () => {
+describe('Index page – count selector', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({})
@@ -156,7 +156,7 @@ describe.skip('Index page – count selector', () => {
   })
 })
 
-describe.skip('Index page – category selection', () => {
+describe('Index page – category selection', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({})
@@ -194,7 +194,7 @@ describe.skip('Index page – category selection', () => {
   })
 })
 
-describe.skip('Index page – 查看菜谱 button without selection', () => {
+describe('Index page – 查看菜谱 button without selection', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({})
@@ -215,7 +215,7 @@ describe.skip('Index page – 查看菜谱 button without selection', () => {
   })
 })
 
-describe.skip('Index page – custom menu', () => {
+describe('Index page – custom menu', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({})
@@ -343,7 +343,7 @@ describe.skip('Index page – custom menu', () => {
   })
 })
 
-describe.skip('Index page – start button logic', () => {
+describe('Index page – start button logic', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({})
@@ -415,7 +415,7 @@ describe.skip('Index page – start button logic', () => {
   })
 })
 
-describe.skip('Index page – storage integration', () => {
+describe('Index page – storage integration', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // useLoad is a no-op mock by default; make it invoke the callback so that
@@ -445,7 +445,7 @@ describe.skip('Index page – storage integration', () => {
   })
 })
 
-describe.skip('Index page – delete category', () => {
+describe('Index page – delete category', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({ '自定义1': ['食物X'] })
@@ -495,7 +495,7 @@ describe.skip('Index page – delete category', () => {
 
 // ─── New: trending & dynamic categories ─────────────────────────────────────
 
-describe.skip('Index page – trending integration', () => {
+describe('Index page – trending integration', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({})
@@ -617,7 +617,7 @@ describe.skip('Index page – trending integration', () => {
 
 // ─── AI category cache localStorage persistence ──────────────────────────────
 
-describe.skip('Index page – AI category cache persistence', () => {
+describe('Index page – AI category cache persistence', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -724,7 +724,7 @@ describe.skip('Index page – AI category cache persistence', () => {
 
 // ─── Bulk fetch loading ────────────────────────────────────────────────────
 
-describe.skip('Index page – bulk category fetch', () => {
+describe('Index page – bulk category fetch', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })

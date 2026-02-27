@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Input } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro from '@tarojs/taro'
 import { useState, useCallback } from 'react'
 import './ingredient.scss'
 
@@ -34,16 +34,6 @@ export default function Ingredient() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [allowExtra, setAllowExtra] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
-
-  // 同步 tabBar 选中态（官方推荐：每个 tab 页 onShow 时通过 getTabBar 设置）
-  // ⚠️ getCurrentInstance() 必须在顶层调用，不能在回调里调用
-  const pageCtx = Taro.getCurrentInstance().page
-  useDidShow(() => {
-    if (pageCtx && typeof pageCtx.getTabBar === 'function') {
-      const tabBar = pageCtx.getTabBar()
-      if (tabBar) tabBar.setData({ active: 1 })
-    }
-  })
 
   const addIngredient = useCallback((name: string) => {
     if (!name.trim()) return

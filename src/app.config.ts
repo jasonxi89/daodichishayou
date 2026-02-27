@@ -6,7 +6,6 @@ export default defineAppConfig({
     'pages/recipe/recipe',
   ],
   tabBar: {
-    custom: true,
     color: '#999999',
     selectedColor: '#f5a623',
     backgroundColor: '#ffffff',
