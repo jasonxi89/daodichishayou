@@ -81,49 +81,49 @@ export default function Ingredient() {
       ctx.lineTo(W - 24, 82)
       ctx.stroke()
 
-      // 菜品列表（居中）
-      ctx.textAlign = 'center'
+      // 菜品列表（左侧留边距，充分利用宽度）
+      const listX = 40
       const startY = 108
       dishes.slice(0, 5).forEach((dish, i) => {
         const y = startY + i * 48
         // 序号圆圈
         ctx.fillStyle = '#f5a623'
         ctx.beginPath()
-        ctx.arc(W / 2 - 80, y - 5, 12, 0, Math.PI * 2)
+        ctx.arc(listX + 12, y - 5, 12, 0, Math.PI * 2)
         ctx.fill()
         ctx.fillStyle = '#fff'
         ctx.font = 'bold 13px sans-serif'
-        ctx.fillText(String(i + 1), W / 2 - 80, y)
+        ctx.textAlign = 'center'
+        ctx.fillText(String(i + 1), listX + 12, y)
         // 菜名
         ctx.fillStyle = '#333'
         ctx.font = 'bold 18px sans-serif'
         ctx.textAlign = 'left'
-        ctx.fillText(dish.name, W / 2 - 60, y)
+        ctx.fillText(dish.name, listX + 32, y)
         // 简介
         ctx.fillStyle = '#999'
         ctx.font = '13px sans-serif'
-        ctx.fillText(dish.summary || '', W / 2 - 60, y + 22)
-        ctx.textAlign = 'center'
+        ctx.fillText(dish.summary || '', listX + 32, y + 22)
       })
 
-      // 红色印章 "大厨认证"
+      // 红色印章 "大厨认证"（更大，往中间移）
       ctx.save()
-      ctx.translate(W - 80, H - 90)
+      ctx.translate(W - 110, H - 100)
       ctx.rotate(-0.2)
       ctx.strokeStyle = '#d32f2f'
-      ctx.lineWidth = 3
+      ctx.lineWidth = 4
       ctx.beginPath()
-      ctx.arc(0, 0, 42, 0, Math.PI * 2)
+      ctx.arc(0, 0, 52, 0, Math.PI * 2)
       ctx.stroke()
-      ctx.lineWidth = 1.5
+      ctx.lineWidth = 2
       ctx.beginPath()
-      ctx.arc(0, 0, 36, 0, Math.PI * 2)
+      ctx.arc(0, 0, 44, 0, Math.PI * 2)
       ctx.stroke()
       ctx.fillStyle = '#d32f2f'
-      ctx.font = 'bold 18px sans-serif'
+      ctx.font = 'bold 22px sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText('大厨', 0, -6)
-      ctx.fillText('认证', 0, 18)
+      ctx.fillText('大厨', 0, -8)
+      ctx.fillText('认证', 0, 20)
       ctx.restore()
 
       // 底部水印（居中）
