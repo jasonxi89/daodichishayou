@@ -18,6 +18,7 @@ const useShareTimeline = jest.fn()
 const useLaunch = jest.fn()
 
 // Tab bar related mocks
+const getCurrentInstance = jest.fn().mockReturnValue({ page: null })
 const useDidShow = jest.fn()
 const switchTab = jest.fn()
 const getCurrentPages = jest.fn().mockReturnValue([{ route: 'pages/index/index' }])
@@ -35,6 +36,7 @@ const taroMock = {
   setStorageSync,
   navigateTo,
   switchTab,
+  getCurrentInstance,
   getCurrentPages,
   eventCenter,
   useLoad,
@@ -54,6 +56,7 @@ export {
   setStorageSync,
   navigateTo,
   switchTab,
+  getCurrentInstance,
   getCurrentPages,
   eventCenter,
   useLoad,
