@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Input, Canvas } from '@tarojs/components'
+import { View, Text, ScrollView, Input, Canvas, Button } from '@tarojs/components'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import './ingredient.scss'
@@ -460,8 +460,12 @@ export default function Ingredient() {
           </View>
         )}
 
-        {/* 底部留白 */}
       </ScrollView>
+
+      {/* 意见反馈悬浮按钮 */}
+      <Button className='feedback-fab' openType='feedback'>
+        <Text className='feedback-fab-text'>反馈</Text>
+      </Button>
     </View>
   )
 }
