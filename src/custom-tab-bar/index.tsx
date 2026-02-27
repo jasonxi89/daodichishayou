@@ -1,6 +1,6 @@
 import { View, Text, Image } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 import './index.scss'
 import tabHome from '../assets/tab-home.png'
@@ -53,26 +53,44 @@ function detectPage(): number {
   }
 }
 
+// Module-level variable shared across all instances to track the intended tab.
+// When switchTab is called, we store the target index here so the new
+// custom-tab-bar instance on the destination page can read it immediately.
+export let _pendingTabIndex: number | null = null
+
 export default function CustomTabBar() {
-  const [active, setActive] = useState(detectPage)
+  const initial = _pendingTabIndex !== null ? _pendingTabIndex : detectPage()
+  const [active, setActive] = useState(initial)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    // Detect on mount
-    setActive(detectPage())
-    // Listen for tab switch events from other instances
+    // On mount: use _pendingTabIndex if set by switchTo, otherwise detect from route
+    if (_pendingTabIndex !== null) {
+      setActive(_pendingTabIndex)
+      _pendingTabIndex = null
+    } else {
+      setActive(detectPage())
+    }
     const handler = (index: number) => setActive(index)
     Taro.eventCenter.on('switchTab', handler)
-    return () => { Taro.eventCenter.off('switchTab', handler) }
+    return () => {
+      Taro.eventCenter.off('switchTab', handler)
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
   }, [])
 
   Taro.useDidShow(() => {
-    setActive(detectPage())
+    // Delay to ensure getCurrentPages() reflects the new page after switchTab
+    timerRef.current = setTimeout(() => {
+      setActive(detectPage())
+    }, 50)
   })
 
   const switchTo = (index: number, url: string) => {
     if (index === active) return
     setActive(index)
-    // Notify ALL tab bar instances (including the one on the destination page)
+    // Store intended index for the destination page's tab-bar instance
+    _pendingTabIndex = index
     Taro.eventCenter.trigger('switchTab', index)
     Taro.switchTab({ url })
   }

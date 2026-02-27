@@ -65,3 +65,19 @@ export async function generateFoodsByCategory(category: string, count = 30): Pro
   }
   return res.data as { foods: string[], category: string }
 }
+
+export async function bulkGenerateFoodsByCategory(
+  categories: string[], count = 30
+): Promise<{ results: Record<string, string[]> }> {
+  const res = await Taro.request({
+    url: `${API_BASE}/api/bulk-foods-by-category`,
+    method: 'POST',
+    header: { 'Content-Type': 'application/json' },
+    data: { categories, count },
+    timeout: 60000,
+  })
+  if (res.statusCode !== 200) {
+    throw new Error(`API error: ${res.statusCode}`)
+  }
+  return res.data as { results: Record<string, string[]> }
+}

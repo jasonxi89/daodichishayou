@@ -204,7 +204,7 @@ export default function Ingredient() {
           <View className='toggle-row'>
             <View className='toggle-label'>
               <Text className='toggle-title'>允许额外买菜</Text>
-              <Text className='toggle-subtitle'>AI可推荐需额外购买1-2种食材的菜</Text>
+              <Text className='toggle-subtitle'>可推荐需额外购买1-2种食材的菜</Text>
             </View>
             <View className={`toggle-switch ${allowExtra ? 'active' : ''}`} onClick={() => setAllowExtra(prev => !prev)}>
               <View className='toggle-knob' />

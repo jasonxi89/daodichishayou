@@ -3,8 +3,12 @@ import Taro, { useLoad, useShareAppMessage, useShareTimeline } from '@tarojs/tar
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import type { Recipe } from '../../data/recipes'
 import { getLocalRecipe, fetchRecipeFromAPI } from '../../data/recipes'
-import { fetchTrending, fetchCategories, generateFoodsByCategory } from '../../services/api'
+import { fetchTrending, fetchCategories, generateFoodsByCategory, bulkGenerateFoodsByCategory } from '../../services/api'
 import './index.scss'
+
+const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 1 day
+
+const AI_CATEGORIES = ['家常下饭', '嗦粉吃面', '火锅烫涮', '烧烤撸串', '街头小吃', '异国风味', '奶茶续命', '甜品诱惑', '轻食减脂', '深夜食堂']
 
 const defaultFoodList: Record<string, string[]> = {
   随便: ['红烧肉', '番茄炒蛋', '火锅', '螺蛳粉', '烤肉', '麻辣烫', '黄焖鸡', '酸菜鱼', '烤鸭', '炸鸡', '披萨', '寿司', '煲仔饭', '兰州拉面', '小龙虾', '奶茶', '汉堡', '水煮鱼', '串串香', '肉夹馍', '咖喱饭', '生椰拿铁', '锅包肉', '热干面', '烤串', '卤味拼盘', '冒菜', '蛋糕', '砂锅粥', '鸡公煲'],
@@ -96,8 +100,9 @@ export default function Index() {
   const [backendCategories, setBackendCategories] = useState<string[]>([])
 
   // AI 分类缓存
-  const [aiCategoryCache, setAiCategoryCache] = useState<Record<string, string[]>>({})
+  const [aiCategoryCache, setAiCategoryCache] = useState<Record<string, { foods: string[], expiresAt: number }>>({})
   const [categoryLoading, setCategoryLoading] = useState<string | null>(null)
+  const [bulkLoading, setBulkLoading] = useState(false)
 
   // 自定义菜单状态
   const [customFoodList, setCustomFoodList] = useState<Record<string, string[]>>({})
@@ -108,6 +113,8 @@ export default function Index() {
   const [newFoodInputs, setNewFoodInputs] = useState<Record<string, string>>({})
 
   // 合并默认 + 热门 + 后端分类 + AI缓存 + 自定义
+  // 优先级: AI缓存 > 自定义 > 默认硬编码 > 热门趋势
+  // AI缓存是用户主动点击分类后按需生成的，最精准，优先级最高
   const mergedFoodList = useMemo(() => {
     const merged = { ...defaultFoodList, ...customFoodList }
     if (trendingFoods.length > 0) {
@@ -118,16 +125,21 @@ export default function Index() {
         merged[cat] = foods
       }
     }
-    for (const [cat, foods] of Object.entries(aiCategoryCache)) {
-      if (!merged[cat] && foods.length > 0) {
-        merged[cat] = foods
+    // AI缓存优先级最高：覆盖 trendingByCategory 的粗略分组
+    for (const [cat, entry] of Object.entries(aiCategoryCache)) {
+      if (entry.foods.length > 0) {
+        merged[cat] = entry.foods
       }
     }
     return merged
   }, [customFoodList, trendingFoods, trendingByCategory, aiCategoryCache])
   const allCategories = useMemo(() => {
-    const base = [...defaultCategories, ...Object.keys(customFoodList)]
+    const base = [...defaultCategories]
     for (const cat of backendCategories) {
+      if (!base.includes(cat)) base.push(cat)
+    }
+    // 自定义分类放最后
+    for (const cat of Object.keys(customFoodList)) {
       if (!base.includes(cat)) base.push(cat)
     }
     return base
@@ -138,6 +150,37 @@ export default function Index() {
     const stored = Taro.getStorageSync('customFoodList')
     if (stored && typeof stored === 'object') {
       setCustomFoodList(stored)
+    }
+    let validAiCache: Record<string, { foods: string[], expiresAt: number }> = {}
+    const cachedAi = Taro.getStorageSync('aiCategoryCache')
+    if (cachedAi && typeof cachedAi === 'object') {
+      const now = Date.now()
+      for (const [k, v] of Object.entries(cachedAi)) {
+        if (v && typeof v === 'object' && (v as any).expiresAt > now) {
+          validAiCache[k] = v as { foods: string[], expiresAt: number }
+        }
+      }
+      setAiCategoryCache(validAiCache)
+    }
+    // Bulk fetch uncached AI categories
+    const uncached = AI_CATEGORIES.filter(cat => !validAiCache[cat] || validAiCache[cat].expiresAt <= Date.now())
+    if (uncached.length > 0) {
+      setBulkLoading(true)
+      bulkGenerateFoodsByCategory(uncached)
+        .then(res => {
+          setAiCategoryCache(prev => {
+            const next = { ...prev }
+            for (const [cat, foods] of Object.entries(res.results)) {
+              next[cat] = { foods, expiresAt: Date.now() + AI_CACHE_TTL_MS }
+            }
+            Taro.setStorageSync('aiCategoryCache', next)
+            return next
+          })
+        })
+        .catch(() => {})
+        .finally(() => {
+          setBulkLoading(false)
+        })
     }
     // 从后端获取热门食物和分类（失败时静默降级到硬编码）
     fetchTrending(200).then(res => {
@@ -159,17 +202,25 @@ export default function Index() {
   })
 
   // 点击分类标签：切换分类 + 按需触发 AI 生成
+  // 对于没有默认/自定义食物列表的分类，用 AI 生成精准的分类食物
   const handleCategoryClick = useCallback((cat: string) => {
     setActiveCategory(cat)
+    const hasDefaultOrCustom = !!(defaultFoodList[cat] || customFoodList[cat])
     if (
-      (!mergedFoodList[cat] || mergedFoodList[cat].length === 0) &&
+      !hasDefaultOrCustom &&
+      !bulkLoading &&
       categoryLoading === null &&
-      !aiCategoryCache[cat]
+      (!aiCategoryCache[cat] || aiCategoryCache[cat].expiresAt <= Date.now())
     ) {
       setCategoryLoading(cat)
       generateFoodsByCategory(cat)
         .then(res => {
-          setAiCategoryCache(prev => ({ ...prev, [cat]: res.foods }))
+          const entry = { foods: res.foods, expiresAt: Date.now() + AI_CACHE_TTL_MS }
+          setAiCategoryCache(prev => {
+            const next = { ...prev, [cat]: entry }
+            Taro.setStorageSync('aiCategoryCache', next)
+            return next
+          })
         })
         .catch(() => {
           Taro.showToast({ title: `"${cat}"分类生成失败`, icon: 'none' })
@@ -178,7 +229,7 @@ export default function Index() {
           setCategoryLoading(null)
         })
     }
-  }, [mergedFoodList, categoryLoading, aiCategoryCache, setActiveCategory])
+  }, [customFoodList, bulkLoading, categoryLoading, aiCategoryCache, setActiveCategory])
 
   // 分享到聊天
   useShareAppMessage(() => {
@@ -208,11 +259,15 @@ export default function Index() {
   }, [resultList])
 
   const handleStart = useCallback(() => {
-    if (isRolling) return
+    if (isRolling || categoryLoading) return
+    const currentCat = activeCategoryRef.current
+    const list = mergedFoodList[currentCat]
+    if (!list || list.length === 0) {
+      Taro.showToast({ title: '该分类正在加载中，请稍后', icon: 'none' })
+      return
+    }
     setIsRolling(true)
     setResultList([])
-
-    const list = mergedFoodList[activeCategoryRef.current] || mergedFoodList['随便']
     rollListRef.current = list
     let tick = 0
     const maxTick = 15
@@ -232,7 +287,7 @@ export default function Index() {
         setIsRolling(false)
       }
     }, 100)
-  }, [isRolling, activeCategory, count, mergedFoodList])
+  }, [isRolling, activeCategory, count, mergedFoodList, categoryLoading])
 
   // 加载某个食物的菜谱
   const loadRecipe = useCallback(async (food: string) => {
@@ -302,7 +357,8 @@ export default function Index() {
     saveCustomList({ ...customFoodList, [name]: [] })
     setNewCategoryName('')
     setShowAddCategory(false)
-  }, [newCategoryName, customFoodList, saveCustomList])
+    setActiveCategory(name)
+  }, [newCategoryName, customFoodList, saveCustomList, setActiveCategory])
 
   const handleDeleteCategory = useCallback((name: string) => {
     Taro.showModal({
@@ -459,7 +515,7 @@ export default function Index() {
 
         {/* 开始按钮 */}
         <View className='start-btn-wrapper'>
-          <View className={`start-btn ${isRolling || categoryLoading !== null ? 'disabled' : ''}`} onClick={handleStart}>
+          <View className={`start-btn ${isRolling || categoryLoading !== null || bulkLoading ? 'disabled' : ''}`} onClick={handleStart}>
             <Text className='start-btn-text'>{isRolling ? '选择中...' : '开始'}</Text>
           </View>
         </View>
@@ -636,6 +692,17 @@ export default function Index() {
                 </View>
               )
             })()}
+          </View>
+        </View>
+      )}
+
+      {/* Bulk loading overlay */}
+      {bulkLoading && (
+        <View className='bulk-loading-overlay'>
+          <View className='bulk-loading-content'>
+            <Text className='bulk-loading-icon'>🔍</Text>
+            <Text className='bulk-loading-title'>正在搜索全网最新最火品类</Text>
+            <Text className='bulk-loading-subtitle'>首次加载需要几秒钟...</Text>
           </View>
         </View>
       )}

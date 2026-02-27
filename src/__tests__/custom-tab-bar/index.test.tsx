@@ -1,15 +1,19 @@
 import React from 'react'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import * as taroMock from '@tarojs/taro'
-import CustomTabBar from '../../custom-tab-bar/index'
+import CustomTabBar, { _pendingTabIndex } from '../../custom-tab-bar/index'
+
+// We need to write to the exported let binding via the module object
+import * as tabBarModule from '../../custom-tab-bar/index'
 
 const mockSwitchTab = taroMock.switchTab as jest.Mock
 const mockGetCurrentPages = taroMock.getCurrentPages as jest.Mock
-const mockUseDidShow = taroMock.useDidShow as jest.Mock
 
 describe('CustomTabBar – rendering', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    // Reset module-level pending index between tests
+    ;(tabBarModule as any)._pendingTabIndex = null
     mockGetCurrentPages.mockReturnValue([{ route: 'pages/index/index' }])
   })
 
@@ -39,6 +43,7 @@ describe('CustomTabBar – rendering', () => {
 describe('CustomTabBar – tab switching', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(tabBarModule as any)._pendingTabIndex = null
     mockGetCurrentPages.mockReturnValue([{ route: 'pages/index/index' }])
   })
 
@@ -58,6 +63,7 @@ describe('CustomTabBar – tab switching', () => {
 describe('CustomTabBar – page detection', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(tabBarModule as any)._pendingTabIndex = null
   })
 
   it('sets active to 1 when on ingredient page', () => {

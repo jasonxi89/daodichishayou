@@ -16,6 +16,7 @@ jest.mock('../../services/api', () => ({
   fetchTrending: jest.fn().mockResolvedValue({ total: 0, items: [] }),
   fetchCategories: jest.fn().mockResolvedValue([]),
   generateFoodsByCategory: jest.fn().mockResolvedValue({ foods: [], category: '' }),
+  bulkGenerateFoodsByCategory: jest.fn().mockResolvedValue({ results: {} }),
 }))
 
 const mockShowToast = taroMock.showToast as jest.Mock
@@ -326,14 +327,16 @@ describe('Index page – custom menu', () => {
     })
   })
 
-  it('loads custom categories from storage on mount', () => {
+  it('loads custom categories from storage on mount', async () => {
     mockGetStorageSync.mockReturnValue({ '存储分类': ['食物A', '食物B'] })
     // useLoad is a no-op mock; make it invoke the callback synchronously
     const mockUseLoad = taroMock.useLoad as jest.Mock
     mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
 
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
+    await act(async () => {
+      render(<IndexPage />)
+    })
 
     // The stored category should appear in the category tabs
     expect(screen.getByText('存储分类')).toBeInTheDocument()
@@ -421,11 +424,12 @@ describe('Index page – storage integration', () => {
     mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
   })
 
-  it('calls getStorageSync with customFoodList key on mount', () => {
+  it('calls getStorageSync with customFoodList and aiCategoryCache keys on mount', () => {
     mockGetStorageSync.mockReturnValue({})
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
     expect(mockGetStorageSync).toHaveBeenCalledWith('customFoodList')
+    expect(mockGetStorageSync).toHaveBeenCalledWith('aiCategoryCache')
   })
 
   it('ignores non-object storage values gracefully', () => {
@@ -457,7 +461,9 @@ describe('Index page – delete category', () => {
 
   it('calls showModal when delete button is clicked', async () => {
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
+    await act(async () => {
+      render(<IndexPage />)
+    })
 
     fireEvent.click(screen.getByText('自定义菜单'))
 
@@ -471,7 +477,9 @@ describe('Index page – delete category', () => {
 
   it('removes category from storage after confirming delete', async () => {
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
+    await act(async () => {
+      render(<IndexPage />)
+    })
 
     fireEvent.click(screen.getByText('自定义菜单'))
     fireEvent.click(screen.getByText('删除'))
@@ -506,7 +514,9 @@ describe('Index page – trending integration', () => {
 
     const api = require('../../services/api')
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
+    await act(async () => {
+      render(<IndexPage />)
+    })
 
     expect(api.fetchTrending).toHaveBeenCalledWith(200)
     expect(api.fetchCategories).toHaveBeenCalled()
@@ -525,7 +535,9 @@ describe('Index page – trending integration', () => {
     mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
 
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
+    await act(async () => {
+      render(<IndexPage />)
+    })
 
     await waitFor(() => {
       // Both categories should appear regardless of item count
@@ -543,7 +555,9 @@ describe('Index page – trending integration', () => {
     mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
 
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
+    await act(async () => {
+      render(<IndexPage />)
+    })
 
     await waitFor(() => {
       expect(screen.getByText('空分类A')).toBeInTheDocument()
@@ -597,6 +611,216 @@ describe('Index page – trending integration', () => {
     const categories = ['随便', '家常下饭', '嗦粉吃面', '火锅烫涮', '烧烤撸串', '街头小吃', '异国风味', '奶茶续命', '甜品诱惑', '轻食减脂', '深夜食堂']
     categories.forEach(cat => {
       expect(screen.getByText(cat)).toBeInTheDocument()
+    })
+  })
+})
+
+// ─── AI category cache localStorage persistence ──────────────────────────────
+
+describe('Index page – AI category cache persistence', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('persists AI category cache to localStorage after generation', async () => {
+    const api = require('../../services/api')
+    api.generateFoodsByCategory.mockResolvedValueOnce({ foods: ['测试食物1', '测试食物2'], category: '测试分类' })
+    api.fetchCategories.mockResolvedValueOnce(['测试AI分类'])
+
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+    mockGetStorageSync.mockReturnValue({})
+
+    const IndexPage = loadIndexPage()
+    await act(async () => {
+      render(<IndexPage />)
+    })
+
+    // Wait for backend categories to load
+    await waitFor(() => {
+      expect(screen.getByText('测试AI分类')).toBeInTheDocument()
+    })
+
+    // Click the AI category (no default/custom foods, triggers generation)
+    fireEvent.click(screen.getByText('测试AI分类'))
+
+    await waitFor(() => {
+      expect(mockSetStorageSync).toHaveBeenCalledWith(
+        'aiCategoryCache',
+        expect.objectContaining({
+          '测试AI分类': expect.objectContaining({
+            foods: ['测试食物1', '测试食物2'],
+            expiresAt: expect.any(Number),
+          }),
+        })
+      )
+    })
+  })
+
+  it('restores valid (non-expired) AI cache from localStorage on mount', async () => {
+    const futureExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000
+    mockGetStorageSync.mockImplementation((key: string) => {
+      if (key === 'customFoodList') return {}
+      if (key === 'aiCategoryCache') return {
+        '缓存分类': { foods: ['缓存食物A', '缓存食物B'], expiresAt: futureExpiry },
+      }
+      return {}
+    })
+
+    const api = require('../../services/api')
+    api.fetchCategories.mockResolvedValueOnce(['缓存分类'])
+
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+
+    const IndexPage = loadIndexPage()
+    await act(async () => {
+      render(<IndexPage />)
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('缓存分类')).toBeInTheDocument()
+    })
+
+    // Click the cached category — should NOT trigger generateFoodsByCategory
+    fireEvent.click(screen.getByText('缓存分类'))
+    expect(api.generateFoodsByCategory).not.toHaveBeenCalled()
+  })
+
+  it('re-fetches when AI cache entry is expired', async () => {
+    const pastExpiry = Date.now() - 1000 // already expired
+    mockGetStorageSync.mockImplementation((key: string) => {
+      if (key === 'customFoodList') return {}
+      if (key === 'aiCategoryCache') return {
+        '过期分类': { foods: ['旧食物'], expiresAt: pastExpiry },
+      }
+      return {}
+    })
+
+    const api = require('../../services/api')
+    api.generateFoodsByCategory.mockResolvedValueOnce({ foods: ['新食物1', '新食物2'], category: '过期分类' })
+    api.fetchCategories.mockResolvedValueOnce(['过期分类'])
+
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+
+    const IndexPage = loadIndexPage()
+    await act(async () => {
+      render(<IndexPage />)
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('过期分类')).toBeInTheDocument()
+    })
+
+    // Click the expired category — should trigger re-fetch
+    fireEvent.click(screen.getByText('过期分类'))
+
+    await waitFor(() => {
+      expect(api.generateFoodsByCategory).toHaveBeenCalledWith('过期分类')
+    })
+  })
+})
+
+// ─── Bulk fetch loading ────────────────────────────────────────────────────
+
+describe('Index page – bulk category fetch', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('shows loading overlay when bulk fetching uncached categories', async () => {
+    const api = require('../../services/api')
+    // Never resolve so loading stays visible
+    let resolvePromise: (v: any) => void
+    api.bulkGenerateFoodsByCategory.mockReturnValueOnce(
+      new Promise(resolve => { resolvePromise = resolve })
+    )
+
+    mockGetStorageSync.mockReturnValue({})
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('正在搜索全网最新最火品类')).toBeInTheDocument()
+    })
+
+    // Resolve and verify loading disappears
+    await act(async () => {
+      resolvePromise!({ results: { '家常下饭': ['红烧肉'] } })
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByText('正在搜索全网最新最火品类')).not.toBeInTheDocument()
+    })
+  })
+
+  it('does not show loading when all AI categories are cached', async () => {
+    const futureExpiry = Date.now() + 24 * 60 * 60 * 1000
+    const allCached: Record<string, any> = {}
+    const cats = ['家常下饭', '嗦粉吃面', '火锅烫涮', '烧烤撸串', '街头小吃', '异国风味', '奶茶续命', '甜品诱惑', '轻食减脂', '深夜食堂']
+    cats.forEach(cat => { allCached[cat] = { foods: ['测试食物'], expiresAt: futureExpiry } })
+
+    mockGetStorageSync.mockImplementation((key: string) => {
+      if (key === 'customFoodList') return {}
+      if (key === 'aiCategoryCache') return allCached
+      return {}
+    })
+
+    const api = require('../../services/api')
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    // Should NOT show loading or call bulk API
+    expect(screen.queryByText('正在搜索全网最新最火品类')).not.toBeInTheDocument()
+    expect(api.bulkGenerateFoodsByCategory).not.toHaveBeenCalled()
+  })
+
+  it('silently handles bulk fetch failure without crashing', async () => {
+    const api = require('../../services/api')
+    api.bulkGenerateFoodsByCategory.mockRejectedValueOnce(new Error('Network error'))
+
+    mockGetStorageSync.mockReturnValue({})
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+
+    const IndexPage = loadIndexPage()
+    expect(() => render(<IndexPage />)).not.toThrow()
+
+    await waitFor(() => {
+      expect(screen.queryByText('正在搜索全网最新最火品类')).not.toBeInTheDocument()
+    })
+  })
+
+  it('writes bulk fetch results to localStorage', async () => {
+    const api = require('../../services/api')
+    api.bulkGenerateFoodsByCategory.mockResolvedValueOnce({
+      results: { '家常下饭': ['红烧肉', '番茄炒蛋'], '火锅烫涮': ['四川火锅'] }
+    })
+
+    mockGetStorageSync.mockReturnValue({})
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    await waitFor(() => {
+      expect(mockSetStorageSync).toHaveBeenCalledWith(
+        'aiCategoryCache',
+        expect.objectContaining({
+          '家常下饭': expect.objectContaining({
+            foods: ['红烧肉', '番茄炒蛋'],
+            expiresAt: expect.any(Number),
+          }),
+        })
+      )
     })
   })
 })
