@@ -105,6 +105,20 @@ export const ScrollView = ({
   </div>
 )
 
+export const Canvas = ({
+  id,
+  type: _type,
+  style,
+  ...props
+}: {
+  id?: string
+  type?: string
+  style?: React.CSSProperties | string
+  [key: string]: unknown
+}) => (
+  <canvas id={id} style={style as React.CSSProperties} {...props} />
+)
+
 export const Image = ({
   src,
   className,

@@ -17,6 +17,17 @@ const useShareAppMessage = jest.fn()
 const useShareTimeline = jest.fn()
 const useLaunch = jest.fn()
 
+// Canvas / share image mocks
+const createSelectorQuery = jest.fn().mockReturnValue({
+  select: jest.fn().mockReturnValue({
+    fields: jest.fn().mockReturnValue({
+      exec: jest.fn((cb) => cb([null])),
+    }),
+  }),
+})
+const canvasToTempFilePath = jest.fn()
+const getSystemInfoSync = jest.fn().mockReturnValue({ pixelRatio: 2 })
+
 // Tab bar related mocks
 const getCurrentInstance = jest.fn().mockReturnValue({ page: null })
 const useDidShow = jest.fn()
@@ -36,6 +47,9 @@ const taroMock = {
   setStorageSync,
   navigateTo,
   switchTab,
+  createSelectorQuery,
+  canvasToTempFilePath,
+  getSystemInfoSync,
   getCurrentInstance,
   getCurrentPages,
   eventCenter,
@@ -56,6 +70,9 @@ export {
   setStorageSync,
   navigateTo,
   switchTab,
+  createSelectorQuery,
+  canvasToTempFilePath,
+  getSystemInfoSync,
   getCurrentInstance,
   getCurrentPages,
   eventCenter,

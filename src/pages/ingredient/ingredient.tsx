@@ -1,6 +1,6 @@
-import { View, Text, ScrollView, Input } from '@tarojs/components'
+import { View, Text, ScrollView, Input, Canvas } from '@tarojs/components'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import './ingredient.scss'
 
 const COMMON_INGREDIENTS: Record<string, string[]> = {
@@ -34,14 +34,126 @@ export default function Ingredient() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [allowExtra, setAllowExtra] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const shareImagePath = useRef('')
+
+  // 当菜品结果变化时，绘制分享卡片
+  useEffect(() => {
+    if (dishes.length === 0) {
+      shareImagePath.current = ''
+      return
+    }
+    const query = Taro.createSelectorQuery()
+    query.select('#shareCanvas').fields({ node: true, size: true }).exec((res) => {
+      if (!res[0]?.node) return
+      const canvas = res[0].node
+      const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+      const dpr = Taro.getSystemInfoSync().pixelRatio || 2
+      const W = 500, H = 400
+      canvas.width = W * dpr
+      canvas.height = H * dpr
+      ctx.scale(dpr, dpr)
+
+      // 背景
+      ctx.fillStyle = '#f5f8fd'
+      ctx.fillRect(0, 0, W, H)
+
+      // 顶部色块
+      ctx.fillStyle = '#f5a623'
+      ctx.fillRect(0, 0, W, 6)
+
+      // 标题
+      ctx.fillStyle = '#333'
+      ctx.font = 'bold 22px sans-serif'
+      ctx.fillText('AI 推荐菜品', 24, 40)
+
+      // 食材
+      ctx.fillStyle = '#888'
+      ctx.font = '14px sans-serif'
+      const ingredientLine = '食材：' + selected.slice(0, 6).join('、') + (selected.length > 6 ? '...' : '')
+      ctx.fillText(ingredientLine, 24, 68)
+
+      // 分隔线
+      ctx.strokeStyle = '#e5e5e5'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(24, 82)
+      ctx.lineTo(W - 24, 82)
+      ctx.stroke()
+
+      // 菜品列表
+      ctx.fillStyle = '#333'
+      const startY = 108
+      dishes.slice(0, 5).forEach((dish, i) => {
+        const y = startY + i * 48
+        // 序号圆圈
+        ctx.fillStyle = '#f5a623'
+        ctx.beginPath()
+        ctx.arc(38, y - 5, 12, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#fff'
+        ctx.font = 'bold 13px sans-serif'
+        ctx.fillText(String(i + 1), 34, y)
+        // 菜名
+        ctx.fillStyle = '#333'
+        ctx.font = 'bold 18px sans-serif'
+        ctx.fillText(dish.name, 58, y)
+        // 简介
+        ctx.fillStyle = '#999'
+        ctx.font = '13px sans-serif'
+        ctx.fillText(dish.summary || '', 58, y + 22)
+      })
+
+      // 红色印章 "大厨认证"
+      ctx.save()
+      ctx.translate(W - 80, H - 90)
+      ctx.rotate(-0.2)
+      // 外圈
+      ctx.strokeStyle = '#d32f2f'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.arc(0, 0, 42, 0, Math.PI * 2)
+      ctx.stroke()
+      // 内圈
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.arc(0, 0, 36, 0, Math.PI * 2)
+      ctx.stroke()
+      // 文字
+      ctx.fillStyle = '#d32f2f'
+      ctx.font = 'bold 18px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('大厨', 0, -6)
+      ctx.fillText('认证', 0, 18)
+      ctx.restore()
+
+      // 底部水印
+      ctx.fillStyle = '#ccc'
+      ctx.font = '12px sans-serif'
+      ctx.textAlign = 'left'
+      ctx.fillText('到底吃啥哟 · AI智能推荐', 24, H - 16)
+
+      // 导出图片
+      Taro.canvasToTempFilePath({
+        canvas,
+        width: W * dpr,
+        height: H * dpr,
+        destWidth: W * dpr,
+        destHeight: H * dpr,
+        success: (r) => { shareImagePath.current = r.tempFilePath },
+        fail: () => { shareImagePath.current = '' },
+      })
+    })
+  }, [dishes, selected])
 
   useShareAppMessage(() => {
     const foodNames = dishes.length > 0 ? dishes.map(d => d.name).join('、') : ''
     const ingredientText = selected.length > 0 ? selected.join('、') : ''
-    return {
+    const result: any = {
       title: foodNames ? `用${ingredientText}做了：${foodNames}` : '不知道做啥菜？AI帮你推荐！',
       path: '/pages/ingredient/ingredient',
     }
+    if (shareImagePath.current) result.imageUrl = shareImagePath.current
+    return result
   })
 
   useShareTimeline(() => {
@@ -137,6 +249,8 @@ export default function Ingredient() {
 
   return (
     <View className='ingredient'>
+      {/* 隐藏的分享卡片画布 */}
+      <Canvas type='2d' id='shareCanvas' style={{ position: 'fixed', left: '-9999px', width: '500px', height: '400px' }} />
       <ScrollView scrollY className='ingredient-scroll'>
         {/* 已选食材 */}
         {selected.length > 0 && (
