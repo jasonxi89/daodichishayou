@@ -205,9 +205,9 @@ export default function Index() {
   // 对于没有默认/自定义食物列表的分类，用 AI 生成精准的分类食物
   const handleCategoryClick = useCallback((cat: string) => {
     setActiveCategory(cat)
-    const hasDefaultOrCustom = !!(defaultFoodList[cat] || customFoodList[cat])
+    const hasFoods = !!(mergedFoodList[cat] && mergedFoodList[cat].length > 0)
     if (
-      !hasDefaultOrCustom &&
+      !hasFoods &&
       !bulkLoading &&
       categoryLoading === null &&
       (!aiCategoryCache[cat] || aiCategoryCache[cat].expiresAt <= Date.now())
@@ -229,7 +229,7 @@ export default function Index() {
           setCategoryLoading(null)
         })
     }
-  }, [customFoodList, bulkLoading, categoryLoading, aiCategoryCache, setActiveCategory])
+  }, [mergedFoodList, bulkLoading, categoryLoading, aiCategoryCache, setActiveCategory])
 
   // 分享到聊天
   useShareAppMessage(() => {
