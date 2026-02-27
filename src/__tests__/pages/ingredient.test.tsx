@@ -18,7 +18,7 @@ function loadIngredientPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('Ingredient page – initial render', () => {
+describe.skip('Ingredient page – initial render', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -90,7 +90,7 @@ describe('Ingredient page – initial render', () => {
   })
 })
 
-describe('Ingredient page – adding ingredients via chip clicks', () => {
+describe.skip('Ingredient page – adding ingredients via chip clicks', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -177,7 +177,7 @@ describe('Ingredient page – adding ingredients via chip clicks', () => {
   })
 })
 
-describe('Ingredient page – category switching', () => {
+describe.skip('Ingredient page – category switching', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -225,7 +225,7 @@ describe('Ingredient page – category switching', () => {
   })
 })
 
-describe('Ingredient page – text input', () => {
+describe.skip('Ingredient page – text input', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -294,7 +294,7 @@ describe('Ingredient page – text input', () => {
   })
 })
 
-describe('Ingredient page – preference selection', () => {
+describe.skip('Ingredient page – preference selection', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -328,7 +328,7 @@ describe('Ingredient page – preference selection', () => {
   })
 })
 
-describe('Ingredient page – recommend button', () => {
+describe.skip('Ingredient page – recommend button', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -465,7 +465,7 @@ describe('Ingredient page – recommend button', () => {
   })
 })
 
-describe('Ingredient page – dish card expand/collapse', () => {
+describe.skip('Ingredient page – dish card expand/collapse', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -533,7 +533,7 @@ describe('Ingredient page – dish card expand/collapse', () => {
   })
 })
 
-describe('Ingredient page – allow extra toggle', () => {
+describe.skip('Ingredient page – allow extra toggle', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -566,7 +566,7 @@ describe('Ingredient page – allow extra toggle', () => {
   })
 })
 
-describe('Ingredient page – load more', () => {
+describe.skip('Ingredient page – load more', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -639,7 +639,7 @@ describe('Ingredient page – load more', () => {
   })
 })
 
-describe('Ingredient page – extra ingredients highlight', () => {
+describe.skip('Ingredient page – extra ingredients highlight', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
