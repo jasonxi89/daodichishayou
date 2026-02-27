@@ -523,10 +523,12 @@ export default function Index() {
         {/* 底部链接 */}
         <View className='bottom-links'>
           <Text className='link-text' onClick={() => setShowCustomMenu(true)}>自定义菜单</Text>
-          <Button className='link-btn' openType='feedback'>
-            <Text className='link-text'>意见反馈</Text>
-          </Button>
         </View>
+
+        {/* 意见反馈悬浮按钮 */}
+        <Button className='feedback-fab' openType='feedback'>
+          <Text className='feedback-fab-text'>反馈</Text>
+        </Button>
 
         {/* TabBar占位 */}
       </View>
