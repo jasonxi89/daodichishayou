@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, Input } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback } from 'react'
 import './ingredient.scss'
 
@@ -34,6 +34,22 @@ export default function Ingredient() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [allowExtra, setAllowExtra] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+
+  useShareAppMessage(() => {
+    const foodNames = dishes.length > 0 ? dishes.map(d => d.name).join('、') : ''
+    const ingredientText = selected.length > 0 ? selected.join('、') : ''
+    return {
+      title: foodNames ? `用${ingredientText}做了：${foodNames}` : '不知道做啥菜？AI帮你推荐！',
+      path: '/pages/ingredient/ingredient',
+    }
+  })
+
+  useShareTimeline(() => {
+    const foodNames = dishes.length > 0 ? dishes.map(d => d.name).join('、') : ''
+    return {
+      title: foodNames ? `AI推荐菜品：${foodNames}` : '不知道做啥菜？AI帮你推荐！',
+    }
+  })
 
   const addIngredient = useCallback((name: string) => {
     if (!name.trim()) return
