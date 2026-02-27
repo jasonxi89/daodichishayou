@@ -149,7 +149,7 @@ export default function Ingredient() {
     const foodNames = dishes.length > 0 ? dishes.map(d => d.name).join('、') : ''
     const ingredientText = selected.length > 0 ? selected.join('、') : ''
     const result: any = {
-      title: foodNames ? `用${ingredientText}做了：${foodNames}` : '不知道做啥菜？AI帮你推荐！',
+      title: foodNames ? `用${ingredientText}做了：${foodNames}` : '有材料不知道做什么？到底吃啥哟，专业智能推荐！',
       path: '/pages/ingredient/ingredient',
     }
     if (shareImagePath.current) result.imageUrl = shareImagePath.current
@@ -159,7 +159,7 @@ export default function Ingredient() {
   useShareTimeline(() => {
     const foodNames = dishes.length > 0 ? dishes.map(d => d.name).join('、') : ''
     const result: any = {
-      title: foodNames ? `御厨推荐：${foodNames}` : '不知道做啥菜？AI帮你推荐！',
+      title: foodNames ? `御厨推荐：${foodNames}` : '有材料不知道做什么？到底吃啥哟，专业智能推荐！',
     }
     if (shareImagePath.current) result.imageUrl = shareImagePath.current
     return result
