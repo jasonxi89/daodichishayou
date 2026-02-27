@@ -61,16 +61,17 @@ export default function Ingredient() {
       ctx.fillStyle = '#f5a623'
       ctx.fillRect(0, 0, W, 6)
 
-      // 标题
+      // 标题（居中）
       ctx.fillStyle = '#333'
       ctx.font = 'bold 22px sans-serif'
-      ctx.fillText('AI 推荐菜品', 24, 40)
+      ctx.textAlign = 'center'
+      ctx.fillText('御厨推荐', W / 2, 40)
 
-      // 食材
+      // 食材（居中）
       ctx.fillStyle = '#888'
       ctx.font = '14px sans-serif'
       const ingredientLine = '食材：' + selected.slice(0, 6).join('、') + (selected.length > 6 ? '...' : '')
-      ctx.fillText(ingredientLine, 24, 68)
+      ctx.fillText(ingredientLine, W / 2, 68)
 
       // 分隔线
       ctx.strokeStyle = '#e5e5e5'
@@ -80,45 +81,44 @@ export default function Ingredient() {
       ctx.lineTo(W - 24, 82)
       ctx.stroke()
 
-      // 菜品列表
-      ctx.fillStyle = '#333'
+      // 菜品列表（居中）
+      ctx.textAlign = 'center'
       const startY = 108
       dishes.slice(0, 5).forEach((dish, i) => {
         const y = startY + i * 48
         // 序号圆圈
         ctx.fillStyle = '#f5a623'
         ctx.beginPath()
-        ctx.arc(38, y - 5, 12, 0, Math.PI * 2)
+        ctx.arc(W / 2 - 80, y - 5, 12, 0, Math.PI * 2)
         ctx.fill()
         ctx.fillStyle = '#fff'
         ctx.font = 'bold 13px sans-serif'
-        ctx.fillText(String(i + 1), 34, y)
+        ctx.fillText(String(i + 1), W / 2 - 80, y)
         // 菜名
         ctx.fillStyle = '#333'
         ctx.font = 'bold 18px sans-serif'
-        ctx.fillText(dish.name, 58, y)
+        ctx.textAlign = 'left'
+        ctx.fillText(dish.name, W / 2 - 60, y)
         // 简介
         ctx.fillStyle = '#999'
         ctx.font = '13px sans-serif'
-        ctx.fillText(dish.summary || '', 58, y + 22)
+        ctx.fillText(dish.summary || '', W / 2 - 60, y + 22)
+        ctx.textAlign = 'center'
       })
 
       // 红色印章 "大厨认证"
       ctx.save()
       ctx.translate(W - 80, H - 90)
       ctx.rotate(-0.2)
-      // 外圈
       ctx.strokeStyle = '#d32f2f'
       ctx.lineWidth = 3
       ctx.beginPath()
       ctx.arc(0, 0, 42, 0, Math.PI * 2)
       ctx.stroke()
-      // 内圈
       ctx.lineWidth = 1.5
       ctx.beginPath()
       ctx.arc(0, 0, 36, 0, Math.PI * 2)
       ctx.stroke()
-      // 文字
       ctx.fillStyle = '#d32f2f'
       ctx.font = 'bold 18px sans-serif'
       ctx.textAlign = 'center'
@@ -126,11 +126,11 @@ export default function Ingredient() {
       ctx.fillText('认证', 0, 18)
       ctx.restore()
 
-      // 底部水印
+      // 底部水印（居中）
       ctx.fillStyle = '#ccc'
       ctx.font = '12px sans-serif'
-      ctx.textAlign = 'left'
-      ctx.fillText('到底吃啥哟 · AI智能推荐', 24, H - 16)
+      ctx.textAlign = 'center'
+      ctx.fillText('到底吃啥哟 · 专业智能推荐', W / 2, H - 16)
 
       // 导出图片
       Taro.canvasToTempFilePath({
@@ -158,9 +158,11 @@ export default function Ingredient() {
 
   useShareTimeline(() => {
     const foodNames = dishes.length > 0 ? dishes.map(d => d.name).join('、') : ''
-    return {
-      title: foodNames ? `AI推荐菜品：${foodNames}` : '不知道做啥菜？AI帮你推荐！',
+    const result: any = {
+      title: foodNames ? `御厨推荐：${foodNames}` : '不知道做啥菜？AI帮你推荐！',
     }
+    if (shareImagePath.current) result.imageUrl = shareImagePath.current
+    return result
   })
 
   const addIngredient = useCallback((name: string) => {
