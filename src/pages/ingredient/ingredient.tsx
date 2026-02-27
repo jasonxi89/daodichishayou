@@ -461,7 +461,6 @@ export default function Ingredient() {
         )}
 
         {/* 底部留白 */}
-        <View className='bottom-spacer' />
       </ScrollView>
     </View>
   )
