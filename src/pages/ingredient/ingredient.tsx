@@ -53,84 +53,119 @@ export default function Ingredient() {
       canvas.height = H * dpr
       ctx.scale(dpr, dpr)
 
-      // 背景
-      ctx.fillStyle = '#f5f8fd'
+      const pad = 20 // 外边距
+
+      // 背景 — 暖白色
+      ctx.fillStyle = '#faf7f2'
       ctx.fillRect(0, 0, W, H)
 
-      // 顶部色块
+      // 内容卡片 — 白色圆角矩形
+      const cardX = pad, cardY = pad, cardW = W - pad * 2, cardH = H - pad * 2
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.moveTo(cardX + 12, cardY)
+      ctx.arcTo(cardX + cardW, cardY, cardX + cardW, cardY + cardH, 12)
+      ctx.arcTo(cardX + cardW, cardY + cardH, cardX, cardY + cardH, 12)
+      ctx.arcTo(cardX, cardY + cardH, cardX, cardY, 12)
+      ctx.arcTo(cardX, cardY, cardX + cardW, cardY, 12)
+      ctx.closePath()
+      ctx.fill()
+      // 卡片阴影边框
+      ctx.strokeStyle = '#f0ebe4'
+      ctx.lineWidth = 1
+      ctx.stroke()
+
+      // 顶部装饰线
       ctx.fillStyle = '#f5a623'
-      ctx.fillRect(0, 0, W, 6)
+      ctx.fillRect(cardX, cardY, cardW, 5)
+      // 修圆角
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(cardX, cardY + 5, cardW, 2)
 
-      // 标题（居中）
-      ctx.fillStyle = '#333'
-      ctx.font = 'bold 22px sans-serif'
+      // 标题区
       ctx.textAlign = 'center'
-      ctx.fillText('御厨推荐', W / 2, 40)
+      ctx.fillStyle = '#f5a623'
+      ctx.font = 'bold 13px sans-serif'
+      ctx.fillText('- - -  御 厨 推 荐  - - -', W / 2, cardY + 32)
 
-      // 食材（居中）
-      ctx.fillStyle = '#888'
-      ctx.font = '14px sans-serif'
-      const ingredientLine = '食材：' + selected.slice(0, 6).join('、') + (selected.length > 6 ? '...' : '')
-      ctx.fillText(ingredientLine, W / 2, 68)
+      // 食材标签
+      ctx.fillStyle = '#666'
+      ctx.font = '13px sans-serif'
+      const ingredientLine = selected.slice(0, 5).join(' / ') + (selected.length > 5 ? ' ...' : '')
+      ctx.fillText(ingredientLine, W / 2, cardY + 54)
 
       // 分隔线
-      ctx.strokeStyle = '#e5e5e5'
+      ctx.strokeStyle = '#f0ebe4'
       ctx.lineWidth = 1
       ctx.beginPath()
-      ctx.moveTo(24, 82)
-      ctx.lineTo(W - 24, 82)
+      ctx.moveTo(cardX + 20, cardY + 66)
+      ctx.lineTo(cardX + cardW - 20, cardY + 66)
       ctx.stroke()
 
-      // 菜品列表（左侧留边距，充分利用宽度）
-      const listX = 40
-      const startY = 108
-      dishes.slice(0, 5).forEach((dish, i) => {
-        const y = startY + i * 48
-        // 序号圆圈
+      // 菜品列表
+      const startY = cardY + 90
+      const maxDishes = Math.min(dishes.length, 4)
+      dishes.slice(0, maxDishes).forEach((dish, i) => {
+        const y = startY + i * 56
+        // 序号圆点
         ctx.fillStyle = '#f5a623'
         ctx.beginPath()
-        ctx.arc(listX + 12, y - 5, 12, 0, Math.PI * 2)
+        ctx.arc(cardX + 30, y, 13, 0, Math.PI * 2)
         ctx.fill()
         ctx.fillStyle = '#fff'
-        ctx.font = 'bold 13px sans-serif'
+        ctx.font = 'bold 14px sans-serif'
         ctx.textAlign = 'center'
-        ctx.fillText(String(i + 1), listX + 12, y)
+        ctx.fillText(String(i + 1), cardX + 30, y + 5)
         // 菜名
         ctx.fillStyle = '#333'
-        ctx.font = 'bold 18px sans-serif'
+        ctx.font = 'bold 19px sans-serif'
         ctx.textAlign = 'left'
-        ctx.fillText(dish.name, listX + 32, y)
+        ctx.fillText(dish.name, cardX + 52, y + 5)
         // 简介
-        ctx.fillStyle = '#999'
-        ctx.font = '13px sans-serif'
-        ctx.fillText(dish.summary || '', listX + 32, y + 22)
+        if (dish.summary) {
+          ctx.fillStyle = '#aaa'
+          ctx.font = '12px sans-serif'
+          ctx.fillText(dish.summary.slice(0, 15), cardX + 52, y + 24)
+        }
       })
 
-      // 红色印章 "大厨认证"（更大，往中间移）
+      // 红色印章 "大厨认证"
       ctx.save()
-      ctx.translate(W - 110, H - 100)
-      ctx.rotate(-0.2)
-      ctx.strokeStyle = '#d32f2f'
-      ctx.lineWidth = 4
+      const stampX = cardX + cardW - 70, stampY = cardY + cardH - 70
+      ctx.translate(stampX, stampY)
+      ctx.rotate(-0.18)
+      // 外圈
+      ctx.strokeStyle = 'rgba(211, 47, 47, 0.85)'
+      ctx.lineWidth = 3.5
       ctx.beginPath()
-      ctx.arc(0, 0, 52, 0, Math.PI * 2)
+      ctx.arc(0, 0, 48, 0, Math.PI * 2)
       ctx.stroke()
-      ctx.lineWidth = 2
+      // 内圈
+      ctx.lineWidth = 1.5
       ctx.beginPath()
-      ctx.arc(0, 0, 44, 0, Math.PI * 2)
+      ctx.arc(0, 0, 40, 0, Math.PI * 2)
       ctx.stroke()
-      ctx.fillStyle = '#d32f2f'
-      ctx.font = 'bold 22px sans-serif'
+      // 星形装饰点（上下左右）
+      ctx.fillStyle = 'rgba(211, 47, 47, 0.85)'
+      for (let a = 0; a < 4; a++) {
+        const angle = a * Math.PI / 2
+        ctx.beginPath()
+        ctx.arc(Math.cos(angle) * 44, Math.sin(angle) * 44, 2.5, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      // 文字
+      ctx.fillStyle = 'rgba(211, 47, 47, 0.9)'
+      ctx.font = 'bold 24px sans-serif'
       ctx.textAlign = 'center'
       ctx.fillText('大厨', 0, -8)
-      ctx.fillText('认证', 0, 20)
+      ctx.fillText('认证', 0, 22)
       ctx.restore()
 
-      // 底部水印（居中）
-      ctx.fillStyle = '#ccc'
-      ctx.font = '12px sans-serif'
+      // 底部水印
+      ctx.fillStyle = '#c8c0b6'
+      ctx.font = '11px sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText('到底吃啥哟 · 专业智能推荐', W / 2, H - 16)
+      ctx.fillText('到底吃啥哟 · 专业智能推荐', W / 2, H - 8)
 
       // 导出图片
       Taro.canvasToTempFilePath({

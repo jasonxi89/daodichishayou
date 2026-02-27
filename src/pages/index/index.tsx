@@ -527,7 +527,6 @@ export default function Index() {
         </View>
 
         {/* TabBar占位 */}
-        <View className='tab-bar-spacer' />
       </View>
 
       {/* 自定义菜单弹窗 */}
