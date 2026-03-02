@@ -102,7 +102,6 @@ export default function Index() {
   // AI 分类缓存
   const [aiCategoryCache, setAiCategoryCache] = useState<Record<string, { foods: string[], expiresAt: number }>>({})
   const [categoryLoading, setCategoryLoading] = useState<string | null>(null)
-  const [bulkLoading, setBulkLoading] = useState(false)
 
   // 自定义菜单状态
   const [customFoodList, setCustomFoodList] = useState<Record<string, string[]>>({})
@@ -162,10 +161,9 @@ export default function Index() {
       }
       setAiCategoryCache(validAiCache)
     }
-    // Bulk fetch uncached AI categories
+    // Bulk fetch uncached AI categories (静默后台刷新，不阻塞用户)
     const uncached = AI_CATEGORIES.filter(cat => !validAiCache[cat] || validAiCache[cat].expiresAt <= Date.now())
     if (uncached.length > 0) {
-      setBulkLoading(true)
       bulkGenerateFoodsByCategory(uncached)
         .then(res => {
           setAiCategoryCache(prev => {
@@ -178,9 +176,6 @@ export default function Index() {
           })
         })
         .catch(() => {})
-        .finally(() => {
-          setBulkLoading(false)
-        })
     }
     // 从后端获取热门食物和分类（失败时静默降级到硬编码）
     fetchTrending(200).then(res => {
@@ -208,7 +203,6 @@ export default function Index() {
     const hasFoods = !!(mergedFoodList[cat] && mergedFoodList[cat].length > 0)
     if (
       !hasFoods &&
-      !bulkLoading &&
       categoryLoading === null &&
       (!aiCategoryCache[cat] || aiCategoryCache[cat].expiresAt <= Date.now())
     ) {
@@ -229,7 +223,7 @@ export default function Index() {
           setCategoryLoading(null)
         })
     }
-  }, [mergedFoodList, bulkLoading, categoryLoading, aiCategoryCache, setActiveCategory])
+  }, [mergedFoodList, categoryLoading, aiCategoryCache, setActiveCategory])
 
   // 分享到聊天
   useShareAppMessage(() => {
@@ -515,7 +509,7 @@ export default function Index() {
 
         {/* 开始按钮 */}
         <View className='start-btn-wrapper'>
-          <View className={`start-btn ${isRolling || categoryLoading !== null || bulkLoading ? 'disabled' : ''}`} onClick={handleStart}>
+          <View className={`start-btn ${isRolling || categoryLoading !== null ? 'disabled' : ''}`} onClick={handleStart}>
             <Text className='start-btn-text'>{isRolling ? '选择中...' : '开始'}</Text>
           </View>
         </View>
@@ -699,16 +693,6 @@ export default function Index() {
         </View>
       )}
 
-      {/* Bulk loading overlay */}
-      {bulkLoading && (
-        <View className='bulk-loading-overlay'>
-          <View className='bulk-loading-content'>
-            <Text className='bulk-loading-icon'>🔍</Text>
-            <Text className='bulk-loading-title'>正在搜索全网最新最火品类</Text>
-            <Text className='bulk-loading-subtitle'>首次加载需要几秒钟...</Text>
-          </View>
-        </View>
-      )}
     </View>
   )
 }

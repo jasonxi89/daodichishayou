@@ -729,33 +729,21 @@ describe('Index page – bulk category fetch', () => {
     jest.clearAllMocks()
   })
 
-  it('shows loading overlay when bulk fetching uncached categories', async () => {
+  it('bulk fetch runs silently without loading overlay', async () => {
     const api = require('../../services/api')
-    // Never resolve so loading stays visible
-    let resolvePromise: (v: any) => void
-    api.bulkGenerateFoodsByCategory.mockReturnValueOnce(
-      new Promise(resolve => { resolvePromise = resolve })
-    )
 
     mockGetStorageSync.mockReturnValue({})
     const mockUseLoad = taroMock.useLoad as jest.Mock
     mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
 
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
-
-    await waitFor(() => {
-      expect(screen.getByText('正在搜索全网最新最火品类')).toBeInTheDocument()
-    })
-
-    // Resolve and verify loading disappears
     await act(async () => {
-      resolvePromise!({ results: { '家常下饭': ['红烧肉'] } })
+      render(<IndexPage />)
     })
 
-    await waitFor(() => {
-      expect(screen.queryByText('正在搜索全网最新最火品类')).not.toBeInTheDocument()
-    })
+    // Bulk fetch should be called but no loading overlay shown
+    expect(api.bulkGenerateFoodsByCategory).toHaveBeenCalled()
+    expect(screen.queryByText('正在搜索全网最新最火品类')).not.toBeInTheDocument()
   })
 
   it('does not show loading when all AI categories are cached', async () => {
