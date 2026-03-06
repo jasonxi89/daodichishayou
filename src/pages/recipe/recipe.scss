@@ -1,7 +1,25 @@
 .recipe-page {
   min-height: 100vh;
   background-color: #f5f8fd;
-  padding: 32px;
+  padding: 0 32px 32px;
+}
+
+/* 顶部橙色装饰条 */
+.recipe-top-bar {
+  height: 6px;
+  margin: 0 -32px 24px;
+  background: linear-gradient(90deg, #f5a623, #f7b84e, #f5a623);
+  border-radius: 0 0 3px 3px;
+}
+
+/* 标题卡片 */
+.recipe-header-card {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  padding: 36px 32px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .recipe-header {
@@ -19,6 +37,23 @@
   font-size: 28px;
   color: #888;
   margin-top: 12px;
+}
+
+/* 元数据标签 */
+.recipe-meta {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.meta-tag {
+  font-size: 22px;
+  color: #f5a623;
+  background: #fff3e0;
+  border-radius: 20px;
+  padding: 6px 20px;
+  font-weight: 500;
 }
 
 /* 食材区域 */
@@ -56,13 +91,30 @@
 .step-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
-.step-item {
+/* 步骤卡片 */
+.step-card {
+  display: flex;
+  background: #fafafa;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.step-card-accent {
+  width: 6px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #f5a623, #f7b84e);
+  border-radius: 3px 0 0 3px;
+}
+
+.step-card-body {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  padding: 20px 24px;
+  flex: 1;
 }
 
 .step-number {
@@ -86,11 +138,44 @@
   padding-top: 8px;
 }
 
-/* 底部提示 */
+/* 底部 */
 .recipe-footer {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
   margin-top: 48px;
   padding-bottom: 48px;
+}
+
+.share-recipe-btn {
+  width: 400px;
+  height: 80px;
+  background: linear-gradient(135deg, #f5a623, #f7b84e);
+  border-radius: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(245, 166, 35, 0.3);
+  border: none;
+  padding: 0;
+  margin: 0;
+
+  &::after {
+    border: none;
+  }
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+}
+
+.share-recipe-btn-text {
+  font-size: 30px;
+  color: #fff;
+  font-weight: bold;
+  letter-spacing: 4px;
 }
 
 .footer-text {

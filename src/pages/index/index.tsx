@@ -86,11 +86,13 @@ export default function Index() {
   const [activePopupIndex, setActivePopupIndex] = useState(0)
   const [recipeLoading, setRecipeLoading] = useState(false)
   const recipeCacheRef = useRef<Record<string, Recipe | null>>({})
-  const rollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [isLanded, setIsLanded] = useState(false)
+  const [showResult, setShowResult] = useState(false)
+  const rollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     return () => {
-      if (rollTimerRef.current) clearInterval(rollTimerRef.current)
+      if (rollTimerRef.current) clearTimeout(rollTimerRef.current)
     }
   }, [])
 
@@ -252,6 +254,9 @@ export default function Index() {
     setResultList(prev => prev.map((f, i) => i === index ? newFood : f))
   }, [resultList])
 
+  // 变速减速滚动：模拟老虎机效果
+  const ROLL_DELAYS = [60, 60, 60, 60, 60, 60, 120, 120, 120, 120, 250, 250, 250, 400, 400]
+
   const handleStart = useCallback(() => {
     if (isRolling || categoryLoading) return
     const currentCat = activeCategoryRef.current
@@ -261,26 +266,33 @@ export default function Index() {
       return
     }
     setIsRolling(true)
+    setIsLanded(false)
+    setShowResult(false)
     setResultList([])
     rollListRef.current = list
+
     let tick = 0
-    const maxTick = 15
-    rollTimerRef.current = setInterval(() => {
+    const rollTick = () => {
       setCurrentFood(list[Math.floor(Math.random() * list.length)])
       tick++
-      if (tick >= maxTick) {
-        if (rollTimerRef.current) clearInterval(rollTimerRef.current)
-        rollTimerRef.current = null
+      if (tick >= ROLL_DELAYS.length) {
         if (count === 1) {
           setCurrentFood(list[Math.floor(Math.random() * list.length)])
+          setIsLanded(true)
+          setTimeout(() => setIsLanded(false), 400)
         } else {
           const n = Math.min(count, list.length)
           const shuffled = [...list].sort(() => Math.random() - 0.5)
           setResultList(shuffled.slice(0, n))
+          setShowResult(true)
         }
         setIsRolling(false)
+        rollTimerRef.current = null
+      } else {
+        rollTimerRef.current = setTimeout(rollTick, ROLL_DELAYS[tick])
       }
-    }, 100)
+    }
+    rollTimerRef.current = setTimeout(rollTick, ROLL_DELAYS[0])
   }, [isRolling, activeCategory, count, mergedFoodList, categoryLoading])
 
   // 加载某个食物的菜谱
@@ -327,8 +339,10 @@ export default function Index() {
     const recipe = recipeCacheRef.current[food]
     if (!recipe) return
     setShowRecipe(false)
+    const difficulty = (recipe as any).difficulty || ''
+    const cookTime = (recipe as any).cook_time || ''
     Taro.navigateTo({
-      url: `/pages/recipe/recipe?name=${encodeURIComponent(recipe.name)}`,
+      url: `/pages/recipe/recipe?name=${encodeURIComponent(recipe.name)}&difficulty=${encodeURIComponent(difficulty)}&cook_time=${encodeURIComponent(cookTime)}`,
     })
   }, [popupFoods, activePopupIndex])
 
@@ -436,7 +450,7 @@ export default function Index() {
           {resultList.length > 1 ? (
             <View className={`result-list ${resultList.length > 3 ? 'grid' : ''}`}>
               {resultList.map((food, i) => (
-                <View key={i} className='result-row'>
+                <View key={i} className={`result-row ${showResult ? 'animate-in' : ''}`} style={{ animationDelay: `${i * 0.1}s` }}>
                   <View className='result-item'>
                     <Text className='result-index'>{i + 1}</Text>
                     <Text className='result-food'>{food}</Text>
@@ -448,7 +462,7 @@ export default function Index() {
               ))}
             </View>
           ) : (
-            <Text className={`food-name ${isRolling ? 'rolling' : ''}`}>{currentFood}</Text>
+            <Text className={`food-name ${isRolling ? 'rolling' : ''} ${isLanded ? 'landed' : ''}`}>{currentFood}</Text>
           )}
         </View>
 

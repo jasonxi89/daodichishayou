@@ -57,6 +57,18 @@ $bg-svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30
 
 .food-name.rolling {
   opacity: 0.7;
+  transform: scale(1.05);
+  filter: blur(0.5px);
+}
+
+.food-name.landed {
+  animation: landBounce 0.4s ease-out;
+}
+
+@keyframes landBounce {
+  0% { transform: scale(1.15); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
 }
 
 /* 功能按钮区 */
@@ -327,6 +339,22 @@ $bg-svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30
   display: flex;
   align-items: center;
   gap: 16px;
+  opacity: 0;
+
+  &.animate-in {
+    animation: fadeSlideUp 0.4s ease-out forwards;
+  }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .result-item {
