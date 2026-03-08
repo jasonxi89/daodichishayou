@@ -1,3 +1,77 @@
+# What to Eat — Food Decision Helper
+
+A cross-platform app that helps indecisive eaters decide what to eat today.
+
+## Features
+
+- **Random Recommendations**: picks from 5 categories (Anything / Milk Tea / Healthy / Treat Yourself / Nearby)
+- **Multiple Results**: generate 1–10 non-repeating suggestions at once, adjustable count
+- **Swap Individual Items**: tap "Swap" on any result to refresh just that one
+- **Slot Machine Animation**: food names scroll rapidly before landing, adding fun
+
+## Tech Stack
+
+- **Framework**: [Taro](https://taro-docs.jd.com/) v4 + React
+- **Language**: TypeScript
+- **Styling**: Sass
+- **Build**: Webpack5
+
+## Supported Platforms
+
+- WeChat Mini Program
+- iOS (React Native)
+- Android (React Native)
+- H5
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# WeChat Mini Program dev
+npm run dev:weapp
+
+# H5 dev
+npm run dev:h5
+
+# React Native dev
+npm run dev:rn
+```
+
+## Project Structure
+
+```
+├── config/               # Build config
+│   ├── dev.ts
+│   ├── index.ts
+│   └── prod.ts
+├── src/                  # Source code
+│   ├── pages/            # Pages
+│   ├── app.config.ts     # App config
+│   ├── app.scss          # Global styles
+│   ├── app.ts            # App entry
+│   └── index.html        # H5 entry
+├── types/                # Type definitions
+├── package.json
+└── tsconfig.json
+```
+
+## Build
+
+```bash
+# WeChat Mini Program
+npm run build:weapp
+
+# H5
+npm run build:h5
+
+# React Native
+npm run build:rn
+```
+
+---
+
 # 到底吃啥哟
 
 一款跨平台应用，帮助选择困难症的你决定今天吃什么。
