@@ -466,28 +466,6 @@ export default function Index() {
           )}
         </View>
 
-        {/* 功能按钮 */}
-        <View className='actions'>
-          <View className='action-row'>
-            <View className='action-item disabled'>
-              <Text className='action-icon'>🛵</Text>
-              <Text className='action-text'>去点外卖</Text>
-            </View>
-            <Button className='share-btn' openType='share'>
-              <View className='action-item'>
-                <Text className='action-icon'>🔗</Text>
-                <Text className='action-text'>分享美食</Text>
-              </View>
-            </Button>
-          </View>
-          <View className='action-row center'>
-            <View className='action-item' onClick={handleRecipeClick}>
-              <Text className='action-icon'>📋</Text>
-              <Text className='action-text'>查看菜谱</Text>
-            </View>
-          </View>
-        </View>
-
         {/* 分类标签 */}
         <View className='categories'>
           {allCategories.map((cat) => (
@@ -499,6 +477,7 @@ export default function Index() {
               {cat}
             </Text>
           ))}
+          <Text className='category-tag edit-tag' onClick={() => setShowCustomMenu(true)}>✏️ 自定义</Text>
         </View>
 
         {/* 数量选择器 */}
@@ -528,10 +507,21 @@ export default function Index() {
           </View>
         </View>
 
-        {/* 底部链接 */}
-        <View className='bottom-links'>
-          <Text className='link-text' onClick={() => setShowCustomMenu(true)}>自定义菜单</Text>
-        </View>
+        {/* 结果操作按钮 — 选出食物后才显示 */}
+        {(resultList.length > 0 || currentFood !== '今天吃啥？') && (
+          <View className='actions'>
+            <View className='action-item' onClick={handleRecipeClick}>
+              <Text className='action-icon'>📋</Text>
+              <Text className='action-text'>查看菜谱</Text>
+            </View>
+            <Button className='share-btn' openType='share'>
+              <View className='action-item'>
+                <Text className='action-icon'>🔗</Text>
+                <Text className='action-text'>分享美食</Text>
+              </View>
+            </Button>
+          </View>
+        )}
 
         {/* 意见反馈悬浮按钮 */}
         <Button className='feedback-fab' openType='feedback'>

@@ -71,23 +71,13 @@ $bg-svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30
   100% { transform: scale(1); }
 }
 
-/* 功能按钮区 */
+/* 结果操作按钮区 — 选出食物后显示 */
 .actions {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 28px;
-}
-
-.action-row {
-  display: flex;
   justify-content: center;
+  align-items: center;
   gap: 48px;
-
-  &.center {
-    gap: 0;
-  }
+  margin-bottom: 20px;
 }
 
 .action-item {
@@ -197,6 +187,13 @@ $bg-svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30
   &.loading {
     opacity: 0.7;
     animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  &.edit-tag {
+    color: #f5a623;
+    background: rgba(245, 166, 35, 0.08);
+    border: 1px dashed rgba(245, 166, 35, 0.4);
+    font-size: 20px;
   }
 }
 
@@ -442,18 +439,6 @@ $bg-svg: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30
   letter-spacing: 6px;
 }
 
-/* 底部链接 */
-.bottom-links {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  padding-bottom: 20px;
-}
-
-.link-text {
-  font-size: 24px;
-  color: #888;
-}
 
 /* 菜谱/自定义菜单弹窗 — z-index 需盖过小程序 custom-tab-bar */
 .recipe-overlay {

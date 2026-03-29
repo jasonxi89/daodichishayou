@@ -80,22 +80,17 @@ describe('Index page – initial render', () => {
     expect(screen.getByText('份数')).toBeInTheDocument()
   })
 
-  it('renders the 分享美食 button', () => {
+  it('does not render 分享美食 or 查看菜谱 buttons before selection', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
-    expect(screen.getByText('分享美食')).toBeInTheDocument()
+    expect(screen.queryByText('分享美食')).not.toBeInTheDocument()
+    expect(screen.queryByText('查看菜谱')).not.toBeInTheDocument()
   })
 
-  it('renders the 查看菜谱 button', () => {
+  it('renders the ✏️ 自定义 tag in categories', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
-    expect(screen.getByText('查看菜谱')).toBeInTheDocument()
-  })
-
-  it('renders the 自定义菜单 link', () => {
-    const IndexPage = loadIndexPage()
-    render(<IndexPage />)
-    expect(screen.getByText('自定义菜单')).toBeInTheDocument()
+    expect(screen.getByText('✏️ 自定义')).toBeInTheDocument()
   })
 })
 
@@ -194,24 +189,16 @@ describe('Index page – category selection', () => {
   })
 })
 
-describe('Index page – 查看菜谱 button without selection', () => {
+describe('Index page – 查看菜谱 button visibility', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({})
   })
 
-  it('shows toast when no food is selected yet', async () => {
+  it('查看菜谱 button is hidden before food selection', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
-
-    const recipeBtn = screen.getByText('查看菜谱')
-    fireEvent.click(recipeBtn)
-
-    await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: '先选一个食物吧' })
-      )
-    })
+    expect(screen.queryByText('查看菜谱')).not.toBeInTheDocument()
   })
 })
 
@@ -221,11 +208,11 @@ describe('Index page – custom menu', () => {
     mockGetStorageSync.mockReturnValue({})
   })
 
-  it('opens custom menu popup when 自定义菜单 is clicked', () => {
+  it('opens custom menu popup when ✏️ 自定义 tag is clicked', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
 
     expect(screen.getByText('我的菜单')).toBeInTheDocument()
   })
@@ -234,7 +221,7 @@ describe('Index page – custom menu', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
     expect(screen.getByText('我的菜单')).toBeInTheDocument()
 
     // The close button contains ✕
@@ -248,7 +235,7 @@ describe('Index page – custom menu', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
 
     expect(screen.getByText(/还没有自定义分类/)).toBeInTheDocument()
   })
@@ -257,7 +244,7 @@ describe('Index page – custom menu', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
 
     expect(screen.getByText('+ 添加新分类')).toBeInTheDocument()
   })
@@ -266,7 +253,7 @@ describe('Index page – custom menu', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
     fireEvent.click(screen.getByText('+ 添加新分类'))
 
     // The input for new category name should appear
@@ -277,7 +264,7 @@ describe('Index page – custom menu', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
     fireEvent.click(screen.getByText('+ 添加新分类'))
 
     // Click 确定 without typing a name
@@ -294,7 +281,7 @@ describe('Index page – custom menu', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
     fireEvent.click(screen.getByText('+ 添加新分类'))
 
     const input = screen.getByPlaceholderText('输入分类名...')
@@ -312,7 +299,7 @@ describe('Index page – custom menu', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
     fireEvent.click(screen.getByText('+ 添加新分类'))
 
     const input = screen.getByPlaceholderText('输入分类名...')
@@ -465,7 +452,7 @@ describe('Index page – delete category', () => {
       render(<IndexPage />)
     })
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
 
     const deleteBtn = screen.getByText('删除')
     fireEvent.click(deleteBtn)
@@ -481,7 +468,7 @@ describe('Index page – delete category', () => {
       render(<IndexPage />)
     })
 
-    fireEvent.click(screen.getByText('自定义菜单'))
+    fireEvent.click(screen.getByText('✏️ 自定义'))
     fireEvent.click(screen.getByText('删除'))
 
     await waitFor(() => {
