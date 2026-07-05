@@ -1,0 +1,47 @@
+/* 今日风向快报卡片 — 风格贴合首页卡片（白色半透明 + 圆角 + 轻阴影） */
+.digest-card {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 20px;
+  padding: 18px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.digest-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.digest-title {
+  font-size: 26px;
+  font-weight: bold;
+  color: #333;
+}
+
+.digest-badge {
+  font-size: 18px;
+  color: #f5a623;
+  background: rgba(245, 166, 35, 0.1);
+  border-radius: 16px;
+  padding: 2px 12px;
+}
+
+.digest-summary {
+  font-size: 22px;
+  color: #666;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+
+  &.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+}

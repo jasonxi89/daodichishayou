@@ -17,6 +17,7 @@ jest.mock('../../services/api', () => ({
   fetchCategories: jest.fn().mockResolvedValue([]),
   generateFoodsByCategory: jest.fn().mockResolvedValue({ foods: [], category: '' }),
   bulkGenerateFoodsByCategory: jest.fn().mockResolvedValue({ results: {} }),
+  fetchDigest: jest.fn().mockResolvedValue(null),
 }))
 
 const mockShowToast = taroMock.showToast as jest.Mock

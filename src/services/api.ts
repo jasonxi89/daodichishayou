@@ -39,6 +39,15 @@ export interface RecipeSearchResponse {
   items: RecipeOut[]
 }
 
+export interface FoodDigest {
+  id: number
+  digest_date: string
+  summary: string
+  top_foods: string[]
+  recommendation: string | null
+  updated_at: string
+}
+
 // === Generic request helper ===
 
 async function request<T>(path: string, options?: { timeout?: number }): Promise<T> {
@@ -69,6 +78,15 @@ export async function fetchCategories(): Promise<string[]> {
 
 export async function fetchHealth(): Promise<{ status: string; version: string }> {
   return request('/api/health', { timeout: 5000 })
+}
+
+export async function fetchDigest(): Promise<FoodDigest | null> {
+  const res = await request<FoodDigest | null>('/api/trending/digest')
+  // 后端无 digest 时返回 JSON null
+  if (!res || !res.summary) {
+    return null
+  }
+  return res
 }
 
 export async function fetchRecipeByName(name: string): Promise<RecipeOut | null> {

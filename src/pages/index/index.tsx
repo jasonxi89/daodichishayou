@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import type { Recipe } from '../../data/recipes'
 import { getLocalRecipe, fetchRecipeFromAPI } from '../../data/recipes'
 import { fetchTrending, fetchCategories, generateFoodsByCategory, bulkGenerateFoodsByCategory } from '../../services/api'
+import DigestCard from '../../components/DigestCard'
 import './index.scss'
 
 const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 1 day
@@ -465,6 +466,9 @@ export default function Index() {
             <Text className={`food-name ${isRolling ? 'rolling' : ''} ${isLanded ? 'landed' : ''}`}>{currentFood}</Text>
           )}
         </View>
+
+        {/* 今日风向快报 */}
+        <DigestCard />
 
         {/* 分类标签 */}
         <View className='categories'>

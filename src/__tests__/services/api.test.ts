@@ -11,6 +11,7 @@ let fetchTrending: typeof import('../../services/api').fetchTrending
 let fetchCategories: typeof import('../../services/api').fetchCategories
 let fetchHealth: typeof import('../../services/api').fetchHealth
 let fetchRecipeByName: typeof import('../../services/api').fetchRecipeByName
+let fetchDigest: typeof import('../../services/api').fetchDigest
 
 beforeAll(() => {
   const api = require('../../services/api')
@@ -18,6 +19,7 @@ beforeAll(() => {
   fetchCategories = api.fetchCategories
   fetchHealth = api.fetchHealth
   fetchRecipeByName = api.fetchRecipeByName
+  fetchDigest = api.fetchDigest
 })
 
 beforeEach(() => {
@@ -114,6 +116,42 @@ describe('API service – fetchCategories', () => {
     mockRequest.mockResolvedValueOnce({ statusCode: 404, data: {} })
 
     await expect(fetchCategories()).rejects.toThrow('API error: 404')
+  })
+})
+
+describe('API service – fetchDigest', () => {
+  it('calls the digest endpoint and returns the digest', async () => {
+    const digest = {
+      id: 1,
+      digest_date: '2026-07-04T00:00:00Z',
+      summary: '火锅热度飙升',
+      top_foods: ['火锅'],
+      recommendation: '来一顿火锅',
+      updated_at: '2026-07-04T08:00:00Z',
+    }
+    mockRequest.mockResolvedValueOnce({ statusCode: 200, data: digest })
+
+    const result = await fetchDigest()
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'http://test-api:8900/api/trending/digest',
+      })
+    )
+    expect(result).toEqual(digest)
+  })
+
+  it('returns null when backend responds with JSON null (无当日 digest)', async () => {
+    mockRequest.mockResolvedValueOnce({ statusCode: 200, data: null })
+
+    const result = await fetchDigest()
+    expect(result).toBeNull()
+  })
+
+  it('throws on non-200 status code', async () => {
+    mockRequest.mockResolvedValueOnce({ statusCode: 502, data: {} })
+
+    await expect(fetchDigest()).rejects.toThrow('API error: 502')
   })
 })
 
