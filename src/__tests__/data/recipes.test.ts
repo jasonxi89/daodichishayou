@@ -127,26 +127,27 @@ describe('recipes default export', () => {
 })
 
 // ─────────────────────────────────────────────
-// fetchRecipeFromAPI – async, uses dynamic import of Taro
+// fetchRecipeFromAPI – async, calls own backend via services/api
 // ─────────────────────────────────────────────
 describe('fetchRecipeFromAPI', () => {
   beforeEach(() => {
     jest.resetModules()
   })
 
-  it('returns null when Taro.request rejects', async () => {
-    // The taro mock's request defaults to resolving with {} (no code:200),
-    // which means the function will return null gracefully.
+  it('returns null (silent degradation) when Taro.request rejects', async () => {
+    const taro = await import('@tarojs/taro')
+    const mockRequest = taro.request as jest.Mock
+    mockRequest.mockRejectedValueOnce(new Error('Network failure'))
+
     const { fetchRecipeFromAPI: fn } = await import('../../data/recipes')
     // Use a unique name to bypass module-level apiCache
     const result = await fn('绝对不存在_' + Math.random())
     expect(result).toBeNull()
   })
 
-  it('returns null when API returns empty newslist', async () => {
-    // Taro mock request already resolves to { statusCode: 200, data: {} }
-    // The function checks res.data?.code === 200 && res.data?.result?.list?.length
-    // so missing those fields means it returns null.
+  it('returns null when backend response has no items', async () => {
+    // Taro mock request defaults to { statusCode: 200, data: {} },
+    // i.e. no items array → fetchRecipeByName returns null → null here.
     const { fetchRecipeFromAPI: fn } = await import('../../data/recipes')
     const result = await fn('空结果_' + Math.random())
     expect(result).toBeNull()
@@ -160,41 +161,71 @@ describe('fetchRecipeFromAPI', () => {
     expect(result === null || typeof result === 'object').toBe(true)
   })
 
-  it('returns a properly shaped Recipe when API returns valid data', async () => {
-    // We must mock @tarojs/taro *before* importing the module
-    // Since fetchRecipeFromAPI does a dynamic import internally,
-    // we control the mock via jest.mock at module level.
+  it('maps a backend RecipeOut into the display Recipe shape', async () => {
     const taro = await import('@tarojs/taro')
     const mockRequest = taro.request as jest.Mock
     mockRequest.mockResolvedValueOnce({
       statusCode: 200,
       data: {
-        code: 200,
-        result: {
-          list: [{
-            cp_name: '测试菜',
-            yuanliao: '食材A；食材B',
-            tiaoliao: '调料C',
-            zuofa: '1. 第一步 2. 第二步 3. 第三步',
-            texing: '香辣鲜美的测试菜',
-            tishi: '',
-          }],
-        },
+        total: 1,
+        items: [{
+          id: 42,
+          name: '测试菜',
+          rating: 7.8,
+          made_count: 1200,
+          image_url: null,
+          author: '测试作者',
+          ingredients_json: JSON.stringify([
+            { name: '食材A', amount: '2个' },
+            { name: '食材B' },
+          ]),
+          ingredients_text: '食材A 食材B',
+          steps_json: JSON.stringify([{ text: '第一步' }, { text: '第二步' }]),
+          category: null,
+          updated_at: '2026-07-04T00:00:00Z',
+        }],
       },
     })
 
     // Use a unique name to avoid hitting the module-level cache from other tests
-    const uniqueName = '测试菜_' + Date.now()
     const { fetchRecipeFromAPI: fn } = await import('../../data/recipes')
-    const result = await fn(uniqueName)
+    const result = await fn('测试菜_' + Date.now())
 
-    // The function may return null if the dynamic import resolves to the already-
-    // mocked-but-resolved version; we accept either null or a valid shaped object.
-    if (result !== null) {
-      expect(typeof result.name).toBe('string')
-      expect(typeof result.summary).toBe('string')
-      expect(Array.isArray(result.ingredients)).toBe(true)
-      expect(Array.isArray(result.steps)).toBe(true)
-    }
+    expect(result).not.toBeNull()
+    expect(result?.name).toBe('测试菜')
+    expect(result?.summary).toBe('评分 7.8 · 1200人做过 · by 测试作者')
+    expect(result?.ingredients).toEqual(['食材A 2个', '食材B'])
+    expect(result?.steps).toEqual(['第一步', '第二步'])
+  })
+
+  it('falls back to ingredients_text and placeholder steps when JSON fields are missing', async () => {
+    const taro = await import('@tarojs/taro')
+    const mockRequest = taro.request as jest.Mock
+    mockRequest.mockResolvedValueOnce({
+      statusCode: 200,
+      data: {
+        total: 1,
+        items: [{
+          id: 43,
+          name: '简化菜',
+          rating: null,
+          made_count: 0,
+          image_url: null,
+          author: null,
+          ingredients_json: null,
+          ingredients_text: '食材X 食材Y，食材Z',
+          steps_json: null,
+          category: null,
+          updated_at: '2026-07-04T00:00:00Z',
+        }],
+      },
+    })
+
+    const { fetchRecipeFromAPI: fn } = await import('../../data/recipes')
+    const result = await fn('简化菜_' + Date.now())
+
+    expect(result?.ingredients).toEqual(['食材X', '食材Y', '食材Z'])
+    expect(result?.steps).toEqual(['暂无步骤信息'])
+    expect(result?.summary).toBe('简化菜的做法')
   })
 })

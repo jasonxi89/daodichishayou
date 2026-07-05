@@ -10,12 +10,14 @@ declare const API_BASE: string
 let fetchTrending: typeof import('../../services/api').fetchTrending
 let fetchCategories: typeof import('../../services/api').fetchCategories
 let fetchHealth: typeof import('../../services/api').fetchHealth
+let fetchRecipeByName: typeof import('../../services/api').fetchRecipeByName
 
 beforeAll(() => {
   const api = require('../../services/api')
   fetchTrending = api.fetchTrending
   fetchCategories = api.fetchCategories
   fetchHealth = api.fetchHealth
+  fetchRecipeByName = api.fetchRecipeByName
 })
 
 beforeEach(() => {
@@ -112,6 +114,68 @@ describe('API service – fetchCategories', () => {
     mockRequest.mockResolvedValueOnce({ statusCode: 404, data: {} })
 
     await expect(fetchCategories()).rejects.toThrow('API error: 404')
+  })
+})
+
+describe('API service – fetchRecipeByName', () => {
+  const sampleRecipeOut = {
+    id: 1,
+    name: '红烧肉',
+    rating: 8.2,
+    made_count: 1500,
+    image_url: null,
+    author: '美食家',
+    ingredients_json: '[{"name":"五花肉","amount":"500g"}]',
+    ingredients_text: '五花肉 冰糖',
+    steps_json: '[{"text":"焯水"},{"text":"炖煮"}]',
+    category: null,
+    updated_at: '2026-07-04T00:00:00Z',
+  }
+
+  it('calls recipe search endpoint with encoded name and limit=1', async () => {
+    mockRequest.mockResolvedValueOnce({
+      statusCode: 200,
+      data: { total: 1, items: [sampleRecipeOut] },
+    })
+
+    const result = await fetchRecipeByName('红烧肉')
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: `http://test-api:8900/api/recipes/search?name=${encodeURIComponent('红烧肉')}&limit=1`,
+      })
+    )
+    expect(result?.name).toBe('红烧肉')
+    expect(result?.ingredients_text).toBe('五花肉 冰糖')
+  })
+
+  it('returns null when backend has no matching recipe', async () => {
+    mockRequest.mockResolvedValueOnce({
+      statusCode: 200,
+      data: { total: 0, items: [] },
+    })
+
+    const result = await fetchRecipeByName('不存在的菜')
+    expect(result).toBeNull()
+  })
+
+  it('returns null when response shape is missing items', async () => {
+    mockRequest.mockResolvedValueOnce({ statusCode: 200, data: {} })
+
+    const result = await fetchRecipeByName('异常响应菜')
+    expect(result).toBeNull()
+  })
+
+  it('throws on non-200 status code', async () => {
+    mockRequest.mockResolvedValueOnce({ statusCode: 500, data: {} })
+
+    await expect(fetchRecipeByName('红烧肉')).rejects.toThrow('API error: 500')
+  })
+
+  it('propagates network errors', async () => {
+    mockRequest.mockRejectedValueOnce(new Error('Network failure'))
+
+    await expect(fetchRecipeByName('红烧肉')).rejects.toThrow('Network failure')
   })
 })
 

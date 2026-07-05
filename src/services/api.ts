@@ -20,6 +20,25 @@ export interface TrendingResponse {
   items: FoodTrendItem[]
 }
 
+export interface RecipeOut {
+  id: number
+  name: string
+  rating: number | null
+  made_count: number
+  image_url: string | null
+  author: string | null
+  ingredients_json: string | null
+  ingredients_text: string | null
+  steps_json: string | null
+  category: string | null
+  updated_at: string
+}
+
+export interface RecipeSearchResponse {
+  total: number
+  items: RecipeOut[]
+}
+
 // === Generic request helper ===
 
 async function request<T>(path: string, options?: { timeout?: number }): Promise<T> {
@@ -50,6 +69,16 @@ export async function fetchCategories(): Promise<string[]> {
 
 export async function fetchHealth(): Promise<{ status: string; version: string }> {
   return request('/api/health', { timeout: 5000 })
+}
+
+export async function fetchRecipeByName(name: string): Promise<RecipeOut | null> {
+  const res = await request<RecipeSearchResponse>(
+    `/api/recipes/search?name=${encodeURIComponent(name)}&limit=1`
+  )
+  if (!res || !Array.isArray(res.items) || res.items.length === 0) {
+    return null
+  }
+  return res.items[0]
 }
 
 export async function generateFoodsByCategory(category: string, count = 30): Promise<{ foods: string[], category: string }> {

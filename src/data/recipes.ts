@@ -1,3 +1,5 @@
+import { fetchRecipeByName, type RecipeOut } from '../services/api'
+
 export interface Recipe {
   name: string
   summary: string
@@ -275,61 +277,88 @@ export function getLocalRecipe(name: string): Recipe | null {
   return recipes[name] || null
 }
 
+// 解析后端 ingredients_json（[{name, amount}] 数组），失败时回退到 ingredients_text
+function parseIngredients(item: RecipeOut): string[] {
+  if (item.ingredients_json) {
+    try {
+      const data = JSON.parse(item.ingredients_json)
+      if (Array.isArray(data)) {
+        const parsed = data
+          .map((entry) => {
+            if (typeof entry === 'string') return entry.trim()
+            const ingredientName = (entry && entry.name) || ''
+            const amount = (entry && entry.amount) || ''
+            return `${ingredientName} ${amount}`.trim()
+          })
+          .filter((s) => s.length > 0)
+        if (parsed.length > 0) return parsed
+      }
+    } catch {
+      // JSON 解析失败，回退到 ingredients_text
+    }
+  }
+  if (item.ingredients_text) {
+    const parsed = item.ingredients_text.split(/[\s,，;；]+/).filter((s) => s.length > 0)
+    if (parsed.length > 0) return parsed
+  }
+  return ['暂无食材信息']
+}
+
+// 解析后端 steps_json（[{text}] 或字符串数组）
+function parseSteps(item: RecipeOut): string[] {
+  if (item.steps_json) {
+    try {
+      const data = JSON.parse(item.steps_json)
+      if (Array.isArray(data)) {
+        const parsed = data
+          .map((entry) => (typeof entry === 'string' ? entry : String((entry && entry.text) || '')).trim())
+          .filter((s) => s.length > 0)
+        if (parsed.length > 0) return parsed
+      }
+    } catch {
+      // JSON 解析失败，回退到兜底
+    }
+  }
+  return ['暂无步骤信息']
+}
+
+// 摘要：优先评分/做过人数，其次首步截断，兜底生成
+function buildSummary(item: RecipeOut, steps: string[]): string {
+  const parts: string[] = []
+  if (item.rating) parts.push(`评分 ${item.rating}`)
+  if (item.made_count > 0) parts.push(`${item.made_count}人做过`)
+  if (item.author) parts.push(`by ${item.author}`)
+  if (parts.length > 0) return parts.join(' · ')
+  if (steps[0] && steps[0] !== '暂无步骤信息') {
+    return steps[0].substring(0, 30) + (steps[0].length > 30 ? '...' : '')
+  }
+  return `${item.name}的做法`
+}
+
+function mapRecipeOutToRecipe(item: RecipeOut, fallbackName: string): Recipe {
+  const steps = parseSteps(item)
+  return {
+    name: item.name || fallbackName,
+    summary: buildSummary(item, steps),
+    ingredients: parseIngredients(item),
+    steps,
+  }
+}
+
 export async function fetchRecipeFromAPI(name: string): Promise<Recipe | null> {
   // 先查缓存
   if (apiCache[name]) return apiCache[name]
 
   try {
-    const Taro = (await import('@tarojs/taro')).default
-    const res = await Taro.request({
-      url: 'https://apis.tianapi.com/caipu/index',
-      method: 'GET',
-      data: {
-        key: '8fe628ae496e3e8e63fa4067c01e4a4a',
-        word: name,
-        num: 1,
-      },
-    })
-    if (res.data && res.data.code === 200 && res.data.result && res.data.result.list && res.data.result.list.length) {
-      const item = res.data.result.list[0]
-
-      // 解析食材：统一去编号，按分号/编号/换行拆分
-      const rawIngredients = [item.yuanliao, item.tiaoliao].filter(Boolean).join('；')
-      const ingredients = rawIngredients
-        .split(/[;；\n]|\d+[、.)\]]\s*/)
-        .map((s: string) => s.replace(/^\s*[（(].*?[）)]\s*/, '').trim())
-        .filter((s) => s.length > 0)
-
-      // 解析步骤：按编号拆分，清理尾部杂项和空白
-      let steps: string[] = ['暂无步骤信息']
-      if (item.zuofa) {
-        const raw = item.zuofa.replace(/\r/g, '').trim()
-        const parts = raw.split(/\d+[.、)\]]\s*/).filter(Boolean)
-        steps = parts
-          .map((s: string) => s.replace(/\s*具体操作[：:]?[\s\S]*$/, '').replace(/[；;]\s*$/, '').trim())
-          .filter((s) => s.length > 0)
-      }
-
-      // 摘要：优先 texing，其次 tishi，兜底生成
-      let summary = (item.texing || item.tishi || '').trim()
-      if (!summary && steps.length > 0) {
-        summary = steps[0].substring(0, 30) + (steps[0].length > 30 ? '...' : '')
-      }
-      if (!summary) summary = `${name}的做法`
-
-      const recipe: Recipe = {
-        name: item.cp_name || name,
-        summary,
-        ingredients: ingredients.length > 0 ? ingredients : ['暂无食材信息'],
-        steps,
-      }
-      apiCache[name] = recipe
-      return recipe
-    }
+    const item = await fetchRecipeByName(name)
+    if (!item) return null
+    const recipe = mapRecipeOutToRecipe(item, name)
+    apiCache[name] = recipe
+    return recipe
   } catch {
-    // API 调用失败，返回 null
+    // API 调用失败，静默降级返回 null（调用方显示"暂无菜谱"）
+    return null
   }
-  return null
 }
 
 export default recipes
