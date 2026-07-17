@@ -56,6 +56,8 @@ npx jest              # 跑测试（package.json 的 test 脚本是 jest --cover
 - 上传压缩（es6/postcss/minified）已在 v1.7.0 于 project.config.json 开启。
 
 ## 进行中 / TODO
+**⭐ 零等待体验改造 P2-P3（涉及本仓库）**：完整实施计划在后端仓库 `C:\Users\goodb\daodichishayou-backend\docs\plans\2026-07-17-zero-wait-ux.md`——P2 投机预取（Task 2.2 改本仓库 ingredient.tsx）、P3 两段式+流式（Task 3.2-3.4 前后端联动）。执行前先读该计划全局约束。
+
 **审核上线前 · 代码质量清单**（微信包体/性能门槛）：
 - [ ] 分包加载：把 recipe 页拆到子包，减小主包体积（主包限制 2M）。
 - [ ] 图片上 CDN：>200K 图片不打包，改网络加载。
