@@ -391,6 +391,26 @@ describe('Ingredient page – recommend button', () => {
     })
   })
 
+  it('sends recommend request with 120s timeout to cover slow AI path', async () => {
+    // 回归：AI 路径实测 44-110s，30s 超时导致必然「网络异常」报错
+    mockRequest.mockResolvedValue({ statusCode: 200, data: { dishes: [] } })
+
+    const IngredientPage = loadIngredientPage()
+    render(<IngredientPage />)
+
+    fireEvent.click(screen.getByText('番茄'))
+    fireEvent.click(screen.getByText('开始推荐'))
+
+    await waitFor(() => {
+      expect(mockRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: `${API_BASE}/api/recommend`,
+          timeout: 120000,
+        })
+      )
+    })
+  })
+
   it('shows difficulty badge when present', async () => {
     mockRequest.mockResolvedValue({
       statusCode: 200,

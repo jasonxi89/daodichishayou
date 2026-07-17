@@ -237,7 +237,7 @@ export default function Ingredient() {
           preferences: preference === '不限' ? null : preference,
           allow_extra: allowExtra,
         },
-        timeout: 30000,
+        timeout: 120000,
       })
 
       if (res.statusCode === 200 && res.data.dishes) {
@@ -266,7 +266,7 @@ export default function Ingredient() {
           allow_extra: allowExtra,
           exclude_dishes: dishes.map(d => d.name),
         },
-        timeout: 30000,
+        timeout: 120000,
       })
       if (res.statusCode === 200 && res.data.dishes) {
         setDishes(prev => [...prev, ...res.data.dishes])
