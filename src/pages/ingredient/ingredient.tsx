@@ -1,9 +1,10 @@
 import { View, Text, ScrollView, Input, Canvas, Button } from '@tarojs/components'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback, useRef, useEffect } from 'react'
+import DishCard, { type RecommendedDish } from './DishCard'
 import './ingredient.scss'
 
-const COMMON_INGREDIENTS: Record<string, string[]> = {
+export const COMMON_INGREDIENTS: Record<string, string[]> = {
   '蔬菜': ['番茄', '土豆', '白菜', '青椒', '黄瓜', '茄子', '西兰花', '胡萝卜', '菠菜', '洋葱', '蘑菇', '豆芽'],
   '肉类': ['鸡胸肉', '猪肉', '牛肉', '排骨', '五花肉', '鸡翅', '鸡腿', '肉末'],
   '水产蛋奶': ['虾', '鱼', '豆腐', '鸡蛋', '牛奶'],
@@ -13,16 +14,6 @@ const COMMON_INGREDIENTS: Record<string, string[]> = {
 const CATEGORIES = Object.keys(COMMON_INGREDIENTS)
 
 const PREFERENCES = ['不限', '清淡', '家常', '快手菜', '下饭菜', '减脂']
-
-interface RecommendedDish {
-  name: string
-  summary: string
-  ingredients: string[]
-  steps: string[]
-  difficulty?: string
-  cook_time?: string
-  extra_ingredients?: string[]
-}
 
 export default function Ingredient() {
   const [selected, setSelected] = useState<string[]>([])
@@ -407,50 +398,12 @@ export default function Ingredient() {
           <View className='results'>
             <Text className='results-title'>为你推荐</Text>
             {dishes.map((dish, index) => (
-              <View key={index} className='dish-card' onClick={() => toggleExpand(index)}>
-                <View className='dish-header'>
-                  <View className='dish-info'>
-                    <Text className='dish-name'>{dish.name}</Text>
-                    <Text className='dish-summary'>{dish.summary}</Text>
-                  </View>
-                  <View className='dish-meta'>
-                    {dish.difficulty && <Text className='dish-badge'>{dish.difficulty}</Text>}
-                    {dish.cook_time && <Text className='dish-time'>{dish.cook_time}</Text>}
-                  </View>
-                </View>
-                <Text className='dish-expand-hint'>
-                  {expandedIndex === index ? '收起详情 ▲' : '查看详情 ▼'}
-                </Text>
-                {expandedIndex === index && (
-                  <View className='dish-detail'>
-                    <View className='dish-ingredients'>
-                      <Text className='dish-detail-label'>食材清单</Text>
-                      <View className='dish-ingredient-tags'>
-                        {dish.ingredients.map((item, i) => {
-                          const isExtra = dish.extra_ingredients?.some(extra => item.includes(extra))
-                          return (
-                            <Text key={i} className={`dish-ingredient-tag ${isExtra ? 'extra' : ''}`}>
-                              {isExtra ? `🛒 ${item}` : item}
-                            </Text>
-                          )
-                        })}
-                      </View>
-                      {dish.extra_ingredients && dish.extra_ingredients.length > 0 && (
-                        <Text className='extra-hint'>🛒 = 需额外购买</Text>
-                      )}
-                    </View>
-                    <View className='dish-steps'>
-                      <Text className='dish-detail-label'>做法步骤</Text>
-                      {dish.steps.map((step, i) => (
-                        <View key={i} className='dish-step'>
-                          <Text className='dish-step-num'>{i + 1}</Text>
-                          <Text className='dish-step-text'>{step}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-              </View>
+              <DishCard
+                key={index}
+                dish={dish}
+                expanded={expandedIndex === index}
+                onToggle={() => toggleExpand(index)}
+              />
             ))}
             <View className={`load-more-btn ${loadingMore ? 'loading' : ''}`} onClick={handleLoadMore}>
               <Text className='load-more-btn-text'>
