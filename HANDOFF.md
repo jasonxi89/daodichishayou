@@ -1,5 +1,5 @@
 # HANDOFF — 到底吃啥哟 · 微信小程序前端
-> 跨 agent/IDE 接手文档 | 最后更新: 2026-07-17 | 改动项目后请同步更新此文档
+> 跨 agent/IDE 接手文档 | 最后更新: 2026-07-18 | 改动项目后请同步更新此文档
 
 ## 项目定位
 「到底吃啥哟」帮用户解决"今天吃什么"。核心两块：
@@ -9,10 +9,10 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
-- 版本 **v1.7.1**（package.json）；分支 `main`，工作区干净，已与 origin 同步。
-- 测试 **159 jest tests** 全绿；`build:weapp` 可正常构建。
-- 最近改动（v1.7.1）：推荐请求超时 30s → 120s（30s < LLM 实际耗时，是"网络异常"报错主因）。
-- 尚未提交微信审核上线（见下方 TODO 的代码质量清单）。
+- 开发版本 **v1.8.0**（`feature/zero-wait`）；尚未合并/推送/提交微信审核。
+- 测试 **184 jest tests** 全绿；`build:weapp` 可正常构建。
+- 零等待 Stage B 已完成并通过独立 reviewer：投机预取、两段式 quick/steps、NDJSON 流式步骤、首包/空闲超时、请求所有权防竞态、静默本地降级。
+- 生产仍是 v1.7.1；Stage C 真机回归和上线尚未执行。
 
 ## 技术栈与结构
 Taro **4.1.11** + React **18** + TypeScript + Sass；测试 jest + ts-jest + @testing-library/react。
@@ -56,7 +56,9 @@ npx jest              # 跑测试（package.json 的 test 脚本是 jest --cover
 - 上传压缩（es6/postcss/minified）已在 v1.7.0 于 project.config.json 开启。
 
 ## 进行中 / TODO
-**⭐ 零等待体验改造 P2-P3（涉及本仓库）**：完整实施计划在后端仓库 `C:\Users\goodb\daodichishayou-backend\docs\plans\2026-07-17-zero-wait-ux.md`——P2 投机预取（Task 2.2 改本仓库 ingredient.tsx）、P3 两段式+流式（Task 3.2-3.4 前后端联动）。执行前先读该计划全局约束。
+**零等待 Stage B 已完成，Stage C 待执行**：完整计划在后端仓库 `docs/plans/2026-07-17-zero-wait-ux.md`。两仓当前均为本地 `feature/zero-wait`，下一步是合并/推送后先部署 v1.14.0 后端，再用微信开发者工具与真机验证 v1.8.0；未经明确授权不要合并或发布。
+
+**已知非阻塞告警**：Jest 仍有历史 React `act(...)` warning；npm audit 报告 86 个依赖漏洞（14 critical / 32 high），未使用 ignore 或强制 audit fix 掩盖，需单独评估 Taro 依赖升级兼容性。
 
 **审核上线前 · 代码质量清单**（微信包体/性能门槛）：
 - [ ] 分包加载：把 recipe 页拆到子包，减小主包体积（主包限制 2M）。

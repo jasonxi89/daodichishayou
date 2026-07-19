@@ -1,28 +1,19 @@
 import { View, Text, ScrollView, Input, Canvas, Button } from '@tarojs/components'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { findLocalRecipesByIngredients } from '../../data/recipes'
+import {
+  fetchDishStepsStreaming,
+  fetchQuickRecommendations,
+  type QuickRecommendResponse,
+} from '../../services/api'
+import DishCard, { type DisplayDish } from './DishCard'
+import RecommendationLoading from './RecommendationLoading'
+import { CATEGORIES, COMMON_INGREDIENTS, LOADING_MESSAGES, PREFERENCES,
+  makePrefetchKey, makeQuickPayload } from './recommendationConfig'
 import './ingredient.scss'
 
-const COMMON_INGREDIENTS: Record<string, string[]> = {
-  '蔬菜': ['番茄', '土豆', '白菜', '青椒', '黄瓜', '茄子', '西兰花', '胡萝卜', '菠菜', '洋葱', '蘑菇', '豆芽'],
-  '肉类': ['鸡胸肉', '猪肉', '牛肉', '排骨', '五花肉', '鸡翅', '鸡腿', '肉末'],
-  '水产蛋奶': ['虾', '鱼', '豆腐', '鸡蛋', '牛奶'],
-  '主食': ['米饭', '面条', '馒头', '饺子皮', '面粉'],
-}
-
-const CATEGORIES = Object.keys(COMMON_INGREDIENTS)
-
-const PREFERENCES = ['不限', '清淡', '家常', '快手菜', '下饭菜', '减脂']
-
-interface RecommendedDish {
-  name: string
-  summary: string
-  ingredients: string[]
-  steps: string[]
-  difficulty?: string
-  cook_time?: string
-  extra_ingredients?: string[]
-}
+export { COMMON_INGREDIENTS } from './recommendationConfig'
 
 export default function Ingredient() {
   const [selected, setSelected] = useState<string[]>([])
@@ -30,11 +21,78 @@ export default function Ingredient() {
   const [inputValue, setInputValue] = useState('')
   const [preference, setPreference] = useState('不限')
   const [loading, setLoading] = useState(false)
-  const [dishes, setDishes] = useState<RecommendedDish[]>([])
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
+  const [dishes, setDishes] = useState<DisplayDish[]>([])
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [allowExtra, setAllowExtra] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [loadingStepIndex, setLoadingStepIndex] = useState<number | null>(null)
+  const [usingLocalFallback, setUsingLocalFallback] = useState(false)
   const shareImagePath = useRef('')
+  const prefetchRef = useRef<{
+    key: string
+    promise: Promise<QuickRecommendResponse | null>
+  } | null>(null)
+  const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const recommendationRequestRef = useRef(0)
+  const resultGenerationRef = useRef(0)
+  const detailRequestCounterRef = useRef(0)
+  const activeDetailRequestsRef = useRef(new Map<string, number>())
+  const loadMoreInFlightRef = useRef(false)
+  const loadMoreRequestRef = useRef(0)
+  const currentCriteriaKey = makePrefetchKey(selected, preference, allowExtra)
+  const currentCriteriaKeyRef = useRef(currentCriteriaKey)
+  currentCriteriaKeyRef.current = currentCriteriaKey
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingMessageIndex(0)
+      return
+    }
+    const timer = setInterval(() => {
+      setLoadingMessageIndex(index => (index + 1) % LOADING_MESSAGES.length)
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [loading])
+
+  useEffect(() => {
+    recommendationRequestRef.current += 1
+    loadMoreRequestRef.current += 1
+    loadMoreInFlightRef.current = false
+    resultGenerationRef.current += 1
+    activeDetailRequestsRef.current.clear()
+    setLoading(false)
+    setLoadingMore(false)
+    setLoadingStepIndex(null)
+    setExpandedIndex(null)
+    setDishes([])
+    setUsingLocalFallback(false)
+  }, [currentCriteriaKey])
+
+  useEffect(() => {
+    if (prefetchTimerRef.current) {
+      clearTimeout(prefetchTimerRef.current)
+      prefetchTimerRef.current = null
+    }
+    prefetchRef.current = null
+    if (selected.length === 0) return
+
+    const key = makePrefetchKey(selected, preference, allowExtra)
+    prefetchTimerRef.current = setTimeout(() => {
+      const promise = fetchQuickRecommendations(
+        makeQuickPayload(selected, preference, allowExtra),
+      ).catch(() => null)
+      prefetchRef.current = { key, promise }
+      prefetchTimerRef.current = null
+    }, 1000)
+
+    return () => {
+      if (prefetchTimerRef.current) {
+        clearTimeout(prefetchTimerRef.current)
+        prefetchTimerRef.current = null
+      }
+    }
+  }, [selected, preference, allowExtra])
 
   // 当菜品结果变化时，绘制分享卡片
   useEffect(() => {
@@ -222,67 +280,172 @@ export default function Ingredient() {
       Taro.showToast({ title: '请先选择食材', icon: 'none' })
       return
     }
+    loadMoreRequestRef.current += 1
+    loadMoreInFlightRef.current = false
+    setLoadingMore(false)
+    const requestId = recommendationRequestRef.current + 1
+    recommendationRequestRef.current = requestId
+    const criteriaKey = makePrefetchKey(selected, preference, allowExtra)
+    resultGenerationRef.current += 1
+    activeDetailRequestsRef.current.clear()
     setLoading(true)
     setDishes([])
     setExpandedIndex(null)
+    setUsingLocalFallback(false)
 
     try {
-      const res = await Taro.request({
-        url: `${API_BASE}/api/recommend`,
-        method: 'POST',
-        header: { 'Content-Type': 'application/json' },
-        data: {
-          ingredients: selected,
-          count: 3,
-          preferences: preference === '不限' ? null : preference,
-          allow_extra: allowExtra,
-        },
-        timeout: 120000,
-      })
-
-      if (res.statusCode === 200 && res.data.dishes) {
-        setDishes(res.data.dishes)
-      } else {
-        Taro.showToast({ title: '推荐失败，请重试', icon: 'none' })
+      if (prefetchTimerRef.current) {
+        clearTimeout(prefetchTimerRef.current)
+        prefetchTimerRef.current = null
       }
+      const matchingPrefetch = prefetchRef.current?.key === criteriaKey
+        ? prefetchRef.current.promise
+        : null
+      prefetchRef.current = null
+
+      const prefetched = matchingPrefetch ? await matchingPrefetch : null
+      const response = prefetched ?? await fetchQuickRecommendations(
+        makeQuickPayload(selected, preference, allowExtra),
+      )
+      if (
+        requestId !== recommendationRequestRef.current
+        || criteriaKey !== currentCriteriaKeyRef.current
+      ) return
+      if (response.dishes.length === 0) {
+        throw new Error('Empty quick recommendation')
+      }
+      setDishes(response.dishes.map(dish => ({
+        ...dish,
+        detailStatus: 'idle' as const,
+      })))
     } catch {
-      Taro.showToast({ title: '网络异常，请重试', icon: 'none' })
+      if (
+        requestId !== recommendationRequestRef.current
+        || criteriaKey !== currentCriteriaKeyRef.current
+      ) return
+      setDishes(findLocalRecipesByIngredients(selected, 3).map(dish => ({
+        ...dish,
+        detailStatus: 'complete' as const,
+      })))
+      setUsingLocalFallback(true)
     } finally {
-      setLoading(false)
+      if (requestId === recommendationRequestRef.current) {
+        setLoading(false)
+      }
     }
   }, [selected, preference, allowExtra])
 
   const handleLoadMore = useCallback(async () => {
+    if (loadMoreInFlightRef.current || usingLocalFallback) return
+    loadMoreInFlightRef.current = true
+    const requestId = loadMoreRequestRef.current + 1
+    loadMoreRequestRef.current = requestId
+    const criteriaKey = currentCriteriaKeyRef.current
+    const listGeneration = resultGenerationRef.current
     setLoadingMore(true)
     try {
-      const res = await Taro.request({
-        url: `${API_BASE}/api/recommend`,
-        method: 'POST',
-        header: { 'Content-Type': 'application/json' },
-        data: {
-          ingredients: selected,
-          count: 3,
-          preferences: preference === '不限' ? null : preference,
-          allow_extra: allowExtra,
-          exclude_dishes: dishes.map(d => d.name),
-        },
-        timeout: 120000,
+      const response = await fetchQuickRecommendations(
+        makeQuickPayload(
+          selected,
+          preference,
+          allowExtra,
+          dishes.map(dish => dish.name),
+        ),
+      )
+      if (
+        requestId !== loadMoreRequestRef.current
+        || criteriaKey !== currentCriteriaKeyRef.current
+        || listGeneration !== resultGenerationRef.current
+      ) return
+      setDishes(prev => {
+        const existingNames = new Set(prev.map(dish => dish.name))
+        const additions = response.dishes
+          .filter(dish => !existingNames.has(dish.name))
+          .map(dish => ({ ...dish, detailStatus: 'idle' as const }))
+        return [...prev, ...additions]
       })
-      if (res.statusCode === 200 && res.data.dishes) {
-        setDishes(prev => [...prev, ...res.data.dishes])
-      } else {
-        Taro.showToast({ title: '加载失败，请重试', icon: 'none' })
-      }
     } catch {
-      Taro.showToast({ title: '网络异常，请重试', icon: 'none' })
+      // Existing cards remain usable; load-more failure is intentionally silent.
     } finally {
-      setLoadingMore(false)
+      if (requestId === loadMoreRequestRef.current) {
+        loadMoreInFlightRef.current = false
+        setLoadingMore(false)
+      }
     }
-  }, [selected, preference, allowExtra, dishes])
+  }, [selected, preference, allowExtra, dishes, usingLocalFallback])
 
-  const toggleExpand = useCallback((index: number) => {
-    setExpandedIndex(prev => prev === index ? null : index)
-  }, [])
+  const toggleExpand = useCallback(async (index: number) => {
+    if (expandedIndex === index) {
+      setExpandedIndex(null)
+      return
+    }
+
+    const dish = dishes[index]
+    if (!dish) return
+    setExpandedIndex(index)
+    if (dish.detailStatus === 'complete') return
+
+    const listGeneration = resultGenerationRef.current
+    const detailKey = `${listGeneration}:${dish.name}:${index}`
+    if (activeDetailRequestsRef.current.has(detailKey)) return
+    const requestId = detailRequestCounterRef.current + 1
+    detailRequestCounterRef.current = requestId
+    activeDetailRequestsRef.current.set(detailKey, requestId)
+    setLoadingStepIndex(index)
+    setDishes(prev => prev.map((item, dishIndex) => (
+      dishIndex === index
+        ? { ...item, detailStatus: 'streaming' as const }
+        : item
+    )))
+
+    const ownsRequest = () => (
+      listGeneration === resultGenerationRef.current
+      && activeDetailRequestsRef.current.get(detailKey) === requestId
+    )
+    try {
+      const fullDish = await fetchDishStepsStreaming(
+        dish.name,
+        selected,
+        streamedSteps => {
+          if (!ownsRequest()) return
+          setDishes(prev => prev.map((item, dishIndex) => (
+            dishIndex === index && item.name === dish.name
+              ? {
+                  ...item,
+                  steps: streamedSteps,
+                  detailStatus: 'streaming' as const,
+                }
+              : item
+          )))
+        },
+        3000,
+        3000,
+        {
+          preferences: preference === '不限' ? null : preference,
+          allowExtra,
+        },
+      )
+      if (!ownsRequest()) return
+      setDishes(prev => prev.map((item, dishIndex) => (
+        dishIndex === index && item.name === dish.name
+          ? { ...item, ...fullDish, detailStatus: 'complete' as const }
+          : item
+      )))
+    } catch {
+      if (!ownsRequest()) return
+      setDishes(prev => prev.map((item, dishIndex) => (
+        dishIndex === index && item.name === dish.name
+          ? { ...item, steps: undefined, detailStatus: 'error' as const }
+          : item
+      )))
+      Taro.showToast({ title: '做法加载失败，请重试', icon: 'none' })
+    } finally {
+      if (activeDetailRequestsRef.current.get(detailKey) === requestId) {
+        activeDetailRequestsRef.current.delete(detailKey)
+        setLoadingStepIndex(current => current === index ? null : current)
+      }
+    }
+  }, [dishes, expandedIndex, selected, preference, allowExtra])
 
   return (
     <View className='ingredient'>
@@ -381,16 +544,7 @@ export default function Ingredient() {
 
         {/* 推荐按钮 / Loading 动画 */}
         {loading ? (
-          <View className='thinking-box'>
-            <Text className='thinking-emoji'>🤔</Text>
-            <View className='thinking-dots'>
-              <Text className='thinking-text'>我想想</Text>
-              <Text className='dot dot1'>.</Text>
-              <Text className='dot dot2'>.</Text>
-              <Text className='dot dot3'>.</Text>
-              <Text className='dot dot4'>.</Text>
-            </View>
-          </View>
+          <RecommendationLoading message={LOADING_MESSAGES[loadingMessageIndex]} />
         ) : (
           <View className='recommend-btn-wrapper'>
             <View
@@ -405,58 +559,31 @@ export default function Ingredient() {
         {/* 结果展示 */}
         {dishes.length > 0 && (
           <View className='results'>
+            {usingLocalFallback && (
+              <View className='section'>
+                <Text className='dish-summary'>网络开小差，先看看这些经典搭配</Text>
+                <View className='load-more-btn' onClick={handleRecommend}>
+                  <Text className='load-more-btn-text'>重试</Text>
+                </View>
+              </View>
+            )}
             <Text className='results-title'>为你推荐</Text>
             {dishes.map((dish, index) => (
-              <View key={index} className='dish-card' onClick={() => toggleExpand(index)}>
-                <View className='dish-header'>
-                  <View className='dish-info'>
-                    <Text className='dish-name'>{dish.name}</Text>
-                    <Text className='dish-summary'>{dish.summary}</Text>
-                  </View>
-                  <View className='dish-meta'>
-                    {dish.difficulty && <Text className='dish-badge'>{dish.difficulty}</Text>}
-                    {dish.cook_time && <Text className='dish-time'>{dish.cook_time}</Text>}
-                  </View>
-                </View>
-                <Text className='dish-expand-hint'>
-                  {expandedIndex === index ? '收起详情 ▲' : '查看详情 ▼'}
-                </Text>
-                {expandedIndex === index && (
-                  <View className='dish-detail'>
-                    <View className='dish-ingredients'>
-                      <Text className='dish-detail-label'>食材清单</Text>
-                      <View className='dish-ingredient-tags'>
-                        {dish.ingredients.map((item, i) => {
-                          const isExtra = dish.extra_ingredients?.some(extra => item.includes(extra))
-                          return (
-                            <Text key={i} className={`dish-ingredient-tag ${isExtra ? 'extra' : ''}`}>
-                              {isExtra ? `🛒 ${item}` : item}
-                            </Text>
-                          )
-                        })}
-                      </View>
-                      {dish.extra_ingredients && dish.extra_ingredients.length > 0 && (
-                        <Text className='extra-hint'>🛒 = 需额外购买</Text>
-                      )}
-                    </View>
-                    <View className='dish-steps'>
-                      <Text className='dish-detail-label'>做法步骤</Text>
-                      {dish.steps.map((step, i) => (
-                        <View key={i} className='dish-step'>
-                          <Text className='dish-step-num'>{i + 1}</Text>
-                          <Text className='dish-step-text'>{step}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-              </View>
+              <DishCard
+                key={`${resultGenerationRef.current}:${dish.name}:${index}`}
+                dish={dish}
+                expanded={expandedIndex === index}
+                onToggle={() => toggleExpand(index)}
+                loadingSteps={loadingStepIndex === index}
+              />
             ))}
-            <View className={`load-more-btn ${loadingMore ? 'loading' : ''}`} onClick={handleLoadMore}>
-              <Text className='load-more-btn-text'>
-                {loadingMore ? '加载中...' : '加载更多 ▼'}
-              </Text>
-            </View>
+            {!usingLocalFallback && (
+              <View className={`load-more-btn ${loadingMore ? 'loading' : ''}`} onClick={handleLoadMore}>
+                <Text className='load-more-btn-text'>
+                  {loadingMore ? '加载中...' : '加载更多 ▼'}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 

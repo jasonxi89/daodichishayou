@@ -277,6 +277,27 @@ export function getLocalRecipe(name: string): Recipe | null {
   return recipes[name] || null
 }
 
+export function findLocalRecipesByIngredients(
+  ingredients: string[],
+  limit = 3,
+): Recipe[] {
+  const normalized = ingredients
+    .map(ingredient => ingredient.trim())
+    .filter(Boolean)
+  const ranked = Object.values(recipes)
+    .map(recipe => ({
+      recipe,
+      score: normalized.reduce((score, ingredient) => (
+        score + (recipe.ingredients.some(item => item.includes(ingredient)) ? 1 : 0)
+      ), 0),
+    }))
+    .filter(item => item.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .map(item => item.recipe)
+
+  return (ranked.length > 0 ? ranked : Object.values(recipes)).slice(0, limit)
+}
+
 // 解析后端 ingredients_json（[{name, amount}] 数组），失败时回退到 ingredients_text
 function parseIngredients(item: RecipeOut): string[] {
   if (item.ingredients_json) {
