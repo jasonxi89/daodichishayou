@@ -39,6 +39,26 @@ export interface RecipeSearchResponse {
   items: RecipeOut[]
 }
 
+export interface QuickDish {
+  name: string
+  summary: string
+  difficulty?: string
+  cook_time?: string
+}
+
+export interface QuickRecommendRequest {
+  ingredients: string[]
+  count: number
+  preferences: string | null
+  allow_extra: boolean
+  exclude_dishes?: string[]
+}
+
+export interface QuickRecommendResponse {
+  dishes: QuickDish[]
+  input_ingredients: string[]
+}
+
 export interface FoodDigest {
   id: number
   digest_date: string
@@ -87,6 +107,22 @@ export async function fetchDigest(): Promise<FoodDigest | null> {
     return null
   }
   return res
+}
+
+export async function fetchQuickRecommendations(
+  payload: QuickRecommendRequest,
+): Promise<QuickRecommendResponse> {
+  const res = await Taro.request({
+    url: `${API_BASE}/api/recommend/quick`,
+    method: 'POST',
+    header: { 'Content-Type': 'application/json' },
+    data: payload,
+    timeout: 30000,
+  })
+  if (res.statusCode !== 200 || !Array.isArray(res.data?.dishes)) {
+    throw new Error(`API error: ${res.statusCode}`)
+  }
+  return res.data as QuickRecommendResponse
 }
 
 export async function fetchRecipeByName(name: string): Promise<RecipeOut | null> {

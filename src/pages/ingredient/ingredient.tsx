@@ -1,6 +1,10 @@
 import { View, Text, ScrollView, Input, Canvas, Button } from '@tarojs/components'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback, useRef, useEffect } from 'react'
+import {
+  fetchQuickRecommendations,
+  type QuickRecommendResponse,
+} from '../../services/api'
 import DishCard, { type RecommendedDish } from './DishCard'
 import './ingredient.scss'
 
@@ -20,6 +24,33 @@ const LOADING_MESSAGES = [
   '快好了快好了...',
 ]
 
+function makePrefetchKey(
+  ingredients: string[],
+  preference: string,
+  allowExtra: boolean,
+) {
+  return JSON.stringify([
+    [...ingredients].sort(),
+    preference === '不限' ? null : preference,
+    allowExtra,
+  ])
+}
+
+function makeQuickPayload(
+  ingredients: string[],
+  preference: string,
+  allowExtra: boolean,
+  excludeDishes?: string[],
+) {
+  return {
+    ingredients,
+    count: 3,
+    preferences: preference === '不限' ? null : preference,
+    allow_extra: allowExtra,
+    ...(excludeDishes ? { exclude_dishes: excludeDishes } : {}),
+  }
+}
+
 export default function Ingredient() {
   const [selected, setSelected] = useState<string[]>([])
   const [activeCategory, setActiveCategory] = useState('蔬菜')
@@ -33,6 +64,11 @@ export default function Ingredient() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadingStepIndex, setLoadingStepIndex] = useState<number | null>(null)
   const shareImagePath = useRef('')
+  const prefetchRef = useRef<{
+    key: string
+    promise: Promise<QuickRecommendResponse | null>
+  } | null>(null)
+  const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!loading) {
@@ -44,6 +80,31 @@ export default function Ingredient() {
     }, 3000)
     return () => clearInterval(timer)
   }, [loading])
+
+  useEffect(() => {
+    if (prefetchTimerRef.current) {
+      clearTimeout(prefetchTimerRef.current)
+      prefetchTimerRef.current = null
+    }
+    prefetchRef.current = null
+    if (selected.length === 0) return
+
+    const key = makePrefetchKey(selected, preference, allowExtra)
+    prefetchTimerRef.current = setTimeout(() => {
+      const promise = fetchQuickRecommendations(
+        makeQuickPayload(selected, preference, allowExtra),
+      ).catch(() => null)
+      prefetchRef.current = { key, promise }
+      prefetchTimerRef.current = null
+    }, 1000)
+
+    return () => {
+      if (prefetchTimerRef.current) {
+        clearTimeout(prefetchTimerRef.current)
+        prefetchTimerRef.current = null
+      }
+    }
+  }, [selected, preference, allowExtra])
 
   // 当菜品结果变化时，绘制分享卡片
   useEffect(() => {
@@ -236,26 +297,27 @@ export default function Ingredient() {
     setExpandedIndex(null)
 
     try {
-      const res = await Taro.request({
-        url: `${API_BASE}/api/recommend/quick`,
-        method: 'POST',
-        header: { 'Content-Type': 'application/json' },
-        data: {
-          ingredients: selected,
-          count: 3,
-          preferences: preference === '不限' ? null : preference,
-          allow_extra: allowExtra,
-        },
-        timeout: 30000,
-      })
-
-      if (res.statusCode === 200 && res.data.dishes) {
-        setDishes(res.data.dishes)
-      } else {
-        Taro.showToast({ title: '推荐失败，请重试', icon: 'none' })
+      if (prefetchTimerRef.current) {
+        clearTimeout(prefetchTimerRef.current)
+        prefetchTimerRef.current = null
       }
-    } catch {
-      Taro.showToast({ title: '网络异常，请重试', icon: 'none' })
+      const key = makePrefetchKey(selected, preference, allowExtra)
+      const matchingPrefetch = prefetchRef.current?.key === key
+        ? prefetchRef.current.promise
+        : null
+      prefetchRef.current = null
+
+      const prefetched = matchingPrefetch ? await matchingPrefetch : null
+      const response = prefetched ?? await fetchQuickRecommendations(
+        makeQuickPayload(selected, preference, allowExtra),
+      )
+      setDishes(response.dishes)
+    } catch (error) {
+      const isHttpError = error instanceof Error && error.message.startsWith('API error:')
+      Taro.showToast({
+        title: isHttpError ? '推荐失败，请重试' : '网络异常，请重试',
+        icon: 'none',
+      })
     } finally {
       setLoading(false)
     }
@@ -264,24 +326,15 @@ export default function Ingredient() {
   const handleLoadMore = useCallback(async () => {
     setLoadingMore(true)
     try {
-      const res = await Taro.request({
-        url: `${API_BASE}/api/recommend/quick`,
-        method: 'POST',
-        header: { 'Content-Type': 'application/json' },
-        data: {
-          ingredients: selected,
-          count: 3,
-          preferences: preference === '不限' ? null : preference,
-          allow_extra: allowExtra,
-          exclude_dishes: dishes.map(d => d.name),
-        },
-        timeout: 30000,
-      })
-      if (res.statusCode === 200 && res.data.dishes) {
-        setDishes(prev => [...prev, ...res.data.dishes])
-      } else {
-        Taro.showToast({ title: '加载失败，请重试', icon: 'none' })
-      }
+      const response = await fetchQuickRecommendations(
+        makeQuickPayload(
+          selected,
+          preference,
+          allowExtra,
+          dishes.map(dish => dish.name),
+        ),
+      )
+      setDishes(prev => [...prev, ...response.dishes])
     } catch {
       Taro.showToast({ title: '网络异常，请重试', icon: 'none' })
     } finally {
