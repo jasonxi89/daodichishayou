@@ -4,7 +4,9 @@ import type { QuickDish, RecommendedDish } from '../../services/api'
 export type DisplayDish = QuickDish & Partial<Pick<
   RecommendedDish,
   'ingredients' | 'steps' | 'extra_ingredients'
->>
+>> & {
+  detailStatus?: 'idle' | 'streaming' | 'complete' | 'error'
+}
 
 const EXTRA_MARKER = String.fromCodePoint(0x1f6d2)
 

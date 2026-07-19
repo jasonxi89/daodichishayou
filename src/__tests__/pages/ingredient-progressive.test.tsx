@@ -84,6 +84,9 @@ describe('Ingredient page progressive recommendation flow', () => {
         '番茄炒蛋',
         ['番茄'],
         expect.any(Function),
+        3000,
+        3000,
+        { preferences: null, allowExtra: false },
       )
       expect(screen.getByText('鸡蛋炒熟')).toBeInTheDocument()
     })

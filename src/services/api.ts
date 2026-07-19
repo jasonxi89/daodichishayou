@@ -119,15 +119,48 @@ export async function fetchDigest(): Promise<FoodDigest | null> {
   return res
 }
 
+interface DishStepsOptions {
+  preferences?: string | null
+  allowExtra?: boolean
+}
+
+interface ChunkEvent {
+  data: ArrayBuffer
+}
+
+interface ChunkedRequestTask extends Promise<unknown> {
+  abort?: () => void
+  onChunkReceived?: (callback: (event: ChunkEvent) => void) => void
+}
+
+type StreamFrame =
+  | { type: 'delta'; text: string }
+  | { type: 'complete'; dish: RecommendedDish }
+  | { type: 'error'; code: string }
+
+function stepsPayload(
+  dishName: string,
+  ingredients: string[],
+  options: DishStepsOptions,
+) {
+  return {
+    dish_name: dishName,
+    ingredients,
+    preferences: options.preferences ?? null,
+    allow_extra: options.allowExtra ?? false,
+  }
+}
+
 export async function fetchDishSteps(
   dishName: string,
   ingredients: string[],
+  options: DishStepsOptions = {},
 ): Promise<RecommendedDish> {
   const res = await Taro.request({
     url: `${API_BASE}/api/recommend/steps`,
     method: 'POST',
     header: { 'Content-Type': 'application/json' },
-    data: { dish_name: dishName, ingredients },
+    data: stepsPayload(dishName, ingredients, options),
     timeout: 120000,
   })
   if (res.statusCode !== 200 || !res.data?.name) {
@@ -136,115 +169,151 @@ export async function fetchDishSteps(
   return res.data as RecommendedDish
 }
 
-function extractStreamedSteps(buffer: string): string {
+function extractCompletedSteps(buffer: string): string[] {
   const stepsKey = buffer.indexOf('"steps"')
-  if (stepsKey < 0) return ''
+  if (stepsKey < 0) return []
   const arrayStart = buffer.indexOf('[', stepsKey)
-  if (arrayStart < 0) return ''
+  if (arrayStart < 0) return []
 
   const values: string[] = []
-  const stringPattern = /"((?:\\.|[^"\\])*)"/g
-  const segment = buffer.slice(arrayStart + 1)
-  let match: RegExpExecArray | null
-  while ((match = stringPattern.exec(segment)) !== null) {
-    try {
-      values.push(JSON.parse(`"${match[1]}"`))
-    } catch {
+  let inString = false
+  let escaped = false
+  let stringStart = -1
+  for (let index = arrayStart + 1; index < buffer.length; index += 1) {
+    const character = buffer[index]
+    if (inString) {
+      if (escaped) {
+        escaped = false
+      } else if (character === '\\') {
+        escaped = true
+      } else if (character === '"') {
+        const raw = buffer.slice(stringStart, index + 1)
+        try {
+          values.push(JSON.parse(raw))
+        } catch {
+          return values
+        }
+        inString = false
+      }
+      continue
+    }
+    if (character === '"') {
+      inString = true
+      stringStart = index
+    } else if (character === ']') {
       break
     }
   }
-  return values.join('\n')
+  return values
 }
 
 export function fetchDishStepsStreaming(
   dishName: string,
   ingredients: string[],
-  onProgress: (text: string) => void,
+  onProgress: (steps: string[]) => void,
   firstChunkTimeout = 3000,
+  idleChunkTimeout = 3000,
+  options: DishStepsOptions = {},
 ): Promise<RecommendedDish> {
   if (typeof TextDecoder === 'undefined') {
-    return fetchDishSteps(dishName, ingredients)
+    return fetchDishSteps(dishName, ingredients, options)
   }
 
   return new Promise((resolve, reject) => {
     let settled = false
-    let buffer = ''
+    let wireBuffer = ''
+    let modelBuffer = ''
     let receivedChunk = false
+    let idleTimer: ReturnType<typeof setTimeout> | null = null
     const decoder = new TextDecoder()
     const task = Taro.request({
       url: `${API_BASE}/api/recommend/steps?stream=1`,
       method: 'POST',
       header: { 'Content-Type': 'application/json' },
-      data: { dish_name: dishName, ingredients },
-      timeout: 120000,
+      data: stepsPayload(dishName, ingredients, options),
+      timeout: 30000,
       enableChunked: true,
-    }) as any
+    }) as unknown as ChunkedRequestTask
 
-    const parseMarker = (): RecommendedDish | null => {
-      const markerIndex = buffer.indexOf('@@JSON@@')
-      if (markerIndex < 0) return null
-      try {
-        return JSON.parse(
-          buffer.slice(markerIndex + '@@JSON@@'.length),
-        ) as RecommendedDish
-      } catch {
-        return null
-      }
+    const clearTimers = () => {
+      clearTimeout(firstChunkTimer)
+      if (idleTimer) clearTimeout(idleTimer)
     }
 
     const finish = (dish: RecommendedDish) => {
       if (settled) return
       settled = true
-      clearTimeout(firstChunkTimer)
+      clearTimers()
       resolve(dish)
     }
 
     const fallback = () => {
       if (settled) return
       settled = true
-      clearTimeout(firstChunkTimer)
+      clearTimers()
       task.abort?.()
-      fetchDishSteps(dishName, ingredients).then(resolve, reject)
+      fetchDishSteps(dishName, ingredients, options).then(resolve, reject)
+    }
+
+    const processFrame = (frame: StreamFrame) => {
+      if (frame.type === 'error') {
+        fallback()
+      } else if (frame.type === 'complete') {
+        finish(frame.dish)
+      } else {
+        modelBuffer += frame.text
+        const steps = extractCompletedSteps(modelBuffer)
+        if (steps.length > 0) onProgress(steps)
+      }
+    }
+
+    const processWireBuffer = () => {
+      let newlineIndex = wireBuffer.indexOf('\n')
+      while (newlineIndex >= 0 && !settled) {
+        const line = wireBuffer.slice(0, newlineIndex).trim()
+        wireBuffer = wireBuffer.slice(newlineIndex + 1)
+        if (line) {
+          try {
+            processFrame(JSON.parse(line) as StreamFrame)
+          } catch {
+            fallback()
+          }
+        }
+        newlineIndex = wireBuffer.indexOf('\n')
+      }
+    }
+
+    const resetIdleTimer = () => {
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = setTimeout(fallback, idleChunkTimeout)
     }
 
     const firstChunkTimer = setTimeout(() => {
       if (!receivedChunk) fallback()
     }, firstChunkTimeout)
 
+    void Promise.resolve(task)
+      .then(() => {
+        if (settled) return
+        wireBuffer += decoder.decode()
+        processWireBuffer()
+        if (!settled) fallback()
+      })
+      .catch(() => fallback())
+
     if (typeof task.onChunkReceived !== 'function') {
       fallback()
       return
     }
 
-    task.onChunkReceived((event: { data: ArrayBuffer }) => {
+    task.onChunkReceived((event: ChunkEvent) => {
       if (settled) return
       receivedChunk = true
       clearTimeout(firstChunkTimer)
-      buffer += decoder.decode(new Uint8Array(event.data), { stream: true })
-
-      if (buffer.includes('@@ERR@@')) {
-        fallback()
-        return
-      }
-
-      const markerDish = parseMarker()
-      if (markerDish) {
-        finish(markerDish)
-        return
-      }
-
-      const streamedSteps = extractStreamedSteps(buffer)
-      if (streamedSteps) onProgress(streamedSteps)
+      resetIdleTimer()
+      wireBuffer += decoder.decode(new Uint8Array(event.data), { stream: true })
+      processWireBuffer()
     })
-
-    task.then?.(() => {
-      if (settled) return
-      buffer += decoder.decode()
-      const markerDish = parseMarker()
-      if (markerDish) finish(markerDish)
-      else fallback()
-    })
-    task.catch?.(() => fallback())
   })
 }
 

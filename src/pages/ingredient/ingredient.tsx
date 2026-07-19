@@ -8,50 +8,12 @@ import {
   type QuickRecommendResponse,
 } from '../../services/api'
 import DishCard, { type DisplayDish } from './DishCard'
+import RecommendationLoading from './RecommendationLoading'
+import { CATEGORIES, COMMON_INGREDIENTS, LOADING_MESSAGES, PREFERENCES,
+  makePrefetchKey, makeQuickPayload } from './recommendationConfig'
 import './ingredient.scss'
 
-export const COMMON_INGREDIENTS: Record<string, string[]> = {
-  '蔬菜': ['番茄', '土豆', '白菜', '青椒', '黄瓜', '茄子', '西兰花', '胡萝卜', '菠菜', '洋葱', '蘑菇', '豆芽'],
-  '肉类': ['鸡胸肉', '猪肉', '牛肉', '排骨', '五花肉', '鸡翅', '鸡腿', '肉末'],
-  '水产蛋奶': ['虾', '鱼', '豆腐', '鸡蛋', '牛奶'],
-  '主食': ['米饭', '面条', '馒头', '饺子皮', '面粉'],
-}
-
-const CATEGORIES = Object.keys(COMMON_INGREDIENTS)
-
-const PREFERENCES = ['不限', '清淡', '家常', '快手菜', '下饭菜', '减脂']
-const LOADING_MESSAGES = [
-  '正在翻 2 万本菜谱...',
-  '大厨思考中...',
-  '快好了快好了...',
-]
-
-function makePrefetchKey(
-  ingredients: string[],
-  preference: string,
-  allowExtra: boolean,
-) {
-  return JSON.stringify([
-    [...ingredients].sort(),
-    preference === '不限' ? null : preference,
-    allowExtra,
-  ])
-}
-
-function makeQuickPayload(
-  ingredients: string[],
-  preference: string,
-  allowExtra: boolean,
-  excludeDishes?: string[],
-) {
-  return {
-    ingredients,
-    count: 3,
-    preferences: preference === '不限' ? null : preference,
-    allow_extra: allowExtra,
-    ...(excludeDishes ? { exclude_dishes: excludeDishes } : {}),
-  }
-}
+export { COMMON_INGREDIENTS } from './recommendationConfig'
 
 export default function Ingredient() {
   const [selected, setSelected] = useState<string[]>([])
@@ -72,6 +34,15 @@ export default function Ingredient() {
     promise: Promise<QuickRecommendResponse | null>
   } | null>(null)
   const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const recommendationRequestRef = useRef(0)
+  const resultGenerationRef = useRef(0)
+  const detailRequestCounterRef = useRef(0)
+  const activeDetailRequestsRef = useRef(new Map<string, number>())
+  const loadMoreInFlightRef = useRef(false)
+  const loadMoreRequestRef = useRef(0)
+  const currentCriteriaKey = makePrefetchKey(selected, preference, allowExtra)
+  const currentCriteriaKeyRef = useRef(currentCriteriaKey)
+  currentCriteriaKeyRef.current = currentCriteriaKey
 
   useEffect(() => {
     if (!loading) {
@@ -83,6 +54,20 @@ export default function Ingredient() {
     }, 3000)
     return () => clearInterval(timer)
   }, [loading])
+
+  useEffect(() => {
+    recommendationRequestRef.current += 1
+    loadMoreRequestRef.current += 1
+    loadMoreInFlightRef.current = false
+    resultGenerationRef.current += 1
+    activeDetailRequestsRef.current.clear()
+    setLoading(false)
+    setLoadingMore(false)
+    setLoadingStepIndex(null)
+    setExpandedIndex(null)
+    setDishes([])
+    setUsingLocalFallback(false)
+  }, [currentCriteriaKey])
 
   useEffect(() => {
     if (prefetchTimerRef.current) {
@@ -295,6 +280,14 @@ export default function Ingredient() {
       Taro.showToast({ title: '请先选择食材', icon: 'none' })
       return
     }
+    loadMoreRequestRef.current += 1
+    loadMoreInFlightRef.current = false
+    setLoadingMore(false)
+    const requestId = recommendationRequestRef.current + 1
+    recommendationRequestRef.current = requestId
+    const criteriaKey = makePrefetchKey(selected, preference, allowExtra)
+    resultGenerationRef.current += 1
+    activeDetailRequestsRef.current.clear()
     setLoading(true)
     setDishes([])
     setExpandedIndex(null)
@@ -305,8 +298,7 @@ export default function Ingredient() {
         clearTimeout(prefetchTimerRef.current)
         prefetchTimerRef.current = null
       }
-      const key = makePrefetchKey(selected, preference, allowExtra)
-      const matchingPrefetch = prefetchRef.current?.key === key
+      const matchingPrefetch = prefetchRef.current?.key === criteriaKey
         ? prefetchRef.current.promise
         : null
       prefetchRef.current = null
@@ -315,16 +307,41 @@ export default function Ingredient() {
       const response = prefetched ?? await fetchQuickRecommendations(
         makeQuickPayload(selected, preference, allowExtra),
       )
-      setDishes(response.dishes)
+      if (
+        requestId !== recommendationRequestRef.current
+        || criteriaKey !== currentCriteriaKeyRef.current
+      ) return
+      if (response.dishes.length === 0) {
+        throw new Error('Empty quick recommendation')
+      }
+      setDishes(response.dishes.map(dish => ({
+        ...dish,
+        detailStatus: 'idle' as const,
+      })))
     } catch {
-      setDishes(findLocalRecipesByIngredients(selected, 3))
+      if (
+        requestId !== recommendationRequestRef.current
+        || criteriaKey !== currentCriteriaKeyRef.current
+      ) return
+      setDishes(findLocalRecipesByIngredients(selected, 3).map(dish => ({
+        ...dish,
+        detailStatus: 'complete' as const,
+      })))
       setUsingLocalFallback(true)
     } finally {
-      setLoading(false)
+      if (requestId === recommendationRequestRef.current) {
+        setLoading(false)
+      }
     }
   }, [selected, preference, allowExtra])
 
   const handleLoadMore = useCallback(async () => {
+    if (loadMoreInFlightRef.current || usingLocalFallback) return
+    loadMoreInFlightRef.current = true
+    const requestId = loadMoreRequestRef.current + 1
+    loadMoreRequestRef.current = requestId
+    const criteriaKey = currentCriteriaKeyRef.current
+    const listGeneration = resultGenerationRef.current
     setLoadingMore(true)
     try {
       const response = await fetchQuickRecommendations(
@@ -335,13 +352,27 @@ export default function Ingredient() {
           dishes.map(dish => dish.name),
         ),
       )
-      setDishes(prev => [...prev, ...response.dishes])
+      if (
+        requestId !== loadMoreRequestRef.current
+        || criteriaKey !== currentCriteriaKeyRef.current
+        || listGeneration !== resultGenerationRef.current
+      ) return
+      setDishes(prev => {
+        const existingNames = new Set(prev.map(dish => dish.name))
+        const additions = response.dishes
+          .filter(dish => !existingNames.has(dish.name))
+          .map(dish => ({ ...dish, detailStatus: 'idle' as const }))
+        return [...prev, ...additions]
+      })
     } catch {
-      Taro.showToast({ title: '网络异常，请重试', icon: 'none' })
+      // Existing cards remain usable; load-more failure is intentionally silent.
     } finally {
-      setLoadingMore(false)
+      if (requestId === loadMoreRequestRef.current) {
+        loadMoreInFlightRef.current = false
+        setLoadingMore(false)
+      }
     }
-  }, [selected, preference, allowExtra, dishes])
+  }, [selected, preference, allowExtra, dishes, usingLocalFallback])
 
   const toggleExpand = useCallback(async (index: number) => {
     if (expandedIndex === index) {
@@ -349,33 +380,72 @@ export default function Ingredient() {
       return
     }
 
-    setExpandedIndex(index)
     const dish = dishes[index]
-    if (dish.steps?.length || loadingStepIndex === index) return
+    if (!dish) return
+    setExpandedIndex(index)
+    if (dish.detailStatus === 'complete') return
 
+    const listGeneration = resultGenerationRef.current
+    const detailKey = `${listGeneration}:${dish.name}:${index}`
+    if (activeDetailRequestsRef.current.has(detailKey)) return
+    const requestId = detailRequestCounterRef.current + 1
+    detailRequestCounterRef.current = requestId
+    activeDetailRequestsRef.current.set(detailKey, requestId)
     setLoadingStepIndex(index)
+    setDishes(prev => prev.map((item, dishIndex) => (
+      dishIndex === index
+        ? { ...item, detailStatus: 'streaming' as const }
+        : item
+    )))
+
+    const ownsRequest = () => (
+      listGeneration === resultGenerationRef.current
+      && activeDetailRequestsRef.current.get(detailKey) === requestId
+    )
     try {
       const fullDish = await fetchDishStepsStreaming(
         dish.name,
         selected,
-        streamedText => {
-          const streamedSteps = streamedText.split('\n').filter(Boolean)
+        streamedSteps => {
+          if (!ownsRequest()) return
           setDishes(prev => prev.map((item, dishIndex) => (
-            dishIndex === index
-              ? { ...item, steps: streamedSteps }
+            dishIndex === index && item.name === dish.name
+              ? {
+                  ...item,
+                  steps: streamedSteps,
+                  detailStatus: 'streaming' as const,
+                }
               : item
           )))
         },
+        3000,
+        3000,
+        {
+          preferences: preference === '不限' ? null : preference,
+          allowExtra,
+        },
       )
+      if (!ownsRequest()) return
       setDishes(prev => prev.map((item, dishIndex) => (
-        dishIndex === index ? { ...item, ...fullDish } : item
+        dishIndex === index && item.name === dish.name
+          ? { ...item, ...fullDish, detailStatus: 'complete' as const }
+          : item
       )))
     } catch {
+      if (!ownsRequest()) return
+      setDishes(prev => prev.map((item, dishIndex) => (
+        dishIndex === index && item.name === dish.name
+          ? { ...item, steps: undefined, detailStatus: 'error' as const }
+          : item
+      )))
       Taro.showToast({ title: '做法加载失败，请重试', icon: 'none' })
     } finally {
-      setLoadingStepIndex(null)
+      if (activeDetailRequestsRef.current.get(detailKey) === requestId) {
+        activeDetailRequestsRef.current.delete(detailKey)
+        setLoadingStepIndex(current => current === index ? null : current)
+      }
     }
-  }, [dishes, expandedIndex, loadingStepIndex, selected])
+  }, [dishes, expandedIndex, selected, preference, allowExtra])
 
   return (
     <View className='ingredient'>
@@ -474,16 +544,7 @@ export default function Ingredient() {
 
         {/* 推荐按钮 / Loading 动画 */}
         {loading ? (
-          <View className='thinking-box'>
-            <Text className='thinking-emoji'>🤔</Text>
-            <View className='thinking-dots'>
-              <Text className='thinking-text'>{LOADING_MESSAGES[loadingMessageIndex]}</Text>
-              <Text className='dot dot1'>.</Text>
-              <Text className='dot dot2'>.</Text>
-              <Text className='dot dot3'>.</Text>
-              <Text className='dot dot4'>.</Text>
-            </View>
-          </View>
+          <RecommendationLoading message={LOADING_MESSAGES[loadingMessageIndex]} />
         ) : (
           <View className='recommend-btn-wrapper'>
             <View
@@ -509,18 +570,20 @@ export default function Ingredient() {
             <Text className='results-title'>为你推荐</Text>
             {dishes.map((dish, index) => (
               <DishCard
-                key={index}
+                key={`${resultGenerationRef.current}:${dish.name}:${index}`}
                 dish={dish}
                 expanded={expandedIndex === index}
                 onToggle={() => toggleExpand(index)}
                 loadingSteps={loadingStepIndex === index}
               />
             ))}
-            <View className={`load-more-btn ${loadingMore ? 'loading' : ''}`} onClick={handleLoadMore}>
-              <Text className='load-more-btn-text'>
-                {loadingMore ? '加载中...' : '加载更多 ▼'}
-              </Text>
-            </View>
+            {!usingLocalFallback && (
+              <View className={`load-more-btn ${loadingMore ? 'loading' : ''}`} onClick={handleLoadMore}>
+                <Text className='load-more-btn-text'>
+                  {loadingMore ? '加载中...' : '加载更多 ▼'}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
