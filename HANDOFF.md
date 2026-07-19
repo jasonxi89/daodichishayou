@@ -9,10 +9,11 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
-- 开发版本 **v1.8.0**（`feature/zero-wait`）；尚未合并/推送/提交微信审核。
+- **v1.8.0 已于 2026-07-18 提交微信审核**（零等待改造：投机预取、两段式 quick/steps、NDJSON 流式步骤、静默本地降级），等待审核结果 → 通过后发布上线。
+- `feature/zero-wait` 已合并回 main 并推送（merge commit `31a5aea`）。
 - 测试 **184 jest tests** 全绿；`build:weapp` 可正常构建。
-- 零等待 Stage B 已完成并通过独立 reviewer：投机预取、两段式 quick/steps、NDJSON 流式步骤、首包/空闲超时、请求所有权防竞态、静默本地降级。
-- 生产仍是 v1.7.1；Stage C 真机回归和上线尚未执行。
+- 线上用户当前仍是 v1.7.1（其「加载更多」走老端点全量 LLM ~23s 属已知旧版行为；v1.8.0 走 quick 端点实测 ~3s）。
+- 后端已配套上线 v1.14.1（预生成命中 0.09s；矩阵每日 03:30 铺 120 组合，4 天铺满 465）。
 
 ## 技术栈与结构
 Taro **4.1.11** + React **18** + TypeScript + Sass；测试 jest + ts-jest + @testing-library/react。
@@ -56,7 +57,7 @@ npx jest              # 跑测试（package.json 的 test 脚本是 jest --cover
 - 上传压缩（es6/postcss/minified）已在 v1.7.0 于 project.config.json 开启。
 
 ## 进行中 / TODO
-**零等待 Stage B 已完成，Stage C 待执行**：完整计划在后端仓库 `docs/plans/2026-07-17-zero-wait-ux.md`。两仓当前均为本地 `feature/zero-wait`，下一步是合并/推送后先部署 v1.14.0 后端，再用微信开发者工具与真机验证 v1.8.0；未经明确授权不要合并或发布。
+**零等待改造收尾**：v1.8.0 已提审（2026-07-18）。待办：① 审核通过后在 mp.weixin.qq.com 点发布；② 发布后线上抽查两段式/流式/降级三场景；③ 更新本文档与 memory 状态。完整计划（已基本执行完）在后端仓库 `docs/plans/2026-07-17-zero-wait-ux.md`。
 
 **已知非阻塞告警**：Jest 仍有历史 React `act(...)` warning；npm audit 报告 86 个依赖漏洞（14 critical / 32 high），未使用 ignore 或强制 audit fix 掩盖，需单独评估 Taro 依赖升级兼容性。
 
