@@ -14,6 +14,11 @@ export const COMMON_INGREDIENTS: Record<string, string[]> = {
 const CATEGORIES = Object.keys(COMMON_INGREDIENTS)
 
 const PREFERENCES = ['不限', '清淡', '家常', '快手菜', '下饭菜', '减脂']
+const LOADING_MESSAGES = [
+  '正在翻 2 万本菜谱...',
+  '大厨思考中...',
+  '快好了快好了...',
+]
 
 export default function Ingredient() {
   const [selected, setSelected] = useState<string[]>([])
@@ -21,12 +26,24 @@ export default function Ingredient() {
   const [inputValue, setInputValue] = useState('')
   const [preference, setPreference] = useState('不限')
   const [loading, setLoading] = useState(false)
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const [dishes, setDishes] = useState<RecommendedDish[]>([])
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [allowExtra, setAllowExtra] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadingStepIndex, setLoadingStepIndex] = useState<number | null>(null)
   const shareImagePath = useRef('')
+
+  useEffect(() => {
+    if (!loading) {
+      setLoadingMessageIndex(0)
+      return
+    }
+    const timer = setInterval(() => {
+      setLoadingMessageIndex(index => (index + 1) % LOADING_MESSAGES.length)
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [loading])
 
   // 当菜品结果变化时，绘制分享卡片
   useEffect(() => {
@@ -408,7 +425,7 @@ export default function Ingredient() {
           <View className='thinking-box'>
             <Text className='thinking-emoji'>🤔</Text>
             <View className='thinking-dots'>
-              <Text className='thinking-text'>我想想</Text>
+              <Text className='thinking-text'>{LOADING_MESSAGES[loadingMessageIndex]}</Text>
               <Text className='dot dot1'>.</Text>
               <Text className='dot dot2'>.</Text>
               <Text className='dot dot3'>.</Text>

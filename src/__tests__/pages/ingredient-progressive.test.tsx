@@ -40,6 +40,19 @@ describe('Ingredient page progressive recommendation flow', () => {
     jest.clearAllMocks()
   })
 
+  it('rotates staged loading copy while quick request is pending', async () => {
+    mockRequest.mockImplementation(() => new Promise(() => undefined))
+    render(<IngredientPage />)
+    fireEvent.click(screen.getByText('番茄'))
+    fireEvent.click(screen.getByText('开始推荐'))
+
+    expect(screen.getByText('正在翻 2 万本菜谱...')).toBeInTheDocument()
+    await waitFor(
+      () => expect(screen.getByText('大厨思考中...')).toBeInTheDocument(),
+      { timeout: 4000 },
+    )
+  })
+
   it('requests quick dish cards with a 30 second timeout', async () => {
     await renderQuickResult()
 
