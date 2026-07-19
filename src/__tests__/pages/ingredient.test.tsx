@@ -437,7 +437,7 @@ describe('Ingredient page – recommend button', () => {
     })
   })
 
-  it('shows toast on API failure', async () => {
+  it('silently falls back on network failure', async () => {
     mockRequest.mockRejectedValue(new Error('Network error'))
 
     const IngredientPage = loadIngredientPage()
@@ -447,13 +447,12 @@ describe('Ingredient page – recommend button', () => {
     fireEvent.click(screen.getByText('开始推荐'))
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: '网络异常，请重试' })
-      )
+      expect(screen.getByText('网络开小差，先看看这些经典搭配')).toBeInTheDocument()
     })
+    expect(mockShowToast).not.toHaveBeenCalled()
   })
 
-  it('shows toast when API returns non-200 status', async () => {
+  it('silently falls back when API returns non-200 status', async () => {
     mockRequest.mockResolvedValue({ statusCode: 500, data: {} })
 
     const IngredientPage = loadIngredientPage()
@@ -463,10 +462,9 @@ describe('Ingredient page – recommend button', () => {
     fireEvent.click(screen.getByText('开始推荐'))
 
     await waitFor(() => {
-      expect(mockShowToast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: '推荐失败，请重试' })
-      )
+      expect(screen.getByText('网络开小差，先看看这些经典搭配')).toBeInTheDocument()
     })
+    expect(mockShowToast).not.toHaveBeenCalled()
   })
 
   it('reverts button to 开始推荐 after request completes', async () => {

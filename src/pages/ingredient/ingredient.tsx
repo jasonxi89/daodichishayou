@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Input, Canvas, Button } from '@tarojs/components'
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { findLocalRecipesByIngredients } from '../../data/recipes'
 import {
   fetchDishStepsStreaming,
   fetchQuickRecommendations,
@@ -64,6 +65,7 @@ export default function Ingredient() {
   const [allowExtra, setAllowExtra] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadingStepIndex, setLoadingStepIndex] = useState<number | null>(null)
+  const [usingLocalFallback, setUsingLocalFallback] = useState(false)
   const shareImagePath = useRef('')
   const prefetchRef = useRef<{
     key: string
@@ -296,6 +298,7 @@ export default function Ingredient() {
     setLoading(true)
     setDishes([])
     setExpandedIndex(null)
+    setUsingLocalFallback(false)
 
     try {
       if (prefetchTimerRef.current) {
@@ -313,12 +316,9 @@ export default function Ingredient() {
         makeQuickPayload(selected, preference, allowExtra),
       )
       setDishes(response.dishes)
-    } catch (error) {
-      const isHttpError = error instanceof Error && error.message.startsWith('API error:')
-      Taro.showToast({
-        title: isHttpError ? '推荐失败，请重试' : '网络异常，请重试',
-        icon: 'none',
-      })
+    } catch {
+      setDishes(findLocalRecipesByIngredients(selected, 3))
+      setUsingLocalFallback(true)
     } finally {
       setLoading(false)
     }
@@ -498,6 +498,14 @@ export default function Ingredient() {
         {/* 结果展示 */}
         {dishes.length > 0 && (
           <View className='results'>
+            {usingLocalFallback && (
+              <View className='section'>
+                <Text className='dish-summary'>网络开小差，先看看这些经典搭配</Text>
+                <View className='load-more-btn' onClick={handleRecommend}>
+                  <Text className='load-more-btn-text'>重试</Text>
+                </View>
+              </View>
+            )}
             <Text className='results-title'>为你推荐</Text>
             {dishes.map((dish, index) => (
               <DishCard
