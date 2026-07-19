@@ -2,9 +2,16 @@ import React from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import * as taroMock from '@tarojs/taro'
 
+jest.mock('../../services/api', () => ({
+  ...jest.requireActual('../../services/api'),
+  fetchDishStepsStreaming: jest.fn(),
+}))
+
 import IngredientPage from '../../pages/ingredient/ingredient'
+import { fetchDishStepsStreaming } from '../../services/api'
 
 const mockRequest = taroMock.request as jest.Mock
+const mockFetchDishStepsStreaming = fetchDishStepsStreaming as jest.Mock
 
 declare const API_BASE: string
 
@@ -68,20 +75,15 @@ describe('Ingredient page progressive recommendation flow', () => {
 
   it('loads full steps when a quick card is expanded', async () => {
     await renderQuickResult()
-    mockRequest.mockResolvedValueOnce({ statusCode: 200, data: fullDish })
+    mockFetchDishStepsStreaming.mockResolvedValue(fullDish)
 
     fireEvent.click(screen.getByText('番茄炒蛋'))
 
     await waitFor(() => {
-      expect(mockRequest).toHaveBeenNthCalledWith(
-        2,
-        expect.objectContaining({
-          url: `${API_BASE}/api/recommend/steps`,
-          data: {
-            dish_name: '番茄炒蛋',
-            ingredients: ['番茄'],
-          },
-        }),
+      expect(mockFetchDishStepsStreaming).toHaveBeenCalledWith(
+        '番茄炒蛋',
+        ['番茄'],
+        expect.any(Function),
       )
       expect(screen.getByText('鸡蛋炒熟')).toBeInTheDocument()
     })
@@ -89,7 +91,7 @@ describe('Ingredient page progressive recommendation flow', () => {
 
   it('does not reload steps when the same card is expanded again', async () => {
     await renderQuickResult()
-    mockRequest.mockResolvedValueOnce({ statusCode: 200, data: fullDish })
+    mockFetchDishStepsStreaming.mockResolvedValue(fullDish)
 
     fireEvent.click(screen.getByText('番茄炒蛋'))
     await waitFor(() => expect(screen.getByText('鸡蛋炒熟')).toBeInTheDocument())
@@ -98,7 +100,7 @@ describe('Ingredient page progressive recommendation flow', () => {
     fireEvent.click(screen.getByText('番茄炒蛋'))
 
     await waitFor(() => expect(screen.getByText('鸡蛋炒熟')).toBeInTheDocument())
-    expect(mockRequest).toHaveBeenCalledTimes(2)
+    expect(mockFetchDishStepsStreaming).toHaveBeenCalledTimes(1)
   })
 
   it('uses the quick endpoint for load more', async () => {

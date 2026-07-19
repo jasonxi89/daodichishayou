@@ -2,10 +2,11 @@ import { View, Text, ScrollView, Input, Canvas, Button } from '@tarojs/component
 import Taro, { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import {
+  fetchDishStepsStreaming,
   fetchQuickRecommendations,
   type QuickRecommendResponse,
 } from '../../services/api'
-import DishCard, { type RecommendedDish } from './DishCard'
+import DishCard, { type DisplayDish } from './DishCard'
 import './ingredient.scss'
 
 export const COMMON_INGREDIENTS: Record<string, string[]> = {
@@ -58,7 +59,7 @@ export default function Ingredient() {
   const [preference, setPreference] = useState('不限')
   const [loading, setLoading] = useState(false)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
-  const [dishes, setDishes] = useState<RecommendedDish[]>([])
+  const [dishes, setDishes] = useState<DisplayDish[]>([])
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [allowExtra, setAllowExtra] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -354,23 +355,21 @@ export default function Ingredient() {
 
     setLoadingStepIndex(index)
     try {
-      const res = await Taro.request({
-        url: `${API_BASE}/api/recommend/steps`,
-        method: 'POST',
-        header: { 'Content-Type': 'application/json' },
-        data: {
-          dish_name: dish.name,
-          ingredients: selected,
+      const fullDish = await fetchDishStepsStreaming(
+        dish.name,
+        selected,
+        streamedText => {
+          const streamedSteps = streamedText.split('\n').filter(Boolean)
+          setDishes(prev => prev.map((item, dishIndex) => (
+            dishIndex === index
+              ? { ...item, steps: streamedSteps }
+              : item
+          )))
         },
-        timeout: 120000,
-      })
-      if (res.statusCode === 200 && res.data?.name) {
-        setDishes(prev => prev.map((item, dishIndex) => (
-          dishIndex === index ? { ...item, ...res.data } : item
-        )))
-      } else {
-        Taro.showToast({ title: '做法加载失败，请重试', icon: 'none' })
-      }
+      )
+      setDishes(prev => prev.map((item, dishIndex) => (
+        dishIndex === index ? { ...item, ...fullDish } : item
+      )))
     } catch {
       Taro.showToast({ title: '做法加载失败，请重试', icon: 'none' })
     } finally {

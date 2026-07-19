@@ -1,19 +1,15 @@
 import { Text, View } from '@tarojs/components'
+import type { QuickDish, RecommendedDish } from '../../services/api'
 
-export interface RecommendedDish {
-  name: string
-  summary: string
-  ingredients?: string[]
-  steps?: string[]
-  difficulty?: string
-  cook_time?: string
-  extra_ingredients?: string[]
-}
+export type DisplayDish = QuickDish & Partial<Pick<
+  RecommendedDish,
+  'ingredients' | 'steps' | 'extra_ingredients'
+>>
 
 const EXTRA_MARKER = String.fromCodePoint(0x1f6d2)
 
 interface DishCardProps {
-  dish: RecommendedDish
+  dish: DisplayDish
   expanded: boolean
   onToggle: () => void
   loadingSteps?: boolean
@@ -62,15 +58,14 @@ export default function DishCard({
           </View>
           <View className='dish-steps'>
             <Text className='dish-detail-label'>做法步骤</Text>
-            {loadingSteps ? (
+            {steps.map((step, index) => (
+              <View key={index} className='dish-step'>
+                <Text className='dish-step-num'>{index + 1}</Text>
+                <Text className='dish-step-text'>{step}</Text>
+              </View>
+            ))}
+            {loadingSteps && (
               <Text className='dish-step-text'>做法加载中...</Text>
-            ) : (
-              steps.map((step, index) => (
-                <View key={index} className='dish-step'>
-                  <Text className='dish-step-num'>{index + 1}</Text>
-                  <Text className='dish-step-text'>{step}</Text>
-                </View>
-              ))
             )}
           </View>
         </View>
