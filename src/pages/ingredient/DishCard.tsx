@@ -3,8 +3,8 @@ import { Text, View } from '@tarojs/components'
 export interface RecommendedDish {
   name: string
   summary: string
-  ingredients: string[]
-  steps: string[]
+  ingredients?: string[]
+  steps?: string[]
   difficulty?: string
   cook_time?: string
   extra_ingredients?: string[]
@@ -16,9 +16,17 @@ interface DishCardProps {
   dish: RecommendedDish
   expanded: boolean
   onToggle: () => void
+  loadingSteps?: boolean
 }
 
-export default function DishCard({ dish, expanded, onToggle }: DishCardProps) {
+export default function DishCard({
+  dish,
+  expanded,
+  onToggle,
+  loadingSteps = false,
+}: DishCardProps) {
+  const ingredients = dish.ingredients ?? []
+  const steps = dish.steps ?? []
   return (
     <View className='dish-card' onClick={onToggle}>
       <View className='dish-header'>
@@ -39,7 +47,7 @@ export default function DishCard({ dish, expanded, onToggle }: DishCardProps) {
           <View className='dish-ingredients'>
             <Text className='dish-detail-label'>食材清单</Text>
             <View className='dish-ingredient-tags'>
-              {dish.ingredients.map((item, index) => {
+              {ingredients.map((item, index) => {
                 const isExtra = dish.extra_ingredients?.some(extra => item.includes(extra))
                 return (
                   <Text key={index} className={`dish-ingredient-tag ${isExtra ? 'extra' : ''}`}>
@@ -54,12 +62,16 @@ export default function DishCard({ dish, expanded, onToggle }: DishCardProps) {
           </View>
           <View className='dish-steps'>
             <Text className='dish-detail-label'>做法步骤</Text>
-            {dish.steps.map((step, index) => (
-              <View key={index} className='dish-step'>
-                <Text className='dish-step-num'>{index + 1}</Text>
-                <Text className='dish-step-text'>{step}</Text>
-              </View>
-            ))}
+            {loadingSteps ? (
+              <Text className='dish-step-text'>做法加载中...</Text>
+            ) : (
+              steps.map((step, index) => (
+                <View key={index} className='dish-step'>
+                  <Text className='dish-step-num'>{index + 1}</Text>
+                  <Text className='dish-step-text'>{step}</Text>
+                </View>
+              ))
+            )}
           </View>
         </View>
       )}

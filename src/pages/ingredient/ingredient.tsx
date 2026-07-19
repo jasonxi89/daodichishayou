@@ -25,6 +25,7 @@ export default function Ingredient() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [allowExtra, setAllowExtra] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [loadingStepIndex, setLoadingStepIndex] = useState<number | null>(null)
   const shareImagePath = useRef('')
 
   // 当菜品结果变化时，绘制分享卡片
@@ -219,7 +220,7 @@ export default function Ingredient() {
 
     try {
       const res = await Taro.request({
-        url: `${API_BASE}/api/recommend`,
+        url: `${API_BASE}/api/recommend/quick`,
         method: 'POST',
         header: { 'Content-Type': 'application/json' },
         data: {
@@ -228,7 +229,7 @@ export default function Ingredient() {
           preferences: preference === '不限' ? null : preference,
           allow_extra: allowExtra,
         },
-        timeout: 120000,
+        timeout: 30000,
       })
 
       if (res.statusCode === 200 && res.data.dishes) {
@@ -247,7 +248,7 @@ export default function Ingredient() {
     setLoadingMore(true)
     try {
       const res = await Taro.request({
-        url: `${API_BASE}/api/recommend`,
+        url: `${API_BASE}/api/recommend/quick`,
         method: 'POST',
         header: { 'Content-Type': 'application/json' },
         data: {
@@ -257,7 +258,7 @@ export default function Ingredient() {
           allow_extra: allowExtra,
           exclude_dishes: dishes.map(d => d.name),
         },
-        timeout: 120000,
+        timeout: 30000,
       })
       if (res.statusCode === 200 && res.data.dishes) {
         setDishes(prev => [...prev, ...res.data.dishes])
@@ -271,9 +272,41 @@ export default function Ingredient() {
     }
   }, [selected, preference, allowExtra, dishes])
 
-  const toggleExpand = useCallback((index: number) => {
-    setExpandedIndex(prev => prev === index ? null : index)
-  }, [])
+  const toggleExpand = useCallback(async (index: number) => {
+    if (expandedIndex === index) {
+      setExpandedIndex(null)
+      return
+    }
+
+    setExpandedIndex(index)
+    const dish = dishes[index]
+    if (dish.steps?.length || loadingStepIndex === index) return
+
+    setLoadingStepIndex(index)
+    try {
+      const res = await Taro.request({
+        url: `${API_BASE}/api/recommend/steps`,
+        method: 'POST',
+        header: { 'Content-Type': 'application/json' },
+        data: {
+          dish_name: dish.name,
+          ingredients: selected,
+        },
+        timeout: 120000,
+      })
+      if (res.statusCode === 200 && res.data?.name) {
+        setDishes(prev => prev.map((item, dishIndex) => (
+          dishIndex === index ? { ...item, ...res.data } : item
+        )))
+      } else {
+        Taro.showToast({ title: '做法加载失败，请重试', icon: 'none' })
+      }
+    } catch {
+      Taro.showToast({ title: '做法加载失败，请重试', icon: 'none' })
+    } finally {
+      setLoadingStepIndex(null)
+    }
+  }, [dishes, expandedIndex, loadingStepIndex, selected])
 
   return (
     <View className='ingredient'>
@@ -403,6 +436,7 @@ export default function Ingredient() {
                 dish={dish}
                 expanded={expandedIndex === index}
                 onToggle={() => toggleExpand(index)}
+                loadingSteps={loadingStepIndex === index}
               />
             ))}
             <View className={`load-more-btn ${loadingMore ? 'loading' : ''}`} onClick={handleLoadMore}>
