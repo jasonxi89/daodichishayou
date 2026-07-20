@@ -1,5 +1,5 @@
 # HANDOFF — 到底吃啥哟 · 微信小程序前端
-> 跨 agent/IDE 接手文档 | 最后更新: 2026-07-18 | 改动项目后请同步更新此文档
+> 跨 agent/IDE 接手文档 | 最后更新: 2026-07-20 | 改动项目后请同步更新此文档
 
 ## 项目定位
 「到底吃啥哟」帮用户解决"今天吃什么"。核心两块：
@@ -9,11 +9,11 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
-- **v1.8.0 已于 2026-07-18 提交微信审核**（零等待改造：投机预取、两段式 quick/steps、NDJSON 流式步骤、静默本地降级），等待审核结果 → 通过后发布上线。
+- **v1.8.0 已于 2026-07-20 审核通过并发布上线**（零等待改造：投机预取、两段式 quick/steps、NDJSON 流式步骤、静默本地降级；2026-07-18 提审）。
+- 发布日线上抽查（API 侧）：health 返回 1.14.1 ✓；`POST /api/recommend/quick` 预生成命中 0.07s ✓；`POST /api/recommend/steps` NDJSON 流 0.11s 返回完整做法（命中缓存）✓。降级场景为纯前端行为，已由审核前真机回归覆盖。
 - `feature/zero-wait` 已合并回 main 并推送（merge commit `31a5aea`）。
 - 测试 **184 jest tests** 全绿；`build:weapp` 可正常构建。
-- 线上用户当前仍是 v1.7.1（其「加载更多」走老端点全量 LLM ~23s 属已知旧版行为；v1.8.0 走 quick 端点实测 ~3s）。
-- 后端已配套上线 v1.14.1（预生成命中 0.09s；矩阵每日 03:30 铺 120 组合，4 天铺满 465）。
+- 后端配套 v1.14.1：菜谱步骤 LLM 补写已完成（653/656 条），465 组合矩阵 2026-07-20 手动一次性铺满（此前每日 03:30 cron 铺 120）。
 
 ## 技术栈与结构
 Taro **4.1.11** + React **18** + TypeScript + Sass；测试 jest + ts-jest + @testing-library/react。
@@ -57,7 +57,7 @@ npx jest              # 跑测试（package.json 的 test 脚本是 jest --cover
 - 上传压缩（es6/postcss/minified）已在 v1.7.0 于 project.config.json 开启。
 
 ## 进行中 / TODO
-**零等待改造收尾**：v1.8.0 已提审（2026-07-18）。待办：① 审核通过后在 mp.weixin.qq.com 点发布；② 发布后线上抽查两段式/流式/降级三场景；③ 更新本文档与 memory 状态。完整计划（已基本执行完）在后端仓库 `docs/plans/2026-07-17-zero-wait-ux.md`。
+**零等待改造已收尾**：v1.8.0 于 2026-07-20 审核通过并发布，API 侧线上抽查通过，本文档与 memory 已同步。完整计划在后端仓库 `docs/plans/2026-07-17-zero-wait-ux.md`。剩余观察项：发布后留意真机线上反馈（崩溃/白屏/接口报错可在小程序后台「运维中心」看）。
 
 **已知非阻塞告警**：Jest 仍有历史 React `act(...)` warning；npm audit 报告 86 个依赖漏洞（14 critical / 32 high），未使用 ignore 或强制 audit fix 掩盖，需单独评估 Taro 依赖升级兼容性。
 
