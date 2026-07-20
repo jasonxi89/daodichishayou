@@ -8,6 +8,7 @@ const showModal = jest.fn().mockImplementation(({ success }: { success?: (res: {
 const getStorageSync = jest.fn().mockReturnValue({})
 const setStorageSync = jest.fn()
 const navigateTo = jest.fn()
+const loadFontFace = jest.fn()
 
 // Taro hooks - just register callbacks, don't call them synchronously
 // (calling them immediately can cause infinite re-render loops)
@@ -46,6 +47,7 @@ const taroMock = {
   getStorageSync,
   setStorageSync,
   navigateTo,
+  loadFontFace,
   switchTab,
   createSelectorQuery,
   canvasToTempFilePath,
@@ -69,6 +71,7 @@ export {
   getStorageSync,
   setStorageSync,
   navigateTo,
+  loadFontFace,
   switchTab,
   createSelectorQuery,
   canvasToTempFilePath,
