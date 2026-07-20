@@ -1,0 +1,59 @@
+@use '../../styles/theme' as theme;
+
+.count-stepper {
+  display: flex;
+  min-height: 108rpx;
+  align-items: center;
+  padding: 0 10rpx 0 22rpx;
+  border: 2rpx solid theme.$border-2;
+  border-radius: 54rpx;
+  background: theme.$card;
+}
+
+.count-stepper__label {
+  margin-right: 8rpx;
+  color: theme.$ink-sub;
+  font-size: 22rpx;
+}
+
+.count-stepper__control {
+  display: flex;
+  width: 88rpx;
+  min-width: 88rpx;
+  height: 88rpx;
+  min-height: 88rpx;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 42rpx;
+  line-height: 88rpx;
+
+  &::after {
+    border: 0;
+  }
+
+  &:focus-visible {
+    outline: 4rpx solid theme.$gold;
+    outline-offset: -8rpx;
+  }
+
+  &[disabled] {
+    color: theme.$weaker;
+    opacity: .7;
+  }
+}
+
+.count-stepper__value {
+  min-width: 48rpx;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 32rpx;
+  font-weight: 900;
+  text-align: center;
+}
