@@ -10,3 +10,4 @@ node_modules/
 # Test coverage
 coverage/
 .wibey-test/
+tools/fonts-src/
