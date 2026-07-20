@@ -1,0 +1,8 @@
+@import './styles/theme.scss';
+
+page {
+  min-height: 100%;
+  background-color: $paper;
+  color: $ink-body;
+  font-family: $body-stack;
+}

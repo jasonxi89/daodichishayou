@@ -1,0 +1,55 @@
+/* 混血主题 design tokens；权威值见 docs/design/README.md。 */
+$ink: #2f261a;
+$ink-body: #3d3428;
+$ink-sub: #5d5142;
+$paper: #faf4e8;
+$card: #fffdf8;
+$gold: #b8934e;
+$gold-text: #f0dfb8;
+$gold-dim: #a3803f;
+$weak: #a3937a;
+$weaker: #b9ac96;
+$border: #e0d2b4;
+$border-2: #d9c9a6;
+$divider: #efe5cf;
+$seal-red: rgba(197, 48, 48, .8);
+$hot-red: #c53030;
+$sticker-yellow: #ffd94a;
+$sticker-orange: #ffb020;
+$sticker-red: #ff5d5d;
+$outline-black: #1f1b16;
+
+$serif-stack: 'NotoSerifSC', 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+$happy-stack: 'ZCOOLKuaiLe', 'ZCOOL KuaiLe', 'PingFang SC', sans-serif;
+$body-stack: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+
+@mixin paper-shadow {
+  box-shadow: 0 20rpx 52rpx rgba(120, 90, 40, .08);
+}
+
+@mixin sticker-shadow($x: 8rpx, $y: 8rpx, $color: $outline-black) {
+  box-shadow: $x $y 0 $color;
+}
+
+@mixin gold-line {
+  background: linear-gradient(90deg, $gold, #e3c88e, $gold);
+}
+
+.serif {
+  font-family: $serif-stack;
+}
+
+.happy {
+  font-family: $happy-stack;
+}
+
+.paper-texture {
+  background-color: $paper;
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(160, 130, 80, .04) 0,
+    rgba(160, 130, 80, .04) 2rpx,
+    transparent 2rpx,
+    transparent 14rpx
+  );
+}
