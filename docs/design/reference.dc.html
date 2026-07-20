@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#f0eee9;font-family:-apple-system,"PingFang SC","Helvetica Neue",system-ui,sans-serif}a{color:#b06a10}a:hover{color:#8a4f06}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55);max-width:375px}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+/* ===== 3c 扭蛋机状态机（可直接移植小程序：class 切换 + keyframes）=====
+   idle: 蛋全部堆在底部静止 → g-shake: 拧钮，蛋在罩内高速乱跳 2.4s → g-drop: 众蛋回落，
+   中奖蛋掉进机身、从出蛋口弹出 → g-done: 出蛋口的蛋呼吸发光，等待确认 */
+.g3c .gball,.g3c .gglobe,.g3c .gknobline{animation:none}
+.g3c .gml,.g3c .gout{opacity:0}
+.g3c.g-shake .gglobe{animation:gwob .34s ease-in-out infinite}
+.g3c.g-shake .gknobline{animation:gknob2 .9s linear infinite}
+.g3c.g-shake .gml{animation:gmlf .4s linear infinite}
+.g3c.g-shake .gb1{animation:gsh1 .72s linear infinite}
+.g3c.g-shake .gb2{animation:gsh2 .66s linear infinite}
+.g3c.g-shake .gb3{animation:gsh3 .78s linear infinite}
+.g3c.g-shake .gb4{animation:gsh4 .7s linear infinite}
+.g3c.g-shake .gb5{animation:gsh5 .82s linear infinite}
+.g3c.g-drop .gball{animation:gsettle .45s ease-out}
+.g3c.g-drop .gwin{animation:gfall .5s ease-in forwards}
+.g3c.g-done .gwin{opacity:0}
+.g3c.g-drop .gout{animation:gpopout .6s .3s cubic-bezier(.34,1.56,.64,1) forwards}
+.g3c.g-done .gout{opacity:1;animation:gpulse 1.1s ease-in-out infinite}
+@keyframes gsh1{0%{transform:translate(0,0) rotate(-14deg)}25%{transform:translate(34px,-88px) rotate(120deg)}50%{transform:translate(-12px,-30px) rotate(240deg)}75%{transform:translate(-38px,-96px) rotate(300deg)}100%{transform:translate(0,0) rotate(346deg)}}
+@keyframes gsh2{0%{transform:translate(0,0) rotate(9deg)}30%{transform:translate(-40px,-70px) rotate(-140deg)}55%{transform:translate(18px,-108px) rotate(-230deg)}80%{transform:translate(40px,-36px) rotate(-320deg)}100%{transform:translate(0,0) rotate(-351deg)}}
+@keyframes gsh3{0%{transform:translate(0,0) rotate(-6deg)}20%{transform:translate(-30px,-92px) rotate(110deg)}45%{transform:translate(30px,-60px) rotate(190deg)}70%{transform:translate(-16px,-104px) rotate(280deg)}100%{transform:translate(0,0) rotate(354deg)}}
+@keyframes gsh4{0%{transform:translate(0,0) rotate(22deg)}35%{transform:translate(26px,-64px) rotate(-90deg)}60%{transform:translate(-34px,-90px) rotate(-200deg)}85%{transform:translate(10px,-20px) rotate(-300deg)}100%{transform:translate(0,0) rotate(-338deg)}}
+@keyframes gsh5{0%{transform:translate(0,0) rotate(-18deg)}28%{transform:translate(36px,-40px) rotate(140deg)}52%{transform:translate(-8px,-96px) rotate(220deg)}76%{transform:translate(-40px,-30px) rotate(300deg)}100%{transform:translate(0,0) rotate(342deg)}}
+@keyframes gwob{0%,100%{transform:rotate(0)}25%{transform:rotate(-2deg) translateY(1px)}50%{transform:rotate(1.6deg)}75%{transform:rotate(-1.2deg) translateY(-1px)}}
+@keyframes gknob2{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes gmlf{0%,100%{opacity:.5}50%{opacity:.1}}
+@keyframes gsettle{0%{transform:translateY(-6px)}60%{transform:translateY(2px) scale(1.05,.93)}100%{transform:translateY(0)}}
+@keyframes gfall{0%{transform:translate(0,0) rotate(9deg);opacity:1}55%{transform:translate(-6px,26px) rotate(60deg);opacity:1}100%{transform:translate(-10px,46px) rotate(90deg);opacity:0}}
+@keyframes gpopout{0%{transform:translateY(-20px) scale(.5);opacity:0}55%{transform:translateY(3px) scale(1.08);opacity:1}75%{transform:translateY(-2px) scale(1)}100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes gpulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,217,74,.7)}50%{transform:scale(1.1);box-shadow:0 0 0 6px rgba(255,217,74,0)}}</style></helmet>
+<section class="dv-turn" id="t4">
+<div class="dv-thd"><a class="dv-tid" href="#t4">4</a><span class="dv-tname">混血系统精修（承 <a class="dv-oid" href="#2e">2e</a>）：不再拼贴，定分工规则 —— 御厨管「骨」，贴纸管「肉」</span></div>
+<div style="max-width:820px;margin:0 0 24px;padding:16px 18px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;font:12px/1.7 system-ui,sans-serif;color:#444">
+<div style="font-weight:700;margin-bottom:6px;color:#1a1a1a">混血分工规则（对应落地时的主题 token 层）</div>
+<b>御厨管结构与仪式</b>：页面骨架、衬线标题、壹贰叁计数、分割线、印章、纸面底色 —— 静态、庄重、始终在场。<br>
+<b>贴纸管动作与反馈</b>：所有可点的东西（按钮、选中态、标签 chip）、抽取动画、彩蛋、角标 —— 动态、跳脱、只在交互时刻出现。<br>
+铁律 v2：<b>emoji 只出现在「结果」里</b>（抽中的菜、签头），不进按钮、不做背景。贴纸语言只给<b>动作与庆祝</b>（确认按钮、换一换、角标、抽取动画）；<b>选择与结构一律御厨</b>（菜单格选中 = 墨块金边）。CTA 分两级：仪式类（为我定夺/再抽）= 墨块金字，确认类（就它了）= 贴纸黄。倾角仅 ±2°/±6° 两档，且只用于角标。
+</div>
+<div class="dv-opts">
+
+<!-- ===== 4a 混血精修 · 首页 ===== -->
+<div class="dv-opt" id="4a"><div class="dv-olabel"><a class="dv-oid" href="#4a">4a</a>首页精修 v2：御厨骨架 + 菜单格选择区；贴纸只剩主按钮的黄色硬阴影一处</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#faf4e8">
+<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(160,130,80,.04) 0,rgba(160,130,80,.04) 1px,transparent 1px,transparent 7px);pointer-events:none"></div>
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#2f261a;position:relative;z-index:3"><span>19:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:3px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2f261a;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2f261a">◉</span></span></div>
+<div style="padding:16px 24px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box;position:relative">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#a3803f;letter-spacing:3px">七月十九 · 晚膳时分</span>
+<span style="font-size:10.5px;color:#b9ac96">第 128 次帮你定夺</span>
+</div>
+<!-- 主视觉：御厨排版，无 emoji -->
+<div style="margin-top:26px;display:flex;flex-direction:column;align-items:center">
+<div style="display:flex;align-items:center;gap:12px"><span style="width:5px;height:5px;border-radius:50%;background:#b8934e"></span><span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#a3803f;letter-spacing:6px">今日一问</span><span style="width:5px;height:5px;border-radius:50%;background:#b8934e"></span></div>
+<div style="margin-top:14px;font-family:'Noto Serif SC',serif;font-size:52px;font-weight:900;color:#2f261a;letter-spacing:8px;line-height:1.2">今晚食何</div>
+<div style="margin-top:12px;font-size:12px;color:#8d7c60;letter-spacing:2px">三十道候选 · 把纠结交给大厨</div>
+</div>
+<!-- 风向：御厨引文样式 -->
+<div style="margin-top:22px;background:rgba(255,253,248,.85);border-left:3px solid #b8934e;padding:9px 13px"><span style="font-size:11px;color:#8d7c60;line-height:1.6">「今日风向」天水麻辣烫持续霸榜，晚市小龙虾呼声最高。</span></div>
+<!-- 分类：菜单格 —— 等宽网格，御厨排版，选中=墨块金边 -->
+<div style="margin-top:20px;display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid #2f261a;padding-bottom:9px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#2f261a;letter-spacing:3px">菜单 · 择一挂</span><span style="font-size:10px;color:#b9ac96;letter-spacing:1px">MENU</span></div>
+<span style="font-size:11px;color:#a3803f;letter-spacing:1px">＋ 自定义</span>
+</div>
+<div style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+<div style="position:relative;height:52px;background:#2f261a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:inset 0 0 0 1px #b8934e,inset 0 0 0 3px #2f261a,inset 0 0 0 4px rgba(184,147,78,.5)">
+<span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#f0dfb8;letter-spacing:3px">随便</span>
+<span style="font-size:9.5px;color:#b8934e;letter-spacing:2px">大厨看着办</span>
+</div>
+<div style="height:52px;background:#fffdf8;border:1px solid #e0d2b4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#c53030;letter-spacing:3px">热门</span>
+<span style="font-size:9.5px;color:#bd8a75;letter-spacing:2px">今日爆款</span>
+</div>
+<div style="height:52px;background:#fffdf8;border:1px solid #e0d2b4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#3d3428;letter-spacing:3px">家常下饭</span>
+<span style="font-size:9.5px;color:#a3937a;letter-spacing:2px">妈妈味道</span>
+</div>
+<div style="height:52px;background:#fffdf8;border:1px solid #e0d2b4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#3d3428;letter-spacing:3px">嗦粉吃面</span>
+<span style="font-size:9.5px;color:#a3937a;letter-spacing:2px">一碗入魂</span>
+</div>
+<div style="height:52px;background:#fffdf8;border:1px solid #e0d2b4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#3d3428;letter-spacing:3px">火锅烫涮</span>
+<span style="font-size:9.5px;color:#a3937a;letter-spacing:2px">咕嘟咕嘟</span>
+</div>
+<div style="height:52px;background:#fffdf8;border:1px solid #e0d2b4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#3d3428;letter-spacing:3px">烧烤撸串</span>
+<span style="font-size:9.5px;color:#a3937a;letter-spacing:2px">滋滋冒油</span>
+</div>
+<div style="height:52px;background:#fffdf8;border:1px solid #e0d2b4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#3d3428;letter-spacing:3px">奶茶续命</span>
+<span style="font-size:9.5px;color:#a3937a;letter-spacing:2px">快乐水源</span>
+</div>
+<div style="height:52px;background:#fffdf8;border:1px solid #e0d2b4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#3d3428;letter-spacing:3px">深夜食堂</span>
+<span style="font-size:9.5px;color:#a3937a;letter-spacing:2px">灯火可亲</span>
+</div>
+<div style="height:52px;background:transparent;border:1px dashed #c9b088;display:flex;align-items:center;justify-content:center">
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#a3937a;letter-spacing:3px">更多 ▾</span>
+</div>
+</div>
+<!-- 底部操作区 -->
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="flex-shrink:0;display:flex;align-items:center;gap:8px;background:rgba(255,253,248,.9);border:1px solid #d9c9a6;border-radius:27px;padding:6px 10px 6px 14px">
+<span style="font-size:11px;color:#8d7c60;letter-spacing:2px">份数</span>
+<span style="width:28px;height:28px;border-radius:50%;border:1px solid #d9c9a6;display:flex;align-items:center;justify-content:center;font-size:14px;color:#c9b088">−</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;min-width:22px;text-align:center">壹</span>
+<span style="width:28px;height:28px;border-radius:50%;border:1px solid #b8934e;display:flex;align-items:center;justify-content:center;font-size:14px;color:#a3803f">＋</span>
+</div>
+<div style="flex:1;height:54px;background:#2f261a;border:2.5px solid #1f1b16;border-radius:27px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:4px 4px 0 #ffd94a">
+<span style="width:20px;height:1px;background:#b8934e"></span>
+<span style="font-family:'Noto Serif SC',serif;font-size:17px;color:#f0dfb8;font-weight:900;letter-spacing:6px">为我定夺</span>
+<span style="width:20px;height:1px;background:#b8934e"></span>
+</div>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fffdf8;border-top:1px solid #e6d9bf;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#a3803f">抽</span><span style="font-size:10px;color:#a3803f;font-weight:700">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#b9ac96">做</span><span style="font-size:10px;color:#b9ac96">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 4b 混血精修 · 结果页 ===== -->
+<div class="dv-opt" id="4b"><div class="dv-olabel"><a class="dv-oid" href="#4b">4b</a>结果页精修：菜单卷轴（御厨）承载结果，emoji 首次登场（规则：只出现在结果里），换按钮与主按钮是贴纸</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#faf4e8">
+<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(160,130,80,.04) 0,rgba(160,130,80,.04) 1px,transparent 1px,transparent 7px);pointer-events:none"></div>
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#2f261a;position:relative;z-index:3"><span>19:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="position:absolute;left:10px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#2f261a;font-weight:300">‹</span><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:3px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2f261a;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2f261a">◉</span></span></div>
+<div style="padding:14px 24px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box;position:relative">
+<div style="display:flex;align-items:center;gap:10px"><span style="height:1px;flex:1;background:linear-gradient(90deg,transparent,#c9b088)"></span><span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#a3803f;letter-spacing:6px">今晚菜单已定</span><span style="height:1px;flex:1;background:linear-gradient(90deg,#c9b088,transparent)"></span></div>
+<!-- 卷轴 -->
+<div style="margin-top:14px;background:#fffdf8;border:1px solid #e6d9bf;border-radius:6px;padding:20px 18px 16px;position:relative;box-shadow:0 10px 26px rgba(120,90,40,.08)">
+<div style="position:absolute;top:0;left:18px;right:18px;height:3px;background:linear-gradient(90deg,#b8934e,#e3c88e,#b8934e)"></div>
+<span style="position:absolute;top:-11px;right:14px;background:#ff5d5d;color:#fff;font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;border:2px solid #1f1b16;border-radius:10px;padding:2px 9px;transform:rotate(4deg)">天意如此！</span>
+<div style="text-align:center;font-family:'Noto Serif SC',serif;font-size:11px;color:#a3803f;letter-spacing:4px">─ 七月十九 · 晚膳 ─</div>
+<div style="margin-top:12px;display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid #efe5cf">
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#b8934e;font-weight:900">壹</span>
+<span style="width:38px;height:38px;border-radius:10px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:20px">🍖</span>
+<div style="flex:1"><div style="font-family:'Noto Serif SC',serif;font-size:19px;font-weight:900;color:#2f261a;letter-spacing:2px">红烧肉</div><div style="font-size:10.5px;color:#a3937a;margin-top:1px">肥而不腻 · 下饭一绝</div></div>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:11px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:4px 12px;box-shadow:2px 2px 0 #1f1b16">换一换</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid #efe5cf">
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#b8934e;font-weight:900">贰</span>
+<span style="width:38px;height:38px;border-radius:10px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:20px">🐟</span>
+<div style="flex:1"><div style="font-family:'Noto Serif SC',serif;font-size:19px;font-weight:900;color:#2f261a;letter-spacing:2px">酸菜鱼</div><div style="font-size:10.5px;color:#a3937a;margin-top:1px">酸辣开胃 · 鱼肉滑嫩</div></div>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:11px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:4px 12px;box-shadow:2px 2px 0 #1f1b16">换一换</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:12px 2px">
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#b8934e;font-weight:900">叁</span>
+<span style="width:38px;height:38px;border-radius:10px;background:#f0f7ec;display:flex;align-items:center;justify-content:center;font-size:20px">🥬</span>
+<div style="flex:1"><div style="font-family:'Noto Serif SC',serif;font-size:19px;font-weight:900;color:#2f261a;letter-spacing:2px">蒜蓉生菜</div><div style="font-size:10.5px;color:#a3937a;margin-top:1px">清爽解腻 · 三分钟出锅</div></div>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:11px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:4px 12px;box-shadow:2px 2px 0 #1f1b16">换一换</span>
+</div>
+</div>
+<div style="margin-top:10px;border-top:1px dashed #d9c9a6;padding-top:9px;display:flex;align-items:center;justify-content:space-between">
+<span style="font-size:10.5px;color:#a3937a;letter-spacing:1px">荤素得当 · 御厨手谕</span>
+<div style="width:42px;height:42px;transform:rotate(-12deg);position:relative">
+<div style="position:absolute;inset:0;border:2px solid rgba(197,48,48,.8);border-radius:50%"></div>
+<div style="position:absolute;inset:4px;border:1px solid rgba(197,48,48,.7);border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:9.5px;font-weight:900;color:rgba(197,48,48,.85);line-height:1.15;text-align:center">大厨<br>认证</span></div>
+</div>
+</div>
+</div>
+<div style="margin-top:12px;display:flex;gap:9px;justify-content:center">
+<span style="font-size:12px;color:#5d5142;border:1px solid #d9c9a6;border-radius:15px;padding:6px 16px;letter-spacing:2px;background:rgba(255,253,248,.8)">查菜谱</span>
+<span style="font-size:12px;color:#5d5142;border:1px solid #d9c9a6;border-radius:15px;padding:6px 16px;letter-spacing:2px;background:rgba(255,253,248,.8)">昭告亲友</span>
+</div>
+<div style="margin-top:12px;align-self:center;font-size:10.5px;color:#a3937a;letter-spacing:1px">本周第 5 次听天由命 · 已解锁「干饭锦鲤」</div>
+<div style="margin-top:auto;margin-bottom:16px;display:flex;gap:12px">
+<div style="flex-shrink:0;height:52px;padding:0 18px;background:rgba(255,253,248,.9);border:1px solid #d9c9a6;border-radius:26px;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:14px;color:#5d5142;font-weight:900;letter-spacing:3px">再抽</span></div>
+<div style="flex:1;height:52px;background:#ffb020;border:2.5px solid #1f1b16;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:4px 4px 0 #1f1b16">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:18px;color:#1f1b16;letter-spacing:2px">就它了！</span>
+</div>
+</div>
+</div>
+</div></div></div>
+
+<!-- ===== 4c 混血精修 · 抽取仪式 ===== -->
+<div class="dv-opt" id="4c"><div class="dv-olabel"><a class="dv-oid" href="#4c">4c</a>抽取仪式精修：签筒的庄重（御厨）× 出签瞬间的跳脱（贴纸角标 + emoji 蛋签）——动静分工的样板</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#faf4e8">
+<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(160,130,80,.04) 0,rgba(160,130,80,.04) 1px,transparent 1px,transparent 7px);pointer-events:none"></div>
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#2f261a;position:relative;z-index:3"><span>19:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:3px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2f261a;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2f261a">◉</span></span></div>
+<div style="padding:16px 24px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box;align-items:center">
+<div style="display:flex;align-items:center;gap:10px;width:100%"><span style="height:1px;flex:1;background:linear-gradient(90deg,transparent,#c9b088)"></span><span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#a3803f;letter-spacing:6px">御签摇动中</span><span style="height:1px;flex:1;background:linear-gradient(90deg,#c9b088,transparent)"></span></div>
+<!-- 签筒 + 跳出的签（签头是 emoji 蛋） -->
+<div style="margin-top:24px;position:relative;width:240px;height:310px;display:flex;justify-content:center">
+<span style="position:absolute;top:36px;left:8px;background:#ffd94a;color:#1f1b16;font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;border:2px solid #1f1b16;border-radius:10px;padding:2px 9px;transform:rotate(-6deg);z-index:4">手感不错！</span>
+<div style="position:absolute;top:0;left:50%;transform:translateX(-50%) rotate(-8deg);width:46px;height:158px;background:#fffdf8;border:1px solid #d9c9a6;box-shadow:0 8px 18px rgba(120,90,40,.18);display:flex;flex-direction:column;align-items:center;padding-top:10px;z-index:2">
+<span style="width:26px;height:26px;border-radius:50%;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:14px">🍖</span>
+<span style="margin-top:8px;font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#2f261a;letter-spacing:4px;writing-mode:vertical-rl">红烧肉</span>
+</div>
+<div style="position:absolute;top:28px;left:50%;transform:translateX(-58%) rotate(-18deg);width:38px;height:120px;background:#f4ecd9;border:1px solid #e0d2b4;z-index:1"></div>
+<div style="position:absolute;top:28px;left:50%;transform:translateX(-40%) rotate(4deg);width:38px;height:120px;background:#f4ecd9;border:1px solid #e0d2b4;z-index:1"></div>
+<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:154px;height:172px;background:linear-gradient(180deg,#8a5a28,#6e4419);border-radius:12px 12px 18px 18px;box-shadow:0 14px 30px rgba(110,68,25,.35);display:flex;align-items:center;justify-content:center;z-index:3">
+<div style="position:absolute;top:10px;left:10px;right:10px;height:2px;background:rgba(240,223,184,.35)"></div>
+<div style="position:absolute;bottom:14px;left:10px;right:10px;height:2px;background:rgba(240,223,184,.35)"></div>
+<span style="font-family:'Noto Serif SC',serif;font-size:30px;font-weight:900;color:#f0dfb8;writing-mode:vertical-rl;letter-spacing:8px">食签</span>
+</div>
+</div>
+<div style="margin-top:20px;font-family:'Noto Serif SC',serif;font-size:14px;color:#5d5142;letter-spacing:4px">心诚则灵 · 摇签三下</div>
+<div style="margin-top:8px;font-size:11px;color:#a3937a">随便 · 三份 · 第 128 抽</div>
+<div style="margin-top:auto;margin-bottom:16px;width:100%">
+<div style="text-align:center;font-size:11px;color:#b9ac96;letter-spacing:1px;margin-bottom:9px">等不及？轻点签筒直接揭晓</div>
+<div style="height:52px;background:#e8e0cf;border-radius:26px;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:15px;color:#a3937a;font-weight:900;letter-spacing:6px">签落即定 ···</span></div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fffdf8;border-top:1px solid #e6d9bf;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#a3803f">抽</span><span style="font-size:10px;color:#a3803f;font-weight:700">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#b9ac96">做</span><span style="font-size:10px;color:#b9ac96">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+</div>
+<p class="dv-next">这套的落地成本 ≈ 单风格 +1~2 天（御厨为基底，贴纸只是按钮/选中态/角标三类组件）。试试对我说："按 <a class="dv-oid" href="#4a">4a</a>-<a class="dv-oid" href="#4c">4c</a> 做全流程可交互原型" · "食材页也按这规则出一版"</p>
+</section>
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">补全两套体系：抽取仪式 · 菜谱弹窗 · 分享卡（承 <a class="dv-oid" href="#2a">2a</a><a class="dv-oid" href="#2b">2b</a><a class="dv-oid" href="#2c">2c</a><a class="dv-oid" href="#2d">2d</a>）</span></div>
+<div class="dv-opts">
+
+<!-- ===== 3a 御厨 · 抽签仪式 ===== -->
+<div class="dv-opt" id="3a"><div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>御厨风 · 抽取仪式：老虎机换成「抽签筒」，签正在跳出的瞬间</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#f6f1e7">
+<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(160,130,80,.045) 0,rgba(160,130,80,.045) 1px,transparent 1px,transparent 7px);pointer-events:none"></div>
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#2f261a;position:relative;z-index:3"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:3px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2f261a;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2f261a">◉</span></span></div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box;align-items:center">
+<div style="display:flex;align-items:center;gap:10px;width:100%"><span style="height:1px;flex:1;background:linear-gradient(90deg,transparent,#c9b088)"></span><span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#a3803f;letter-spacing:6px">御签摇动中</span><span style="height:1px;flex:1;background:linear-gradient(90deg,#c9b088,transparent)"></span></div>
+<!-- 跳出的签 -->
+<div style="margin-top:26px;position:relative;width:230px;height:300px;display:flex;justify-content:center">
+<div style="position:absolute;top:0;left:50%;transform:translateX(-50%) rotate(-8deg);width:44px;height:150px;background:#fffdf8;border:1px solid #d9c9a6;box-shadow:0 8px 18px rgba(120,90,40,.18);display:flex;flex-direction:column;align-items:center;padding-top:12px;z-index:2">
+<span style="width:20px;height:20px;border-radius:50%;border:1.5px solid rgba(197,48,48,.7);display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(197,48,48,.85);font-weight:900">吉</span>
+<span style="margin-top:8px;font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:4px;writing-mode:vertical-rl">红烧肉</span>
+</div>
+<div style="position:absolute;top:26px;left:50%;transform:translateX(-58%) rotate(-18deg);width:38px;height:120px;background:#f4ecd9;border:1px solid #e0d2b4;z-index:1"></div>
+<div style="position:absolute;top:26px;left:50%;transform:translateX(-40%) rotate(4deg);width:38px;height:120px;background:#f4ecd9;border:1px solid #e0d2b4;z-index:1"></div>
+<!-- 签筒 -->
+<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:150px;height:170px;background:linear-gradient(180deg,#8a5a28,#6e4419);border-radius:12px 12px 18px 18px;box-shadow:0 14px 30px rgba(110,68,25,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:3">
+<div style="position:absolute;top:10px;left:10px;right:10px;height:2px;background:rgba(240,223,184,.35)"></div>
+<div style="position:absolute;bottom:14px;left:10px;right:10px;height:2px;background:rgba(240,223,184,.35)"></div>
+<span style="font-family:'Noto Serif SC',serif;font-size:30px;font-weight:900;color:#f0dfb8;writing-mode:vertical-rl;letter-spacing:8px">食签</span>
+</div>
+</div>
+<div style="margin-top:22px;font-family:'Noto Serif SC',serif;font-size:14px;color:#5d5142;letter-spacing:4px">心诚则灵 · 摇签三下</div>
+<div style="margin-top:8px;font-size:11px;color:#a3937a">随便一类 · 三十道候选 · 第 128 抽</div>
+<div style="margin-top:14px;display:flex;gap:5px"><span style="width:5px;height:5px;border-radius:50%;background:#b8934e"></span><span style="width:5px;height:5px;border-radius:50%;background:#d9c9a6"></span><span style="width:5px;height:5px;border-radius:50%;background:#d9c9a6"></span></div>
+<div style="margin-top:auto;margin-bottom:16px;width:100%">
+<div style="height:52px;background:#e8e0cf;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:15px;color:#a3937a;font-weight:900;letter-spacing:6px">签落即定 ···</span></div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fffdf8;border-top:1px solid #e6d9bf;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#a3803f">抽</span><span style="font-size:10px;color:#a3803f;font-weight:700">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#b9ac96">做</span><span style="font-size:10px;color:#b9ac96">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 3b 御厨 · 菜谱弹窗 ===== -->
+<div class="dv-opt" id="3b"><div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>御厨风 · 菜谱弹窗：食单式底部抽屉，多菜切换 + 食材 + 做法</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#f6f1e7">
+<div style="position:absolute;inset:0;background:rgba(30,22,12,.5);z-index:5"></div>
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#2f261a"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:3px">到底吃啥哟</span></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:6;background:#fffdf8;border-radius:18px 18px 0 0;padding:18px 24px 26px;box-shadow:0 -10px 40px rgba(30,22,12,.3)">
+<div style="width:36px;height:4px;border-radius:2px;background:#d9c9a6;margin:0 auto 14px"></div>
+<div style="display:flex;gap:8px;margin-bottom:16px">
+<span style="font-family:'Noto Serif SC',serif;font-size:12.5px;color:#fffdf8;background:#2f261a;padding:5px 14px;letter-spacing:2px">红烧肉</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:12.5px;color:#5d5142;border:1px solid #d9c9a6;padding:5px 14px;letter-spacing:2px">酸菜鱼</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:12.5px;color:#5d5142;border:1px solid #d9c9a6;padding:5px 14px;letter-spacing:2px">蒜蓉生菜</span>
+</div>
+<div style="text-align:center;font-family:'Noto Serif SC',serif;font-size:26px;font-weight:900;color:#2f261a;letter-spacing:5px">红烧肉</div>
+<div style="margin-top:6px;text-align:center;font-size:11px;color:#a3937a;letter-spacing:1px">肥而不腻 · 入口即化 · <span style="color:#a3803f">中等难度</span> · 约 90 分钟</div>
+<div style="margin-top:16px;display:flex;align-items:center;gap:8px"><span style="font-family:'Noto Serif SC',serif;font-size:13px;font-weight:900;color:#a3803f;letter-spacing:2px">备料</span><span style="height:1px;flex:1;background:#efe5cf"></span></div>
+<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:7px">
+<span style="font-size:12px;color:#5d5142;border:1px solid #e6d9bf;background:#faf5ea;padding:4px 12px;letter-spacing:1px">五花肉 500g</span>
+<span style="font-size:12px;color:#5d5142;border:1px solid #e6d9bf;background:#faf5ea;padding:4px 12px;letter-spacing:1px">冰糖</span>
+<span style="font-size:12px;color:#5d5142;border:1px solid #e6d9bf;background:#faf5ea;padding:4px 12px;letter-spacing:1px">生抽 · 老抽</span>
+<span style="font-size:12px;color:#5d5142;border:1px solid #e6d9bf;background:#faf5ea;padding:4px 12px;letter-spacing:1px">葱姜 · 八角</span>
+<span style="font-size:12px;color:#a3803f;border:1px dashed #c9b088;padding:4px 12px;letter-spacing:1px">料酒 +3</span>
+</div>
+<div style="margin-top:16px;display:flex;align-items:center;gap:8px"><span style="font-family:'Noto Serif SC',serif;font-size:13px;font-weight:900;color:#a3803f;letter-spacing:2px">要诀</span><span style="height:1px;flex:1;background:#efe5cf"></span></div>
+<div style="margin-top:12px;display:flex;flex-direction:column;gap:11px">
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="font-family:'Noto Serif SC',serif;font-size:13px;font-weight:900;color:#b8934e;flex-shrink:0">壹</span><span style="font-size:12.5px;color:#5d5142;line-height:1.65">五花肉冷水下锅，加料酒姜片焯水，捞出切麻将块。</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="font-family:'Noto Serif SC',serif;font-size:13px;font-weight:900;color:#b8934e;flex-shrink:0">贰</span><span style="font-size:12.5px;color:#5d5142;line-height:1.65">小火炒糖色至枣红起泡，下肉块裹匀上色。</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start"><span style="font-family:'Noto Serif SC',serif;font-size:13px;font-weight:900;color:#b8934e;flex-shrink:0">叁</span><span style="font-size:12.5px;color:#5d5142;line-height:1.65">加热水没过肉，放香料小火焖 60 分钟，大火收汁。</span></div>
+</div>
+<div style="margin-top:20px;height:50px;background:#2f261a;display:flex;align-items:center;justify-content:center;gap:10px">
+<span style="width:22px;height:1px;background:#b8934e"></span><span style="font-family:'Noto Serif SC',serif;font-size:15px;color:#f0dfb8;font-weight:900;letter-spacing:6px">展开全谱</span><span style="width:22px;height:1px;background:#b8934e"></span>
+</div>
+<div style="margin-top:12px;text-align:center;font-size:12px;color:#a3937a;letter-spacing:2px">收起</div>
+</div>
+</div></div></div>
+
+<!-- ===== 3c 贴纸 · 扭蛋机 ===== -->
+<div class="dv-opt" id="3c"><div class="dv-olabel"><a class="dv-oid" href="#3c">3c</a>贴纸风 · 抽取仪式：老虎机换成「扭蛋机」，扭蛋咕噜噜滚动中</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background-color:#fff3d6;background-image:radial-gradient(rgba(31,27,22,.08) 1.2px,transparent 1.2px);background-size:16px 16px">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:700;color:#1f1b16;position:relative;z-index:3"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:17px;color:#1f1b16;letter-spacing:1px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1.5px solid #1f1b16;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#1f1b16;letter-spacing:1px">•••</span><span style="width:1.5px;height:16px;background:#1f1b16"></span><span style="flex:1;text-align:center;font-size:13px;color:#1f1b16">◉</span></span></div>
+<div style="padding:14px 18px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box;align-items:center">
+<div style="background:#1f1b16;color:#ffd94a;font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;padding:5px 16px;border-radius:4px;transform:rotate(-1.5deg)">🎡 咕噜噜…命运扭蛋转起来！</div>
+<!-- 扭蛋机 -->
+<div class="g3c {{ gachaPhase }}" onClick="{{ gachaToggle }}" style="margin-top:20px;position:relative;width:230px;cursor:pointer">
+<!-- 玻璃罩 -->
+<div class="gglobe" style="width:204px;height:204px;margin:0 auto;border-radius:50%;background:radial-gradient(circle at 33% 26%,#ffffff 0%,#eef8ff 34%,#d6ecfd 62%,#b7d9f4 100%);border:3px solid #1f1b16;position:relative;overflow:hidden;box-shadow:inset -8px -12px 24px rgba(90,140,190,.25),inset 6px 8px 14px rgba(255,255,255,.9),5px 6px 0 #1f1b16">
+<!-- 蛋堆：平时全部沉在底部 -->
+<span class="gball gb1" style="position:absolute;left:16px;bottom:12px;width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,#ff9ec7 0 52%,#fffdf6 52%);border:2.5px solid #1f1b16;transform:rotate(-14deg);box-shadow:inset 3px 4px 6px rgba(255,255,255,.75),inset -3px -5px 8px rgba(31,27,22,.14);display:flex;align-items:center;justify-content:center;font-size:17px">🍜</span>
+<span class="gball gb2 gwin" style="position:absolute;left:62px;bottom:8px;width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,#ffd94a 0 52%,#fffdf6 52%);border:2.5px solid #1f1b16;transform:rotate(9deg);box-shadow:inset 3px 4px 6px rgba(255,255,255,.75),inset -3px -5px 8px rgba(31,27,22,.14);display:flex;align-items:center;justify-content:center;font-size:17px">🍖</span>
+<span class="gball gb3" style="position:absolute;right:20px;bottom:12px;width:46px;height:46px;border-radius:50%;background:linear-gradient(180deg,#8be28b 0 52%,#fffdf6 52%);border:2.5px solid #1f1b16;transform:rotate(-6deg);box-shadow:inset 3px 4px 6px rgba(255,255,255,.75),inset -3px -5px 8px rgba(31,27,22,.14);display:flex;align-items:center;justify-content:center;font-size:17px">🍕</span>
+<span class="gball gb4" style="position:absolute;right:56px;bottom:40px;width:44px;height:44px;border-radius:50%;background:linear-gradient(200deg,#6fc3ff 0 52%,#fffdf6 52%);border:2.5px solid #1f1b16;transform:rotate(22deg);box-shadow:inset 3px 4px 6px rgba(255,255,255,.75),inset -3px -5px 8px rgba(31,27,22,.14);display:flex;align-items:center;justify-content:center;font-size:16px">🧋</span>
+<span class="gball gb5" style="position:absolute;left:54px;bottom:46px;width:40px;height:40px;border-radius:50%;background:linear-gradient(160deg,#ffb020 0 52%,#fffdf6 52%);border:2.5px solid #1f1b16;transform:rotate(-18deg);box-shadow:inset 3px 4px 6px rgba(255,255,255,.75),inset -3px -5px 8px rgba(31,27,22,.14);display:flex;align-items:center;justify-content:center;font-size:15px">🍰</span>
+<!-- 运动线：仅摇匀阶段可见 -->
+<span class="gml" style="position:absolute;right:20px;top:22px;width:16px;height:2.5px;background:#1f1b16;border-radius:2px;transform:rotate(32deg)"></span>
+<span class="gml" style="position:absolute;right:14px;top:32px;width:11px;height:2.5px;background:#1f1b16;border-radius:2px;transform:rotate(32deg);animation-delay:.12s"></span>
+<span class="gml" style="position:absolute;left:26px;top:30px;width:13px;height:2.5px;background:#1f1b16;border-radius:2px;transform:rotate(-30deg);animation-delay:.2s"></span>
+<!-- 高光 -->
+<span style="position:absolute;left:26px;top:16px;width:52px;height:20px;border-radius:50%;background:rgba(255,255,255,.9);transform:rotate(-26deg)"></span>
+<span style="position:absolute;left:70px;top:10px;width:14px;height:8px;border-radius:50%;background:rgba(255,255,255,.8);transform:rotate(-26deg)"></span>
+</div>
+<!-- 颈圈 -->
+<div style="width:120px;height:12px;margin:-7px auto 0;background:linear-gradient(180deg,#ffe08a,#e8b93d);border:2.5px solid #1f1b16;border-radius:7px;position:relative;z-index:2"></div>
+<!-- 机身 -->
+<div style="width:178px;height:86px;margin:-3px auto 0;background:linear-gradient(180deg,#ff6b6b,#e94a4a 70%,#d43c3c);border:3px solid #1f1b16;border-radius:12px 12px 16px 16px;box-shadow:inset 0 5px 0 rgba(255,255,255,.28),inset 0 -6px 0 rgba(31,27,22,.18),5px 6px 0 #1f1b16;position:relative;display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-sizing:border-box">
+<!-- 旋钮 -->
+<div style="width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#ffffff,#e9e2d2 68%,#cfc4ab);border:2.5px solid #1f1b16;display:flex;align-items:center;justify-content:center;box-shadow:2px 3px 0 rgba(31,27,22,.55)"><span class="gknobline" style="width:22px;height:6px;background:#1f1b16;border-radius:3px;transform:rotate(35deg)"></span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:11px;color:#fff;letter-spacing:1px;text-shadow:1px 1px 0 rgba(31,27,22,.4)">命运扭蛋</span>
+<span style="width:26px;height:4px;border-radius:2px;background:rgba(31,27,22,.35)"></span>
+</div>
+<!-- 出蛋口 -->
+<div style="width:38px;height:32px;background:#241f19;border:2.5px solid #1f1b16;border-radius:7px;position:relative;box-shadow:inset 0 4px 6px rgba(0,0,0,.6)"><span style="position:absolute;left:3px;right:3px;bottom:3px;height:9px;background:#3d362d;border-radius:3px"></span>
+<span class="gout" style="position:absolute;left:50%;bottom:2px;margin-left:-11px;width:22px;height:22px;border-radius:50%;background:linear-gradient(180deg,#ffd94a 0 52%,#fffdf6 52%);border:2px solid #1f1b16;display:flex;align-items:center;justify-content:center;font-size:9px">🍖</span></div>
+</div>
+<!-- 底座 + 投影 -->
+<div style="width:196px;height:12px;margin:-2px auto 0;background:linear-gradient(180deg,#2e2822,#1f1b16);border:2.5px solid #1f1b16;border-radius:4px 4px 8px 8px;position:relative;z-index:2"></div>
+<div style="width:170px;height:10px;margin:6px auto 0;border-radius:50%;background:rgba(31,27,22,.16);filter:blur(2px)"></div>
+</div>
+<div style="margin-top:18px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:15px;color:#1f1b16">{{ gachaTitle }}</div>
+<div style="margin-top:6px;font-size:11px;color:#7a6f60;font-weight:600">随便 · 第 128 次听天由命 · {{ gachaHint }}</div>
+<div style="margin-top:12px;display:flex;gap:6px">
+<span style="width:8px;height:8px;border-radius:50%;background:#1f1b16"></span><span style="width:8px;height:8px;border-radius:50%;background:rgba(31,27,22,.3)"></span><span style="width:8px;height:8px;border-radius:50%;background:rgba(31,27,22,.3)"></span>
+</div>
+<div style="margin-top:auto;margin-bottom:16px;width:100%">
+<div onClick="{{ gachaToggle }}" style="height:54px;background:{{ gachaBtnBg }};border:3px solid #1f1b16;border-radius:27px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:5px 5px 0 #1f1b16"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:18px;color:#1f1b16;letter-spacing:2px">{{ gachaCta }}</span></div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:3px solid #1f1b16;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:18px">🎰</span><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;color:#1f1b16">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:18px;filter:grayscale(1);opacity:.45">🥬</span><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;color:#b3a89a">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 3d 贴纸 · 菜谱弹窗 ===== -->
+<div class="dv-opt" id="3d"><div class="dv-olabel"><a class="dv-oid" href="#3d">3d</a>贴纸风 · 菜谱弹窗：便利贴小抄，步骤像连环画格子</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background-color:#fff3d6;background-image:radial-gradient(rgba(31,27,22,.08) 1.2px,transparent 1.2px);background-size:16px 16px">
+<div style="position:absolute;inset:0;background:rgba(31,27,22,.45);z-index:5"></div>
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:700;color:#1f1b16"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;display:flex;align-items:center;justify-content:center"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:17px;color:#1f1b16;letter-spacing:1px">到底吃啥哟</span></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:6;background:#fffdf4;border-top:3px solid #1f1b16;border-radius:20px 20px 0 0;padding:16px 20px 24px;box-shadow:0 -8px 30px rgba(31,27,22,.35)">
+<div style="width:44px;height:5px;border-radius:3px;background:#1f1b16;margin:0 auto 12px;opacity:.25"></div>
+<div style="display:flex;gap:7px;margin-bottom:14px">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#ffd94a;border:2px solid #1f1b16;border-radius:12px;padding:4px 12px;box-shadow:2px 2px 0 #1f1b16">红烧肉</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:4px 12px">酸菜鱼</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:4px 12px">蒜蓉生菜</span>
+</div>
+<div style="display:flex;align-items:center;gap:10px">
+<span style="font-size:34px;transform:rotate(-8deg)">🍖</span>
+<div><div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:24px;color:#1f1b16">红烧肉小抄</div><div style="font-size:10.5px;color:#7a6f60;font-weight:700;margin-top:1px">中等难度 · 90 分钟 · 米饭杀手</div></div>
+<span style="margin-left:auto;background:#ff5d5d;color:#fff;font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;border:2px solid #1f1b16;border-radius:10px;padding:2px 8px;transform:rotate(5deg)">收藏+1</span>
+</div>
+<div style="margin-top:14px;background:#ffef9e;border:2px solid #1f1b16;border-radius:4px;padding:10px 12px;transform:rotate(-.6deg);box-shadow:3px 3px 0 rgba(31,27,22,.8);position:relative">
+<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%) rotate(2deg);width:52px;height:14px;background:rgba(255,255,255,.7);border:1px solid rgba(31,27,22,.25)"></span>
+<div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16">🛒 要买的：</div>
+<div style="margin-top:5px;font-size:12px;color:#4a4237;font-weight:600;line-height:1.7">五花肉 500g · 冰糖 · 生抽老抽 · 葱姜八角<br><span style="color:#d8443c">缺：料酒（顺路带一瓶！）</span></div>
+</div>
+<div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+<div style="background:#fff;border:2.5px solid #1f1b16;border-radius:10px;padding:9px 8px;transform:rotate(-1deg)"><div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16">① 焯水</div><div style="font-size:10.5px;color:#7a6f60;font-weight:600;margin-top:3px;line-height:1.5">冷水下锅去腥，切麻将块</div></div>
+<div style="background:#fff;border:2.5px solid #1f1b16;border-radius:10px;padding:9px 8px;transform:rotate(1.2deg)"><div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16">② 炒糖色</div><div style="font-size:10.5px;color:#7a6f60;font-weight:600;margin-top:3px;line-height:1.5">小火熬到枣红冒泡</div></div>
+<div style="background:#fff;border:2.5px solid #1f1b16;border-radius:10px;padding:9px 8px;transform:rotate(-.8deg)"><div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16">③ 焖收汁</div><div style="font-size:10.5px;color:#7a6f60;font-weight:600;margin-top:3px;line-height:1.5">小火 60 分钟，大火收亮</div></div>
+</div>
+<div style="margin-top:16px;display:flex;gap:10px">
+<div style="flex:1;height:50px;background:#ffb020;border:3px solid #1f1b16;border-radius:25px;display:flex;align-items:center;justify-content:center;box-shadow:4px 4px 0 #1f1b16"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:16px;color:#1f1b16;letter-spacing:1px">看完整做法 👀</span></div>
+<div style="width:50px;height:50px;background:#fff;border:3px solid #1f1b16;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:3px 3px 0 #1f1b16"><span style="font-size:17px">✕</span></div>
+</div>
+</div>
+</div></div></div>
+
+<!-- ===== 3e 御厨 · 分享卡 ===== -->
+<div class="dv-opt" id="3e"><div class="dv-olabel"><a class="dv-oid" href="#3e">3e</a>御厨风 · 微信分享卡（500×400，替换现在 Canvas 画的那张）</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:300px;position:relative;overflow:hidden;background:#f6f1e7;display:flex;align-items:center;justify-content:center">
+<div style="width:330px;height:258px;background:#fffdf8;border:1px solid #e6d9bf;position:relative;box-shadow:0 8px 22px rgba(120,90,40,.14)">
+<div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#b8934e,#e3c88e,#b8934e)"></div>
+<div style="margin-top:16px;text-align:center;font-family:'Noto Serif SC',serif;font-size:11px;color:#a3803f;letter-spacing:5px">─ 御 厨 手 谕 ─</div>
+<div style="margin-top:4px;text-align:center;font-size:9.5px;color:#a3937a">番茄 / 鸡蛋 / 面条 · 七月十九</div>
+<div style="margin-top:10px;padding:0 26px">
+<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #efe5cf"><span style="font-family:'Noto Serif SC',serif;font-size:11px;color:#b8934e;font-weight:900">壹</span><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:2px">番茄鸡蛋拌面</span><span style="margin-left:auto;font-size:9px;color:#a3937a">15 分钟</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #efe5cf"><span style="font-family:'Noto Serif SC',serif;font-size:11px;color:#b8934e;font-weight:900">贰</span><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:2px">番茄蛋花汤</span><span style="margin-left:auto;font-size:9px;color:#a3937a">10 分钟</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:7px 0"><span style="font-family:'Noto Serif SC',serif;font-size:11px;color:#b8934e;font-weight:900">叁</span><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:2px">糖拌番茄</span><span style="margin-left:auto;font-size:9px;color:#a3937a">3 分钟</span></div>
+</div>
+<div style="position:absolute;right:16px;bottom:22px;width:52px;height:52px;transform:rotate(-14deg)">
+<div style="position:absolute;inset:0;border:2.5px solid rgba(197,48,48,.8);border-radius:50%"></div>
+<div style="position:absolute;inset:5px;border:1px solid rgba(197,48,48,.7);border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:11px;font-weight:900;color:rgba(197,48,48,.85);line-height:1.15;text-align:center">大厨<br>认证</span></div>
+</div>
+<div style="position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:8.5px;color:#c8bda6;letter-spacing:2px">到底吃啥哟 · 御厨智荐</div>
+</div>
+</div></div></div>
+
+<!-- ===== 3f 贴纸 · 分享卡 ===== -->
+<div class="dv-opt" id="3f"><div class="dv-olabel"><a class="dv-oid" href="#3f">3f</a>贴纸风 · 微信分享卡（朋友圈更抓眼）</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:300px;position:relative;overflow:hidden;background-color:#fff3d6;background-image:radial-gradient(rgba(31,27,22,.08) 1.2px,transparent 1.2px);background-size:16px 16px;display:flex;align-items:center;justify-content:center">
+<div style="width:322px;height:250px;background:#fff;border:3px solid #1f1b16;border-radius:16px;box-shadow:6px 6px 0 #1f1b16;position:relative;transform:rotate(-.8deg)">
+<span style="position:absolute;top:-13px;left:16px;background:#ff5d5d;color:#fff;font-family:'ZCOOL KuaiLe',sans-serif;font-size:11px;border:2px solid #1f1b16;border-radius:11px;padding:2px 10px;transform:rotate(-4deg)">今晚饭缘已定！</span>
+<span style="position:absolute;top:-10px;right:20px;font-size:26px;transform:rotate(14deg)">🍜</span>
+<div style="margin-top:24px;padding:0 18px;display:flex;align-items:center;gap:12px">
+<span style="width:58px;height:58px;border-radius:50%;background:#ffd94a;border:2.5px solid #1f1b16;display:flex;align-items:center;justify-content:center;font-size:28px;transform:rotate(-6deg)">🍖</span>
+<div><div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:25px;color:#1f1b16">红烧肉</div><div style="font-size:10.5px;color:#7a6f60;font-weight:700">+ 酸菜鱼 + 蒜蓉生菜</div></div>
+</div>
+<div style="margin-top:12px;margin-left:18px;margin-right:18px;background:#ffef9e;border:2px dashed #1f1b16;border-radius:8px;padding:7px 10px;transform:rotate(.6deg)"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:11.5px;color:#1f1b16">🎰 第 128 次听天由命，天意让我吃肉！</span></div>
+<div style="position:absolute;bottom:10px;left:18px;font-size:9px;color:#b3a89a;font-weight:700">到底吃啥哟 · 摇一摇就开饭</div>
+<span style="position:absolute;bottom:12px;right:14px;background:#8be28b;border:2px solid #1f1b16;border-radius:10px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:9.5px;color:#1f1b16;padding:2px 8px;transform:rotate(-3deg)">戳我也抽一个</span>
+</div>
+</div></div></div>
+
+</div>
+<p class="dv-next">试试对我说："<a class="dv-oid" href="#3a">3a</a> 签筒配色亮一点" · "御厨一套（<a class="dv-oid" href="#1d">1d</a><a class="dv-oid" href="#2a">2a</a><a class="dv-oid" href="#2b">2b</a><a class="dv-oid" href="#3a">3a</a><a class="dv-oid" href="#3b">3b</a>）做成可交互原型" · "贴纸一套做成可交互原型"</p>
+</section>
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">沿 <a class="dv-oid" href="#1d">1d</a> 御厨纸感 与 <a class="dv-oid" href="#1e">1e</a> 贴纸漫画 往深做</span></div>
+<div class="dv-opts">
+
+<!-- ===== 2a 御厨 · 结果页 ===== -->
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>御厨风 · 抽中结果页：今日菜单卷轴 + 印章落款，3 份结果 + 单项换一换</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#f6f1e7">
+<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(160,130,80,.045) 0,rgba(160,130,80,.045) 1px,transparent 1px,transparent 7px);pointer-events:none"></div>
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#2f261a;position:relative;z-index:3"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:3px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2f261a;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2f261a">◉</span></span></div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box;position:relative">
+<div style="display:flex;align-items:center;gap:10px"><span style="height:1px;flex:1;background:linear-gradient(90deg,transparent,#c9b088)"></span><span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#a3803f;letter-spacing:6px">今日菜单已定</span><span style="height:1px;flex:1;background:linear-gradient(90deg,#c9b088,transparent)"></span></div>
+<!-- 菜单卷轴 -->
+<div style="margin-top:16px;background:#fffdf8;border:1px solid #e6d9bf;border-radius:6px;padding:22px 20px 18px;position:relative;box-shadow:0 10px 26px rgba(120,90,40,.08)">
+<div style="position:absolute;top:0;left:20px;right:20px;height:3px;background:linear-gradient(90deg,#b8934e,#e3c88e,#b8934e)"></div>
+<div style="text-align:center;font-family:'Noto Serif SC',serif;font-size:11px;color:#a3803f;letter-spacing:4px">─ 七月十九 · 晚膳 ─</div>
+<div style="margin-top:18px;display:flex;flex-direction:column;gap:0">
+<div style="display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid #efe5cf">
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#b8934e;font-weight:900">壹</span>
+<div style="flex:1"><div style="font-family:'Noto Serif SC',serif;font-size:20px;font-weight:900;color:#2f261a;letter-spacing:3px">红烧肉</div><div style="font-size:10.5px;color:#a3937a;margin-top:2px">肥而不腻 · 下饭一绝</div></div>
+<span style="font-size:11px;color:#a3803f;border:1px solid #d9c9a6;padding:4px 12px;letter-spacing:2px">换</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid #efe5cf">
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#b8934e;font-weight:900">贰</span>
+<div style="flex:1"><div style="font-family:'Noto Serif SC',serif;font-size:20px;font-weight:900;color:#2f261a;letter-spacing:3px">酸菜鱼</div><div style="font-size:10.5px;color:#a3937a;margin-top:2px">酸辣开胃 · 鱼肉滑嫩</div></div>
+<span style="font-size:11px;color:#a3803f;border:1px solid #d9c9a6;padding:4px 12px;letter-spacing:2px">换</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:13px 2px">
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#b8934e;font-weight:900">叁</span>
+<div style="flex:1"><div style="font-family:'Noto Serif SC',serif;font-size:20px;font-weight:900;color:#2f261a;letter-spacing:3px">蒜蓉生菜</div><div style="font-size:10.5px;color:#a3937a;margin-top:2px">清爽解腻 · 三分钟出锅</div></div>
+<span style="font-size:11px;color:#a3803f;border:1px solid #d9c9a6;padding:4px 12px;letter-spacing:2px">换</span>
+</div>
+</div>
+<div style="margin-top:14px;border-top:1px dashed #d9c9a6;padding-top:10px;display:flex;align-items:center;justify-content:space-between">
+<span style="font-size:10.5px;color:#a3937a;letter-spacing:1px">荤素得当 · 御厨手谕</span>
+<div style="width:46px;height:46px;transform:rotate(-12deg);position:relative">
+<div style="position:absolute;inset:0;border:2px solid rgba(197,48,48,.8);border-radius:50%"></div>
+<div style="position:absolute;inset:4px;border:1px solid rgba(197,48,48,.7);border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:10.5px;font-weight:900;color:rgba(197,48,48,.85);line-height:1.15;text-align:center">大厨<br>认证</span></div>
+</div>
+</div>
+</div>
+<div style="margin-top:14px;display:flex;gap:10px;justify-content:center">
+<span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#5d5142;border:1px solid #d9c9a6;padding:7px 18px;letter-spacing:2px;background:rgba(255,253,248,.8)">📜 查菜谱</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#5d5142;border:1px solid #d9c9a6;padding:7px 18px;letter-spacing:2px;background:rgba(255,253,248,.8)">昭告亲友</span>
+</div>
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="height:52px;background:#2f261a;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 20px rgba(47,38,26,.3)">
+<span style="width:22px;height:1px;background:#b8934e"></span>
+<span style="font-family:'Noto Serif SC',serif;font-size:17px;color:#f0dfb8;font-weight:900;letter-spacing:8px">再抽一次</span>
+<span style="width:22px;height:1px;background:#b8934e"></span>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fffdf8;border-top:1px solid #e6d9bf;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#a3803f">抽</span><span style="font-size:10px;color:#a3803f;font-weight:700">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#b9ac96">做</span><span style="font-size:10px;color:#b9ac96">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 2b 御厨 · 食材页 ===== -->
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>御厨风 · 食材页：呈上食材，请御厨过目（配 <a class="dv-oid" href="#1d">1d</a>/<a class="dv-oid" href="#2a">2a</a> 成套）</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#f6f1e7">
+<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(160,130,80,.045) 0,rgba(160,130,80,.045) 1px,transparent 1px,transparent 7px);pointer-events:none"></div>
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#2f261a;position:relative;z-index:3"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:3px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2f261a;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2f261a">◉</span></span></div>
+<div style="padding:16px 24px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box;position:relative">
+<div style="display:flex;align-items:center;gap:10px"><span style="height:1px;flex:1;background:linear-gradient(90deg,transparent,#c9b088)"></span><span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#a3803f;letter-spacing:6px">呈上食材 · 御厨过目</span><span style="height:1px;flex:1;background:linear-gradient(90deg,#c9b088,transparent)"></span></div>
+<!-- 食盒 -->
+<div style="margin-top:14px;background:#fffdf8;border:1px solid #e6d9bf;border-radius:6px;padding:14px 16px;box-shadow:0 6px 18px rgba(120,90,40,.07);position:relative">
+<div style="position:absolute;top:0;left:16px;right:16px;height:3px;background:linear-gradient(90deg,#b8934e,#e3c88e,#b8934e)"></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-family:'Noto Serif SC',serif;font-size:13px;font-weight:900;color:#2f261a;letter-spacing:2px">食盒 · 三样</span><span style="font-size:10.5px;color:#a3937a">倒空</span></div>
+<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:7px">
+<span style="display:flex;align-items:center;gap:6px;background:#2f261a;padding:5px 10px 5px 12px"><span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#f0dfb8;letter-spacing:2px">番茄</span><span style="font-size:10px;color:#b8934e">✕</span></span>
+<span style="display:flex;align-items:center;gap:6px;background:#2f261a;padding:5px 10px 5px 12px"><span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#f0dfb8;letter-spacing:2px">鸡蛋</span><span style="font-size:10px;color:#b8934e">✕</span></span>
+<span style="display:flex;align-items:center;gap:6px;background:#2f261a;padding:5px 10px 5px 12px"><span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#f0dfb8;letter-spacing:2px">面条</span><span style="font-size:10px;color:#b8934e">✕</span></span>
+<span style="display:flex;align-items:center;border:1px dashed #c9b088;padding:5px 12px"><span style="font-size:12px;color:#a3937a">＋ 手书添入</span></span>
+</div>
+</div>
+<div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e0d2b4;padding-bottom:8px">
+<span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#2f261a;letter-spacing:2px">常备食材</span>
+<div style="display:flex;gap:12px"><span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#2f261a;font-weight:900;border-bottom:2px solid #b8934e;padding-bottom:2px">蔬菜</span><span style="font-size:12px;color:#a3937a">肉类</span><span style="font-size:12px;color:#a3937a">水产蛋奶</span><span style="font-size:12px;color:#a3937a">主食</span></div>
+</div>
+<div style="margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+<span style="text-align:center;padding:7px 0;background:#2f261a;font-family:'Noto Serif SC',serif;font-size:12.5px;color:#f0dfb8;letter-spacing:2px">番茄 ✓</span>
+<span style="text-align:center;padding:7px 0;border:1px solid #d9c9a6;font-family:'Noto Serif SC',serif;font-size:12.5px;color:#5d5142;letter-spacing:2px">土豆</span>
+<span style="text-align:center;padding:7px 0;border:1px solid #d9c9a6;font-family:'Noto Serif SC',serif;font-size:12.5px;color:#5d5142;letter-spacing:2px">白菜</span>
+<span style="text-align:center;padding:7px 0;border:1px solid #d9c9a6;font-family:'Noto Serif SC',serif;font-size:12.5px;color:#5d5142;letter-spacing:2px">青椒</span>
+<span style="text-align:center;padding:7px 0;border:1px solid #d9c9a6;font-family:'Noto Serif SC',serif;font-size:12.5px;color:#5d5142;letter-spacing:2px">黄瓜</span>
+<span style="text-align:center;padding:7px 0;border:1px solid #d9c9a6;font-family:'Noto Serif SC',serif;font-size:12.5px;color:#5d5142;letter-spacing:2px">茄子</span>
+<span style="text-align:center;padding:7px 0;border:1px solid #d9c9a6;font-family:'Noto Serif SC',serif;font-size:12.5px;color:#5d5142;letter-spacing:2px">西兰花</span>
+<span style="text-align:center;padding:7px 0;border:1px solid #d9c9a6;font-family:'Noto Serif SC',serif;font-size:12.5px;color:#5d5142;letter-spacing:2px">胡萝卜</span>
+</div>
+<div style="margin-top:16px;display:flex;align-items:center;gap:10px">
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;font-weight:900;color:#2f261a;letter-spacing:2px;flex-shrink:0">口味</span>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<span style="font-size:12px;color:#fffdf8;background:#2f261a;padding:4px 12px;letter-spacing:1px">不限</span>
+<span style="font-size:12px;color:#5d5142;border:1px solid #d9c9a6;padding:4px 12px;letter-spacing:1px">清淡</span>
+<span style="font-size:12px;color:#5d5142;border:1px solid #d9c9a6;padding:4px 12px;letter-spacing:1px">快手菜</span>
+<span style="font-size:12px;color:#5d5142;border:1px solid #d9c9a6;padding:4px 12px;letter-spacing:1px">下饭菜</span>
+</div>
+</div>
+<div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;background:#fffdf8;border:1px solid #e6d9bf;padding:10px 14px">
+<div style="display:flex;flex-direction:column;gap:1px"><span style="font-family:'Noto Serif SC',serif;font-size:13px;font-weight:900;color:#2f261a;letter-spacing:1px">准许采买</span><span style="font-size:10.5px;color:#a3937a">可荐需再购一二样之菜</span></div>
+<div style="width:44px;height:24px;border-radius:12px;background:#b8934e;position:relative"><div style="width:20px;height:20px;border-radius:50%;background:#fffdf8;position:absolute;top:2px;right:2px;box-shadow:0 1px 2px rgba(0,0,0,.2)"></div></div>
+</div>
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="height:52px;background:#2f261a;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 20px rgba(47,38,26,.3)">
+<span style="width:22px;height:1px;background:#b8934e"></span>
+<span style="font-family:'Noto Serif SC',serif;font-size:17px;color:#f0dfb8;font-weight:900;letter-spacing:8px">请厨出菜</span>
+<span style="width:22px;height:1px;background:#b8934e"></span>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fffdf8;border-top:1px solid #e6d9bf;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#b9ac96">抽</span><span style="font-size:10px;color:#b9ac96">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#a3803f">做</span><span style="font-size:10px;color:#a3803f;font-weight:700">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 2c 贴纸 · 结果页 ===== -->
+<div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>贴纸风 · 抽中结果页：战利品贴纸墙 + 「就它了!」大按钮</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background-color:#fff3d6;background-image:radial-gradient(rgba(31,27,22,.08) 1.2px,transparent 1.2px);background-size:16px 16px">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:700;color:#1f1b16;position:relative;z-index:3"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:17px;color:#1f1b16;letter-spacing:1px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1.5px solid #1f1b16;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#1f1b16;letter-spacing:1px">•••</span><span style="width:1.5px;height:16px;background:#1f1b16"></span><span style="flex:1;text-align:center;font-size:13px;color:#1f1b16">◉</span></span></div>
+<div style="padding:14px 18px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box">
+<div style="align-self:center;background:#1f1b16;color:#ffd94a;font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;padding:5px 16px;border-radius:4px;transform:rotate(-1.5deg)">🎉 铛铛铛！今晚的饭缘是——</div>
+<!-- 大奖 -->
+<div style="margin-top:16px;background:#ffd94a;border:3px solid #1f1b16;border-radius:18px;box-shadow:6px 6px 0 #1f1b16;padding:20px 18px;transform:rotate(-1deg);position:relative;display:flex;align-items:center;gap:14px">
+<span style="position:absolute;top:-12px;left:14px;background:#ff5d5d;color:#fff;font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;border:2px solid #1f1b16;border-radius:10px;padding:2px 8px;transform:rotate(-4deg)">主菜</span>
+<span style="font-size:46px;transform:rotate(-6deg)">🍖</span>
+<div style="flex:1"><div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:30px;color:#1f1b16">红烧肉</div><div style="font-size:11px;color:#7a6f60;font-weight:700;margin-top:2px">肥而不腻，米饭杀手 No.1</div></div>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:4px 10px;box-shadow:2px 2px 0 #1f1b16">换🔄</span>
+</div>
+<div style="margin-top:14px;display:flex;gap:10px">
+<div style="flex:1;background:#fff;border:2.5px solid #1f1b16;border-radius:14px;box-shadow:4px 4px 0 #1f1b16;padding:12px;transform:rotate(1.2deg);position:relative">
+<span style="position:absolute;top:-10px;left:10px;background:#6fc3ff;color:#1f1b16;font-family:'ZCOOL KuaiLe',sans-serif;font-size:9px;border:2px solid #1f1b16;border-radius:9px;padding:1px 7px">配菜</span>
+<div style="font-size:26px">🐟</div><div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:17px;color:#1f1b16;margin-top:4px">酸菜鱼</div><div style="font-size:10px;color:#7a6f60;font-weight:600;margin-top:1px">酸辣开胃</div>
+<span style="position:absolute;right:8px;bottom:8px;font-size:11px">🔄</span>
+</div>
+<div style="flex:1;background:#fff;border:2.5px solid #1f1b16;border-radius:14px;box-shadow:4px 4px 0 #1f1b16;padding:12px;transform:rotate(-1.6deg);position:relative">
+<span style="position:absolute;top:-10px;left:10px;background:#8be28b;color:#1f1b16;font-family:'ZCOOL KuaiLe',sans-serif;font-size:9px;border:2px solid #1f1b16;border-radius:9px;padding:1px 7px">解腻</span>
+<div style="font-size:26px">🥬</div><div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:17px;color:#1f1b16;margin-top:4px">蒜蓉生菜</div><div style="font-size:10px;color:#7a6f60;font-weight:600;margin-top:1px">三分钟出锅</div>
+<span style="position:absolute;right:8px;bottom:8px;font-size:11px">🔄</span>
+</div>
+</div>
+<div style="margin-top:16px;display:flex;justify-content:center;gap:10px">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:16px;padding:6px 16px;box-shadow:3px 3px 0 #1f1b16">📋 看菜谱</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:16px;padding:6px 16px;box-shadow:3px 3px 0 #1f1b16">🔗 炫给朋友</span>
+</div>
+<div style="margin-top:14px;align-self:center;background:#fff;border:2px dashed #1f1b16;border-radius:12px;padding:7px 14px;transform:rotate(.8deg)"><span style="font-size:11px;color:#7a6f60;font-weight:700">🏅 本周第 5 次听天由命，恭喜解锁「干饭锦鲤」贴纸</span></div>
+<div style="margin-top:auto;margin-bottom:16px;display:flex;gap:12px">
+<div style="flex-shrink:0;height:54px;padding:0 18px;background:#fff;border:3px solid #1f1b16;border-radius:27px;display:flex;align-items:center;justify-content:center;box-shadow:4px 4px 0 #1f1b16"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:16px;color:#1f1b16">再摇🎲</span></div>
+<div style="flex:1;height:54px;background:#ffb020;border:3px solid #1f1b16;border-radius:27px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:5px 5px 0 #1f1b16"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:20px;color:#1f1b16;letter-spacing:2px">就它了！</span><span style="font-size:17px">🍚</span></div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:3px solid #1f1b16;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:18px">🎰</span><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;color:#1f1b16">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:18px;filter:grayscale(1);opacity:.45">🥬</span><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;color:#b3a89a">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 2d 贴纸 · 食材页 ===== -->
+<div class="dv-opt" id="2d"><div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>贴纸风 · 食材页：冰箱大冒险，食材是可撕贴纸（配 <a class="dv-oid" href="#1e">1e</a>/<a class="dv-oid" href="#2c">2c</a> 成套）</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background-color:#fff3d6;background-image:radial-gradient(rgba(31,27,22,.08) 1.2px,transparent 1.2px);background-size:16px 16px">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:700;color:#1f1b16;position:relative;z-index:3"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:17px;color:#1f1b16;letter-spacing:1px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1.5px solid #1f1b16;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#1f1b16;letter-spacing:1px">•••</span><span style="width:1.5px;height:16px;background:#1f1b16"></span><span style="flex:1;text-align:center;font-size:13px;color:#1f1b16">◉</span></span></div>
+<div style="padding:14px 18px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box">
+<div style="align-self:flex-start;background:#1f1b16;color:#ffd94a;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;padding:4px 12px;border-radius:4px;transform:rotate(-2deg)">🧊 冰箱里有啥，咱就做啥</div>
+<!-- 购物篮 -->
+<div style="margin-top:12px;background:#fff;border:3px solid #1f1b16;border-radius:16px;box-shadow:5px 5px 0 #1f1b16;padding:14px 14px 12px;transform:rotate(-.8deg);position:relative">
+<span style="position:absolute;top:-12px;right:14px;background:#8be28b;color:#1f1b16;font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;border:2px solid #1f1b16;border-radius:10px;padding:2px 8px;transform:rotate(4deg)">已捡 3 样</span>
+<div style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:14px;color:#1f1b16">🧺 我的菜篮子</div>
+<div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:7px">
+<span style="display:flex;align-items:center;gap:5px;background:#ffd94a;border:2px solid #1f1b16;border-radius:13px;padding:4px 10px;box-shadow:2px 2px 0 #1f1b16;transform:rotate(-2deg)"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16">🍅 番茄</span><span style="font-size:10px;color:#1f1b16">✕</span></span>
+<span style="display:flex;align-items:center;gap:5px;background:#ffd94a;border:2px solid #1f1b16;border-radius:13px;padding:4px 10px;box-shadow:2px 2px 0 #1f1b16;transform:rotate(1.5deg)"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16">🥚 鸡蛋</span><span style="font-size:10px;color:#1f1b16">✕</span></span>
+<span style="display:flex;align-items:center;gap:5px;background:#ffd94a;border:2px solid #1f1b16;border-radius:13px;padding:4px 10px;box-shadow:2px 2px 0 #1f1b16;transform:rotate(-1deg)"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16">🍜 面条</span><span style="font-size:10px;color:#1f1b16">✕</span></span>
+<span style="display:flex;align-items:center;border:2px dashed #1f1b16;border-radius:13px;padding:4px 12px"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#7a6f60">＋输入</span></span>
+</div>
+</div>
+<div style="margin-top:16px;display:flex;align-items:center;gap:8px"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:15px;color:#1f1b16">货架上还有</span><span style="flex:1;height:2px;background:repeating-linear-gradient(90deg,#1f1b16 0 8px,transparent 8px 14px)"></span></div>
+<div style="margin-top:10px;display:flex;gap:6px">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#6fc3ff;border:2px solid #1f1b16;border-radius:12px;padding:3px 12px;box-shadow:2px 2px 0 #1f1b16">🥬 蔬菜</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:3px 12px">🥩 肉类</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:3px 12px">🦐 水产蛋奶</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:3px 12px">🍚 主食</span>
+</div>
+<div style="margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+<span style="text-align:center;padding:7px 0;background:#ffd94a;border:2px solid #1f1b16;border-radius:12px;box-shadow:2px 2px 0 #1f1b16;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12.5px;color:#1f1b16;transform:rotate(-1.5deg)">番茄✓</span>
+<span style="text-align:center;padding:7px 0;background:#fff;border:2px solid #1f1b16;border-radius:12px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12.5px;color:#1f1b16;transform:rotate(1deg)">土豆</span>
+<span style="text-align:center;padding:7px 0;background:#fff;border:2px solid #1f1b16;border-radius:12px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12.5px;color:#1f1b16;transform:rotate(-.6deg)">白菜</span>
+<span style="text-align:center;padding:7px 0;background:#fff;border:2px solid #1f1b16;border-radius:12px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12.5px;color:#1f1b16;transform:rotate(1.4deg)">青椒</span>
+<span style="text-align:center;padding:7px 0;background:#fff;border:2px solid #1f1b16;border-radius:12px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12.5px;color:#1f1b16;transform:rotate(1.2deg)">黄瓜</span>
+<span style="text-align:center;padding:7px 0;background:#fff;border:2px solid #1f1b16;border-radius:12px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12.5px;color:#1f1b16;transform:rotate(-1deg)">茄子</span>
+<span style="text-align:center;padding:7px 0;background:#fff;border:2px solid #1f1b16;border-radius:12px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12.5px;color:#1f1b16;transform:rotate(.8deg)">西兰花</span>
+<span style="text-align:center;padding:7px 0;background:#fff;border:2px solid #1f1b16;border-radius:12px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12.5px;color:#1f1b16;transform:rotate(-1.3deg)">胡萝卜</span>
+</div>
+<div style="margin-top:16px;display:flex;align-items:center;gap:8px">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:14px;color:#1f1b16;flex-shrink:0">口味：</span>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#ff9ec7;border:2px solid #1f1b16;border-radius:12px;padding:3px 11px;box-shadow:2px 2px 0 #1f1b16">不限</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:3px 11px">清淡</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:3px 11px">快手菜</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:12px;padding:3px 11px">下饭菜</span>
+</div>
+</div>
+<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;background:#fff;border:2.5px solid #1f1b16;border-radius:14px;padding:9px 13px;box-shadow:3px 3px 0 #1f1b16">
+<div style="display:flex;flex-direction:column;gap:1px"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16">顺路买点菜？</span><span style="font-size:10px;color:#7a6f60;font-weight:600">允许推荐要多买 1-2 样的菜</span></div>
+<div style="width:46px;height:26px;border-radius:13px;background:#8be28b;border:2px solid #1f1b16;position:relative"><div style="width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid #1f1b16;position:absolute;top:1px;right:1px;box-sizing:border-box"></div></div>
+</div>
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="height:54px;background:#ffb020;border:3px solid #1f1b16;border-radius:27px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:5px 5px 0 #1f1b16">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:19px;color:#1f1b16;letter-spacing:2px">看看能做啥！</span><span style="font-size:17px">👨‍🍳</span>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:3px solid #1f1b16;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:18px;filter:grayscale(1);opacity:.45">🎰</span><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;color:#b3a89a">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:18px">🥬</span><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;color:#1f1b16">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 2e 混血首页 ===== -->
+<div class="dv-opt" id="2e"><div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>混血方案 · 御厨的排版骨架 × 贴纸的活泼元素：衬线大字 + 印章 + 少量贴纸点缀</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#faf4e8">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#2f261a;position:relative;z-index:3"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:3px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2f261a;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2f261a">◉</span></span></div>
+<div style="padding:18px 24px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box">
+<div style="display:flex;align-items:center;justify-content:space-between"><span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#a3803f;letter-spacing:3px">七月十九 · 晚膳时分</span><span style="background:#ffd94a;border:2px solid #1f1b16;border-radius:10px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;color:#1f1b16;padding:2px 9px;transform:rotate(3deg);box-shadow:2px 2px 0 #1f1b16">第128次纠结</span></div>
+<div style="margin-top:22px;position:relative;display:flex;flex-direction:column;align-items:center">
+<span style="position:absolute;left:8px;top:-6px;font-size:30px;transform:rotate(-14deg)">🍜</span>
+<span style="position:absolute;right:6px;top:38px;font-size:28px;transform:rotate(12deg)">🧋</span>
+<span style="position:absolute;left:26px;bottom:-10px;font-size:24px;transform:rotate(8deg)">🍢</span>
+<div style="font-family:'Noto Serif SC',serif;font-size:46px;font-weight:900;color:#2f261a;letter-spacing:6px;text-align:center;line-height:1.25">今晚<br>食何？</div>
+<div style="margin-top:10px;width:44px;height:44px;transform:rotate(-12deg);position:relative">
+<div style="position:absolute;inset:0;border:2px solid rgba(197,48,48,.8);border-radius:50%"></div>
+<div style="position:absolute;inset:4px;border:1px solid rgba(197,48,48,.7);border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:10px;font-weight:900;color:rgba(197,48,48,.85);line-height:1.15;text-align:center">大厨<br>认证</span></div>
+</div>
+</div>
+<div style="margin-top:20px;background:rgba(255,255,255,.75);border-left:3px solid #b8934e;padding:8px 12px"><span style="font-size:11px;color:#8d7c60;line-height:1.6">「今日风向」天水麻辣烫持续霸榜，晚市小龙虾呼声最高。</span></div>
+<div style="margin-top:18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e0d2b4;padding-bottom:8px"><span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#2f261a;letter-spacing:2px">菜单 · 十二类</span><span style="font-size:11px;color:#a3803f;border:1px dashed #c9b088;border-radius:3px;padding:2px 8px">＋ 自定义</span></div>
+<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px 6px">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#ffd94a;border:2px solid #1f1b16;border-radius:13px;padding:4px 13px;box-shadow:2px 2px 0 #1f1b16;transform:rotate(-1.5deg)">随便</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#c53030;padding:4px 12px;border:1px solid rgba(197,48,48,.4);letter-spacing:2px">热门</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:4px 12px;border:1px solid #d9c9a6;letter-spacing:2px">家常下饭</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:4px 12px;border:1px solid #d9c9a6;letter-spacing:2px">嗦粉吃面</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:4px 12px;border:1px solid #d9c9a6;letter-spacing:2px">火锅烫涮</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:4px 12px;border:1px solid #d9c9a6;letter-spacing:2px">烧烤撸串</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:4px 12px;border:1px solid #d9c9a6;letter-spacing:2px">奶茶续命</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:4px 12px;border:1px solid #d9c9a6;letter-spacing:2px">深夜食堂</span>
+</div>
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:12px">
+<span style="font-size:12px;color:#8d7c60;letter-spacing:2px">份数</span>
+<span style="width:26px;height:26px;border:1px solid #d9c9a6;display:flex;align-items:center;justify-content:center;font-size:14px;color:#c9b088">−</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:18px;font-weight:900;color:#2f261a">壹</span>
+<span style="width:26px;height:26px;border:1px solid #b8934e;display:flex;align-items:center;justify-content:center;font-size:14px;color:#a3803f">＋</span>
+</div>
+<div style="height:54px;background:#2f261a;border-radius:27px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:4px 4px 0 rgba(184,147,78,.5)">
+<span style="font-family:'Noto Serif SC',serif;font-size:17px;color:#f0dfb8;font-weight:900;letter-spacing:8px">为我定夺</span><span style="font-size:15px">🎲</span>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:rgba(255,255,255,.92);border-top:1px solid #e6d9bf;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px">🎲</span><span style="font-size:10px;color:#a3803f;font-weight:700">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px;filter:grayscale(1);opacity:.5">🥬</span><span style="font-size:10px;color:#b9ac96">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+</div>
+<p class="dv-next">试试对我说："<a class="dv-oid" href="#2a">2a</a> 的换按钮太素了，参考 <a class="dv-oid" href="#2c">2c</a>" · "定 <a class="dv-oid" href="#2e">2e</a>，做菜谱弹窗" · "做成可交互原型"</p>
+</section>
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">「到底吃啥哟」设计优化 · 现状复刻 + 6 个方向</span></div>
+<div style="max-width:820px;margin:0 0 24px;padding:16px 18px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;font:12px/1.7 system-ui,sans-serif;color:#444">
+<div style="font-weight:700;margin-bottom:6px;color:#1a1a1a">设计假设与思路</div>
+基于仓库源码复刻现状（<a class="dv-oid" href="#1a">1a</a> <a class="dv-oid" href="#1b">1b</a>）：主色 #f5a623 橙黄渐变、白色半透明圆角卡片、emoji 装饰、蓝灰底纹。你的诉求：保留暖橙但更精致、性格偏「专业大厨」、想看年轻贴纸感与深夜暗色（最好可切换）、emoji 保留/替换都看看、老虎机要更有仪式感。<br>
+6 个方向：<a class="dv-oid" href="#1c">1c</a> 暖橙精修（最稳）· <a class="dv-oid" href="#1d">1d</a> 御厨纸感（专业大厨）· <a class="dv-oid" href="#1e">1e</a> 贴纸漫画（emoji 保留且放大）· <a class="dv-oid" href="#1f">1f</a> 深夜食堂暗色（含日/夜切换入口）· <a class="dv-oid" href="#1g">1g</a> 抽取时刻（老虎机仪式感）· <a class="dv-oid" href="#1h">1h</a> 食材页大厨风重设计。
+</div>
+<div class="dv-opts">
+
+<!-- ===== 1a 现状复刻 首页 ===== -->
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>现状复刻 · 首页「抽啥吃啥」（源码 1:1）</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background-color:#f5f8fd;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cg fill='none' stroke='%23e0d5cc' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' opacity='0.45'%3E%3Cg transform='translate(30,30) rotate(-20,15,15)'%3E%3Cline x1='15' y1='0' x2='15' y2='30'/%3E%3Cline x1='9' y1='0' x2='9' y2='12'/%3E%3Cline x1='15' y1='0' x2='15' y2='12'/%3E%3Cline x1='21' y1='0' x2='21' y2='12'/%3E%3Cpath d='M9,12 Q15,18 21,12'/%3E%3C/g%3E%3Cg transform='translate(90,20)'%3E%3Ccircle cx='15' cy='15' r='14'/%3E%3Ccircle cx='15' cy='15' r='5'/%3E%3Cpath d='M5,10 Q10,6 15,9 Q20,5 25,10' stroke='%23e8c8b0'/%3E%3C/g%3E%3Cg transform='translate(170,25) rotate(10,16,14)'%3E%3Cpath d='M2,16 Q2,2 30,2 Q30,16 2,16'/%3E%3Cline x1='2' y1='19' x2='30' y2='19'/%3E%3Cpath d='M0,22 L32,22 L30,28 L2,28 Z'/%3E%3Cpath d='M6,19 Q10,16 14,19 Q18,16 22,19 Q26,16 30,19' stroke='%23e8c8b0'/%3E%3C/g%3E%3Cg transform='translate(250,15) rotate(5,12,18)'%3E%3Cpath d='M4,8 L8,34 L20,34 L24,8 Z'/%3E%3Cline x1='2' y1='8' x2='26' y2='8'/%3E%3Ccircle cx='14' cy='4' r='3'/%3E%3Cline x1='14' y1='1' x2='14' y2='-2'/%3E%3Ccircle cx='10' cy='24' r='2.5'/%3E%3Ccircle cx='17' cy='20' r='2.5'/%3E%3Ccircle cx='13' cy='28' r='2'/%3E%3C/g%3E%3Cg transform='translate(20,100) rotate(-10,18,18)'%3E%3Cpath d='M18,2 L2,34 L34,34 Z'/%3E%3Ccircle cx='14' cy='20' r='3'/%3E%3Ccircle cx='22' cy='24' r='2.5'/%3E%3Ccircle cx='18' cy='14' r='2'/%3E%3C/g%3E%3Cg transform='translate(85,95)'%3E%3Cpath d='M0,14 Q16,38 32,14'/%3E%3Cline x1='-2' y1='14' x2='34' y2='14'/%3E%3Cpath d='M8,10 Q10,2 12,10' fill='none'/%3E%3Cpath d='M16,8 Q18,0 20,8' fill='none'/%3E%3Cpath d='M22,10 Q24,2 26,10' fill='none'/%3E%3C/g%3E%3Cg transform='translate(160,100) rotate(25,12,18)'%3E%3Cellipse cx='12' cy='8' rx='8' ry='10'/%3E%3Cline x1='12' y1='18' x2='12' y2='38'/%3E%3C/g%3E%3Cg transform='translate(225,90) rotate(-5,18,20)'%3E%3Crect x='2' y='14' width='32' height='18' rx='3'/%3E%3Cpath d='M2,14 Q18,4 34,14'/%3E%3Ccircle cx='18' cy='10' r='2'/%3E%3Cline x1='18' y1='4' x2='18' y2='8'/%3E%3Cpath d='M10,8 Q14,2 18,4' stroke='%23e8c8b0'/%3E%3C/g%3E%3Cg transform='translate(30,185) rotate(-30,10,18)'%3E%3Cline x1='6' y1='0' x2='2' y2='36'/%3E%3Cline x1='14' y1='0' x2='10' y2='36'/%3E%3C/g%3E%3Cg transform='translate(80,180)'%3E%3Cellipse cx='18' cy='16' rx='20' ry='16'/%3E%3Ccircle cx='18' cy='14' r='7' stroke='%23e8c8b0'/%3E%3C/g%3E%3Cg transform='translate(160,178) rotate(8,14,20)'%3E%3Cpath d='M4,18 L14,38 L24,18'/%3E%3Ccircle cx='8' cy='14' r='8'/%3E%3Ccircle cx='20' cy='14' r='8'/%3E%3Ccircle cx='14' cy='7' r='7'/%3E%3C/g%3E%3Cg transform='translate(245,178) rotate(15,14,14)'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='19' y1='19' x2='28' y2='28'/%3E%3C/g%3E%3Cg transform='translate(25,260) rotate(20,8,18)'%3E%3Cpath d='M8,0 Q14,4 14,14 L8,18 L8,36'/%3E%3Cline x1='6' y1='18' x2='10' y2='18'/%3E%3C/g%3E%3Cg transform='translate(90,258)'%3E%3Cpath d='M6,16 L4,30 L28,30 L26,16 Z'/%3E%3Ccircle cx='10' cy='12' r='6'/%3E%3Ccircle cx='22' cy='12' r='6'/%3E%3Ccircle cx='16' cy='8' r='6'/%3E%3Ccircle cx='16' cy='5' r='2' fill='%23e8c8b0' stroke='%23e8c8b0'/%3E%3C/g%3E%3Cg transform='translate(165,265)'%3E%3Cellipse cx='20' cy='12' rx='22' ry='10'/%3E%3Cellipse cx='20' cy='12' rx='14' ry='6'/%3E%3C/g%3E%3Cg transform='translate(248,255) rotate(-10,10,20)'%3E%3Crect x='4' y='10' width='16' height='26' rx='3'/%3E%3Crect x='7' y='4' width='10' height='6' rx='1'/%3E%3Cline x1='4' y1='18' x2='20' y2='18'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E&quot;);background-size:150px 150px;background-repeat:repeat">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:#fff;font-size:11px;font-weight:600;color:#111;position:relative;z-index:3"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;background:#fff;position:relative;z-index:3;display:flex;align-items:center;justify-content:center"><span style="font-size:16px;font-weight:600;color:#000">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;gap:0"><span style="flex:1;text-align:center;font-size:12px;color:#111;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#111">◉</span></span></div>
+<div style="display:flex;flex-direction:column;align-items:center;height:692px;padding:0 12px;box-sizing:border-box">
+<div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;min-height:210px;flex-shrink:0">
+<span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-135px;margin-top:-135px;transform:translate(-50%,-50%) rotate(-10deg)">🌮</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-67px;margin-top:-135px;transform:translate(-50%,-50%) rotate(15deg)">🥘</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:0;margin-top:-135px;transform:translate(-50%,-50%) rotate(-5deg)">🍝</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:67px;margin-top:-135px;transform:translate(-50%,-50%) rotate(8deg)">🥐</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:135px;margin-top:-135px;transform:translate(-50%,-50%) rotate(-12deg)">🍤</span>
+<span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:135px;margin-top:-67px;transform:translate(-50%,-50%) rotate(10deg)">🍡</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:135px;margin-top:0;transform:translate(-50%,-50%) rotate(-8deg)">🥧</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:135px;margin-top:67px;transform:translate(-50%,-50%) rotate(5deg)">🧁</span>
+<span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:135px;margin-top:135px;transform:translate(-50%,-50%) rotate(-15deg)">🍿</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:67px;margin-top:135px;transform:translate(-50%,-50%) rotate(12deg)">🥨</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:0;margin-top:135px;transform:translate(-50%,-50%) rotate(-5deg)">🌯</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-67px;margin-top:135px;transform:translate(-50%,-50%) rotate(8deg)">🍘</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-135px;margin-top:135px;transform:translate(-50%,-50%) rotate(-10deg)">🥮</span>
+<span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-135px;margin-top:67px;transform:translate(-50%,-50%) rotate(15deg)">🍙</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-135px;margin-top:0;transform:translate(-50%,-50%) rotate(-8deg)">🥟</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-135px;margin-top:-67px;transform:translate(-50%,-50%) rotate(5deg)">🧆</span>
+<span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-68px;margin-top:-57px;transform:translate(-50%,-50%) rotate(-15deg)">🍕</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-44px;margin-top:-75px;transform:translate(-50%,-50%) rotate(10deg)">🍜</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-17px;margin-top:-82px;transform:translate(-50%,-50%) rotate(-5deg)">🍔</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:9px;margin-top:-80px;transform:translate(-50%,-50%) rotate(12deg)">🧋</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:33px;margin-top:-66px;transform:translate(-50%,-50%) rotate(-8deg)">🍰</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:44px;margin-top:-45px;transform:translate(-50%,-50%) rotate(15deg)">🍣</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:39px;margin-top:-21px;transform:translate(-50%,-50%) rotate(-10deg)">🥗</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:24px;margin-top:-3px;transform:translate(-50%,-50%) rotate(5deg)">🍳</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:6px;margin-top:15px;transform:translate(-50%,-50%) rotate(-12deg)">🍩</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-5px;margin-top:33px;transform:translate(-50%,-50%) rotate(8deg)">🍟</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-11px;margin-top:54px;transform:translate(-50%,-50%) rotate(-5deg)">🥤</span><span style="position:absolute;left:50%;top:50%;font-size:20px;opacity:.18;margin-left:-11px;margin-top:87px;transform:translate(-50%,-50%) rotate(10deg)">🍱</span>
+<span style="position:relative;z-index:1;font-size:28px;font-weight:bold;color:#333;letter-spacing:2px">今天吃啥？</span>
+</div>
+<div style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.85);border-radius:10px;padding:9px 12px;margin-bottom:12px;box-shadow:0 1px 5px rgba(0,0,0,.04)">
+<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:13px;font-weight:bold;color:#333">今日风向</span><span style="font-size:9px;color:#f5a623;background:rgba(245,166,35,.1);border-radius:8px;padding:1px 6px">AI 快报</span></div>
+<div style="font-size:11px;color:#666;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden">今日热搜：天水麻辣烫持续霸榜，广式糖水铺入夏爆单；打工人午餐榜第一名依旧是麻辣烫，晚餐小龙虾呼声最高。</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:0 4px;margin-bottom:14px">
+<span style="font-size:11px;color:#fff;font-weight:bold;padding:3px 10px;border-radius:12px;background:linear-gradient(135deg,#f5a623,#f7b84e);box-shadow:0 1px 4px rgba(245,166,35,.3)">随便</span>
+<span style="font-size:11px;color:#ff4757;padding:3px 10px;border-radius:12px;background:rgba(255,71,87,.08)">热门推荐</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">家常下饭</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">嗦粉吃面</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">火锅烫涮</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">烧烤撸串</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">街头小吃</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">异国风味</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">奶茶续命</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">甜品诱惑</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">轻食减脂</span>
+<span style="font-size:11px;color:#888;padding:3px 10px;border-radius:12px;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(0,0,0,.04)">深夜食堂</span>
+<span style="font-size:10px;color:#f5a623;padding:3px 10px;border-radius:12px;background:rgba(245,166,35,.08);border:1px dashed rgba(245,166,35,.4)">✏️ 自定义</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.82);border-radius:20px;padding:5px 18px;margin-top:auto;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
+<span style="font-size:12px;color:#666;font-weight:500;margin-right:2px">份数</span>
+<span style="width:24px;height:24px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#ccc;font-weight:bold">-</span>
+<span style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f5a623,#f7b84e);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:bold;color:#fff;box-shadow:0 1px 4px rgba(245,166,35,.35)">1</span>
+<span style="width:24px;height:24px;border-radius:50%;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#f5a623;font-weight:bold">+</span>
+</div>
+<div style="width:210px;height:40px;background:linear-gradient(135deg,#f5a623,#f7b84e);border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(245,166,35,.4);margin-bottom:16px"><span style="font-size:16px;color:#fff;font-weight:bold;letter-spacing:3px">开始</span></div>
+</div>
+<div style="position:absolute;right:12px;bottom:126px;width:36px;height:36px;border-radius:50%;background:rgba(245,166,35,.15);display:flex;align-items:center;justify-content:center;opacity:.7"><span style="font-size:10px;color:#f5a623;font-weight:500">反馈</span></div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:1px solid rgba(0,0,0,.06);display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><img src="src/assets/tab-home-active.png" style="width:22px;height:22px" alt=""><span style="font-size:10px;color:#f5a623">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><img src="src/assets/tab-ingredient.png" style="width:22px;height:22px" alt=""><span style="font-size:10px;color:#999999">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 1b 现状复刻 食材页 ===== -->
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>现状复刻 · 食材页「有啥做啥」（源码 1:1）</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#f5f8fd">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:#fff;font-size:11px;font-weight:600;color:#111"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;background:#fff;position:relative;display:flex;align-items:center;justify-content:center"><span style="font-size:16px;font-weight:600;color:#000">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#111;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#111">◉</span></span></div>
+<div style="margin-top:16px;padding:0 16px"><div style="font-size:14px;font-weight:bold;color:#333;margin-bottom:10px">已选食材</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<span style="display:flex;align-items:center;gap:4px;background:linear-gradient(135deg,#f5a623,#f7b84e);border-radius:12px;padding:4px 8px 4px 10px"><span style="font-size:13px;color:#fff;font-weight:500">番茄</span><span style="font-size:11px;color:rgba(255,255,255,.7);padding:2px">✕</span></span>
+<span style="display:flex;align-items:center;gap:4px;background:linear-gradient(135deg,#f5a623,#f7b84e);border-radius:12px;padding:4px 8px 4px 10px"><span style="font-size:13px;color:#fff;font-weight:500">鸡蛋</span><span style="font-size:11px;color:rgba(255,255,255,.7);padding:2px">✕</span></span>
+</div></div>
+<div style="margin-top:16px;padding:0 16px"><div style="font-size:14px;font-weight:bold;color:#333;margin-bottom:10px">输入食材</div>
+<div style="display:flex;align-items:center;gap:8px">
+<div style="flex:1;height:36px;background:#fff;border-radius:18px;padding:0 14px;display:flex;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,.04)"><span style="font-size:14px;color:#bbb">输入食材名，如：鸡蛋</span></div>
+<div style="height:36px;padding:0 14px;background:linear-gradient(135deg,#f5a623,#f7b84e);border-radius:18px;display:flex;align-items:center"><span style="font-size:14px;color:#fff;font-weight:bold">添加</span></div>
+</div></div>
+<div style="margin-top:16px;padding:0 16px"><div style="font-size:14px;font-weight:bold;color:#333;margin-bottom:10px">常用食材</div>
+<div style="display:flex;gap:10px;margin-bottom:10px">
+<span style="font-size:13px;color:#fff;font-weight:bold;padding:4px 12px;border-radius:12px;background:linear-gradient(135deg,#f5a623,#f7b84e)">蔬菜</span>
+<span style="font-size:13px;color:#999;padding:4px 12px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)">肉类</span>
+<span style="font-size:13px;color:#999;padding:4px 12px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)">水产蛋奶</span>
+<span style="font-size:13px;color:#999;padding:4px 12px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)">主食</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<span style="padding:6px 14px;border-radius:14px;background:#fff3e0;box-shadow:0 0 0 1px #f5a623;font-size:13px;color:#f5a623;font-weight:bold">番茄</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">土豆</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">白菜</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">青椒</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">黄瓜</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">茄子</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">西兰花</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">胡萝卜</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">菠菜</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">洋葱</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">蘑菇</span>
+<span style="padding:6px 14px;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);font-size:13px;color:#555">豆芽</span>
+</div></div>
+<div style="margin-top:16px;padding:0 16px"><div style="font-size:14px;font-weight:bold;color:#333;margin-bottom:10px">口味偏好</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<span style="font-size:13px;color:#fff;font-weight:bold;padding:5px 14px;border-radius:12px;background:linear-gradient(135deg,#f5a623,#f7b84e)">不限</span>
+<span style="font-size:13px;color:#888;padding:5px 14px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)">清淡</span>
+<span style="font-size:13px;color:#888;padding:5px 14px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)">家常</span>
+<span style="font-size:13px;color:#888;padding:5px 14px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)">快手菜</span>
+<span style="font-size:13px;color:#888;padding:5px 14px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)">下饭菜</span>
+<span style="font-size:13px;color:#888;padding:5px 14px;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)">减脂</span>
+</div></div>
+<div style="margin-top:16px;padding:0 16px">
+<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:8px;padding:10px 12px;box-shadow:0 1px 2px rgba(0,0,0,.04)">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:bold;color:#333">允许额外买菜</span><span style="font-size:11px;color:#999">可推荐需额外购买1-2种食材的菜</span></div>
+<div style="width:44px;height:24px;border-radius:12px;background:#ddd;position:relative;flex-shrink:0"><div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;box-shadow:0 1px 2px rgba(0,0,0,.2)"></div></div>
+</div></div>
+<div style="margin-top:20px;padding:0 16px">
+<div style="width:100%;height:48px;background:linear-gradient(135deg,#f5a623,#f7b84e);border-radius:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(245,166,35,.4);box-sizing:border-box"><span style="font-size:17px;color:#fff;font-weight:bold;letter-spacing:2px">开始推荐</span></div>
+</div>
+<div style="position:absolute;right:12px;bottom:126px;width:36px;height:36px;border-radius:50%;background:rgba(245,166,35,.15);display:flex;align-items:center;justify-content:center;opacity:.7"><span style="font-size:10px;color:#f5a623;font-weight:500">反馈</span></div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:1px solid rgba(0,0,0,.06);display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><img src="src/assets/tab-home.png" style="width:22px;height:22px" alt=""><span style="font-size:10px;color:#999999">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><img src="src/assets/tab-ingredient-active.png" style="width:22px;height:22px" alt=""><span style="font-size:10px;color:#f5a623">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 1c 暖橙精修 ===== -->
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>暖橙精修 · 保留现有基因，去掉杂色底纹，层级重排（emoji 收敛为一个主视觉）</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:linear-gradient(180deg,#fff7ec 0%,#faf6f0 40%,#f7f4ef 100%)">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#3a2c18"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;display:flex;align-items:center;justify-content:center"><span style="font-size:16px;font-weight:700;color:#2c2013">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2c2013;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.08)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2c2013">◉</span></span></div>
+<div style="padding:18px 20px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:13px;color:#a08256;font-weight:600;letter-spacing:2px">7月19日 · 周日晚餐</span><span style="font-size:11px;color:#c2a377">第 128 次帮你决定</span></div>
+<div style="margin-top:14px;background:#fff;border-radius:20px;padding:28px 20px 22px;box-shadow:0 8px 30px rgba(180,130,50,.10),0 1px 0 rgba(255,255,255,.9) inset;display:flex;flex-direction:column;align-items:center;position:relative">
+<div style="width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9c4,#ffd591);display:flex;align-items:center;justify-content:center;font-size:52px;box-shadow:0 6px 18px rgba(245,166,35,.28)">🍜</div>
+<div style="margin-top:16px;font-size:34px;font-weight:800;color:#2c2013;letter-spacing:2px">今天吃啥？</div>
+<div style="margin-top:6px;font-size:12px;color:#a89a86">按下开始，把选择困难交给我</div>
+<div style="position:absolute;top:14px;right:14px;font-size:10px;color:#f5a623;background:rgba(245,166,35,.1);border-radius:9px;padding:2px 8px;font-weight:600">随便 · 30 种</div>
+</div>
+<div style="margin-top:14px;background:rgba(255,255,255,.72);border-radius:14px;padding:10px 14px;display:flex;gap:10px;align-items:flex-start">
+<span style="font-size:10px;font-weight:700;color:#fff;background:#f5a623;border-radius:7px;padding:2px 7px;flex-shrink:0;margin-top:1px">今日风向</span>
+<span style="font-size:11.5px;color:#6d5f4d;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden">天水麻辣烫持续霸榜，广式糖水铺入夏爆单；晚餐小龙虾呼声最高。</span>
+</div>
+<div style="margin-top:18px;display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:13px;font-weight:700;color:#2c2013">想吃哪一挂？</span><span style="font-size:11px;color:#c2a377">✏️ 自定义</span></div>
+<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:7px">
+<span style="font-size:12px;color:#fff;font-weight:700;padding:6px 14px;border-radius:16px;background:linear-gradient(135deg,#f5a623,#f7b84e);box-shadow:0 3px 10px rgba(245,166,35,.35)">随便</span>
+<span style="font-size:12px;color:#d8443c;font-weight:600;padding:6px 14px;border-radius:16px;background:#fff;border:1px solid rgba(216,68,60,.25)">🔥 热门推荐</span>
+<span style="font-size:12px;color:#6d5f4d;padding:6px 14px;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.05)">家常下饭</span>
+<span style="font-size:12px;color:#6d5f4d;padding:6px 14px;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.05)">嗦粉吃面</span>
+<span style="font-size:12px;color:#6d5f4d;padding:6px 14px;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.05)">火锅烫涮</span>
+<span style="font-size:12px;color:#6d5f4d;padding:6px 14px;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.05)">烧烤撸串</span>
+<span style="font-size:12px;color:#6d5f4d;padding:6px 14px;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.05)">街头小吃</span>
+<span style="font-size:12px;color:#6d5f4d;padding:6px 14px;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.05)">异国风味</span>
+<span style="font-size:12px;color:#6d5f4d;padding:6px 14px;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.05)">奶茶续命</span>
+<span style="font-size:12px;color:#6d5f4d;padding:6px 14px;border-radius:16px;background:#fff;border:1px solid rgba(0,0,0,.05)">深夜食堂</span>
+<span style="font-size:12px;color:#a89a86;padding:6px 14px;border-radius:16px;background:transparent;border:1px dashed rgba(0,0,0,.15)">更多 ▾</span>
+</div>
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="flex-shrink:0;display:flex;align-items:center;gap:8px;background:#fff;border-radius:26px;padding:8px 12px;border:1px solid rgba(0,0,0,.05)">
+<span style="width:26px;height:26px;border-radius:50%;background:#f6efe4;display:flex;align-items:center;justify-content:center;font-size:15px;color:#c2a377;font-weight:700">−</span>
+<span style="font-size:15px;font-weight:800;color:#2c2013;min-width:34px;text-align:center">1 份</span>
+<span style="width:26px;height:26px;border-radius:50%;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:15px;color:#f5a623;font-weight:700">+</span>
+</div>
+<div style="flex:1;height:52px;background:linear-gradient(135deg,#f7a11c,#ffbe55);border-radius:26px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 20px rgba(245,166,35,.4),0 1px 0 rgba(255,255,255,.5) inset">
+<span style="font-size:17px;color:#fff;font-weight:800;letter-spacing:4px">开始抽</span><span style="font-size:15px">🎲</span>
+</div>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:rgba(255,255,255,.92);border-top:1px solid rgba(0,0,0,.05);display:flex;backdrop-filter:blur(8px)">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px">🎲</span><span style="font-size:10px;color:#f5a623;font-weight:700">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px;filter:grayscale(1);opacity:.5">🥬</span><span style="font-size:10px;color:#9a9a9a">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 1d 御厨纸感 ===== -->
+<div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>御厨纸感 · 专业大厨人设：米白纸面 + 衬线字 + 印章红，emoji 全部换为符号/文字</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:#f6f1e7">
+<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(160,130,80,.045) 0,rgba(160,130,80,.045) 1px,transparent 1px,transparent 7px);pointer-events:none"></div>
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#2f261a;position:relative"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;display:flex;align-items:center;justify-content:center"><span style="font-family:'Noto Serif SC',serif;font-size:16px;font-weight:900;color:#2f261a;letter-spacing:3px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2f261a;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.1)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2f261a">◉</span></span></div>
+<div style="padding:22px 24px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box;position:relative">
+<div style="display:flex;align-items:center;gap:10px"><span style="height:1px;flex:1;background:linear-gradient(90deg,transparent,#c9b088)"></span><span style="font-family:'Noto Serif SC',serif;font-size:12px;color:#a3803f;letter-spacing:6px">御厨为你定夺</span><span style="height:1px;flex:1;background:linear-gradient(90deg,#c9b088,transparent)"></span></div>
+<div style="margin-top:18px;background:#fffdf8;border:1px solid #e6d9bf;border-radius:6px;padding:30px 22px 24px;position:relative;box-shadow:0 10px 26px rgba(120,90,40,.08)">
+<div style="position:absolute;top:0;left:20px;right:20px;height:3px;background:linear-gradient(90deg,#b8934e,#e3c88e,#b8934e)"></div>
+<div style="text-align:center;font-family:'Noto Serif SC',serif;font-size:11px;color:#a3803f;letter-spacing:4px">─ 今日一问 ─</div>
+<div style="margin-top:14px;text-align:center;font-family:'Noto Serif SC',serif;font-size:40px;font-weight:900;color:#2f261a;letter-spacing:6px">今晚食何？</div>
+<div style="margin-top:10px;text-align:center;font-size:11.5px;color:#8d7c60;letter-spacing:1px">三十道候选 · 随便一类</div>
+<div style="margin-top:4px;text-align:center;font-size:10.5px;color:#b9ac96;letter-spacing:1px">本店已开张 462 日</div>
+<div style="position:absolute;right:10px;top:10px;width:54px;height:54px;transform:rotate(-12deg)">
+<div style="position:absolute;inset:0;border:2.5px solid rgba(197,48,48,.8);border-radius:50%"></div>
+<div style="position:absolute;inset:5px;border:1px solid rgba(197,48,48,.7);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column"><span style="font-family:'Noto Serif SC',serif;font-size:12px;font-weight:900;color:rgba(197,48,48,.85);line-height:1.15">大厨<br>认证</span></div>
+</div>
+</div>
+<div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e0d2b4;padding-bottom:8px"><span style="font-family:'Noto Serif SC',serif;font-size:14px;font-weight:900;color:#2f261a;letter-spacing:2px">菜单 · 十二类</span><span style="font-size:11px;color:#a3803f;border:1px dashed #c9b088;border-radius:3px;padding:2px 8px">＋ 自定义</span></div>
+<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px 6px">
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;font-weight:900;color:#fffdf8;background:#2f261a;padding:5px 14px;letter-spacing:2px">随便</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#c53030;padding:5px 12px;border:1px solid rgba(197,48,48,.4);letter-spacing:2px">热门</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">家常下饭</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">嗦粉吃面</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">火锅烫涮</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">烧烤撸串</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">街头小吃</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">异国风味</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">奶茶续命</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">甜品诱惑</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">轻食减脂</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:13px;color:#5d5142;padding:5px 12px;border:1px solid #d9c9a6;letter-spacing:2px">深夜食堂</span>
+</div>
+<div style="margin-top:14px;background:rgba(255,253,248,.8);border-left:3px solid #b8934e;padding:8px 12px"><span style="font-size:11px;color:#8d7c60;line-height:1.6">「今日风向」天水麻辣烫持续霸榜，糖水铺入夏爆单，晚市小龙虾呼声最高。</span></div>
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:12px">
+<span style="font-size:12px;color:#8d7c60;letter-spacing:2px">份数</span>
+<span style="width:26px;height:26px;border:1px solid #d9c9a6;display:flex;align-items:center;justify-content:center;font-size:14px;color:#c9b088">−</span>
+<span style="font-family:'Noto Serif SC',serif;font-size:18px;font-weight:900;color:#2f261a">壹</span>
+<span style="width:26px;height:26px;border:1px solid #b8934e;display:flex;align-items:center;justify-content:center;font-size:14px;color:#a3803f">＋</span>
+</div>
+<div style="height:52px;background:#2f261a;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 20px rgba(47,38,26,.3)">
+<span style="width:22px;height:1px;background:#b8934e"></span>
+<span style="font-family:'Noto Serif SC',serif;font-size:17px;color:#f0dfb8;font-weight:900;letter-spacing:8px">为我定夺</span>
+<span style="width:22px;height:1px;background:#b8934e"></span>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fffdf8;border-top:1px solid #e6d9bf;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#a3803f">抽</span><span style="font-size:10px;color:#a3803f;font-weight:700">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-family:'Noto Serif SC',serif;font-size:15px;font-weight:900;color:#b9ac96">做</span><span style="font-size:10px;color:#b9ac96">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 1e 贴纸漫画 ===== -->
+<div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>贴纸漫画 · 年轻活泼：粗描边贴纸 + 硬阴影 + 手写体，emoji 保留并放大当主角</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background-color:#fff3d6;background-image:radial-gradient(rgba(31,27,22,.08) 1.2px,transparent 1.2px);background-size:16px 16px">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:700;color:#1f1b16"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;display:flex;align-items:center;justify-content:center"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:17px;color:#1f1b16;letter-spacing:1px">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1.5px solid #1f1b16;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#1f1b16;letter-spacing:1px">•••</span><span style="width:1.5px;height:16px;background:#1f1b16"></span><span style="flex:1;text-align:center;font-size:13px;color:#1f1b16">◉</span></span></div>
+<div style="padding:14px 18px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box">
+<div style="align-self:flex-start;background:#1f1b16;color:#ffd94a;font-family:'ZCOOL KuaiLe',sans-serif;font-size:12px;padding:4px 12px;border-radius:4px;transform:rotate(-2deg)">星期日 · 干饭人的第 128 次纠结</div>
+<div style="margin-top:14px;background:#fff;border:3px solid #1f1b16;border-radius:18px;box-shadow:6px 6px 0 #1f1b16;padding:24px 18px 20px;transform:rotate(-1.2deg);position:relative;display:flex;flex-direction:column;align-items:center">
+<span style="position:absolute;top:-14px;right:18px;background:#ff5d5d;color:#fff;font-family:'ZCOOL KuaiLe',sans-serif;font-size:11px;border:2px solid #1f1b16;border-radius:12px;padding:3px 10px;transform:rotate(6deg)">别纠结啦！</span>
+<div style="display:flex;gap:6px;font-size:44px;line-height:1"><span style="transform:rotate(-8deg)">🍕</span><span style="transform:translateY(-6px)">🍜</span><span style="transform:rotate(10deg)">🧋</span></div>
+<div style="margin-top:12px;font-family:'ZCOOL KuaiLe',sans-serif;font-size:36px;color:#1f1b16">今天吃啥？</div>
+<div style="margin-top:4px;font-size:12px;color:#7a6f60;font-weight:600">摇一摇骰子，饭缘天注定 ✦</div>
+</div>
+<div style="margin-top:18px;display:flex;align-items:center;gap:8px"><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:15px;color:#1f1b16">想吃哪挂？</span><span style="flex:1;height:2px;background:repeating-linear-gradient(90deg,#1f1b16 0 8px,transparent 8px 14px)"></span></div>
+<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:9px 7px">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#ffd94a;border:2px solid #1f1b16;border-radius:14px;padding:5px 13px;box-shadow:3px 3px 0 #1f1b16;transform:rotate(-2deg)">🎲 随便</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#fff;background:#ff5d5d;border:2px solid #1f1b16;border-radius:14px;padding:5px 13px;transform:rotate(1.5deg)">🔥 热门</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:14px;padding:5px 13px;transform:rotate(-1deg)">🍚 家常下饭</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:14px;padding:5px 13px;transform:rotate(2deg)">🍜 嗦粉吃面</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:14px;padding:5px 13px;transform:rotate(-2deg)">🍲 火锅烫涮</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:14px;padding:5px 13px;transform:rotate(1deg)">🍢 烧烤撸串</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:14px;padding:5px 13px;transform:rotate(-1.5deg)">🧋 奶茶续命</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:14px;padding:5px 13px;transform:rotate(2deg)">🍰 甜品诱惑</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#1f1b16;background:#fff;border:2px solid #1f1b16;border-radius:14px;padding:5px 13px;transform:rotate(-1deg)">🌙 深夜食堂</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:13px;color:#7a6f60;background:transparent;border:2px dashed #1f1b16;border-radius:14px;padding:5px 13px">✏️ 自定义</span>
+</div>
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="flex-shrink:0;display:flex;align-items:center;gap:8px;background:#fff;border:2.5px solid #1f1b16;border-radius:22px;padding:7px 12px;box-shadow:3px 3px 0 #1f1b16">
+<span style="font-size:16px;color:#1f1b16;font-weight:900">−</span>
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:16px;color:#1f1b16;min-width:30px;text-align:center">1 份</span>
+<span style="font-size:16px;color:#1f1b16;font-weight:900">＋</span>
+</div>
+<div style="flex:1;height:54px;background:#ffb020;border:3px solid #1f1b16;border-radius:27px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:5px 5px 0 #1f1b16">
+<span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:20px;color:#1f1b16;letter-spacing:3px">开抽！</span><span style="font-size:18px">🎰</span>
+</div>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#fff;border-top:3px solid #1f1b16;display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:18px">🎰</span><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;color:#1f1b16">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px"><span style="font-size:18px;filter:grayscale(1);opacity:.45">🥬</span><span style="font-family:'ZCOOL KuaiLe',sans-serif;font-size:10px;color:#b3a89a">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 1f 深夜食堂 ===== -->
+<div class="dv-opt" id="1f"><div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>深夜食堂 · 暗色主题：暖橙霓虹 + 灯下氛围，顶部有「日/夜」切换（可与任一浅色方案配对）</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:radial-gradient(120% 60% at 50% 22%,#2a2016 0%,#1a140d 55%,#120d08 100%)">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#e8dcc8"><span>23:41</span><span style="letter-spacing:1px">▪▪▪ ⚡ 41%</span></div>
+<div style="height:40px;position:relative;display:flex;align-items:center;justify-content:center"><span style="font-size:16px;font-weight:700;color:#f3e7d2">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#f3e7d2;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(255,255,255,.18)"></span><span style="flex:1;text-align:center;font-size:13px;color:#f3e7d2">◉</span></span></div>
+<div style="padding:14px 20px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<span style="font-size:12px;color:#c9a05c;letter-spacing:2px">深夜 23:41 · 该吃点好的了</span>
+<span style="display:flex;align-items:center;gap:0;border:1px solid rgba(255,178,64,.35);border-radius:12px;overflow:hidden"><span style="font-size:10px;color:#6d5c42;padding:3px 9px">☀ 日</span><span style="font-size:10px;color:#1a140d;background:#ffb240;padding:3px 9px;font-weight:700">☾ 夜</span></span>
+</div>
+<div style="margin-top:22px;position:relative;display:flex;flex-direction:column;align-items:center">
+<div style="position:absolute;top:-8px;width:220px;height:150px;background:radial-gradient(closest-side,rgba(255,178,64,.28),transparent);filter:blur(6px)"></div>
+<div style="position:relative;width:88px;height:88px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3d2f1c,#241a0e);border:1px solid rgba(255,178,64,.4);display:flex;align-items:center;justify-content:center;font-size:44px;box-shadow:0 0 40px rgba(255,178,64,.25)">🍢</div>
+<div style="position:relative;margin-top:18px;font-size:36px;font-weight:800;color:#ffe8c2;letter-spacing:3px;text-shadow:0 0 24px rgba(255,178,64,.45)">今晚吃啥？</div>
+<div style="position:relative;margin-top:8px;font-size:12px;color:#8f7d61">灯还亮着，锅还热着 · 深夜档 30 家候选</div>
+</div>
+<div style="margin-top:22px;background:rgba(255,255,255,.045);border:1px solid rgba(255,178,64,.14);border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:flex-start">
+<span style="font-size:10px;font-weight:700;color:#1a140d;background:#ffb240;border-radius:6px;padding:2px 7px;flex-shrink:0;margin-top:1px">夜宵风向</span>
+<span style="font-size:11.5px;color:#b3a086;line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden">今夜小龙虾呼声最高，烧烤摊 23 点后排队；泡面加蛋永远是保底选项。</span>
+</div>
+<div style="margin-top:20px;font-size:13px;font-weight:700;color:#e8dcc8">来一挂？</div>
+<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:7px">
+<span style="font-size:12px;color:#1a140d;font-weight:700;padding:6px 14px;border-radius:16px;background:linear-gradient(135deg,#ffb240,#ffc86e);box-shadow:0 0 18px rgba(255,178,64,.4)">深夜食堂</span>
+<span style="font-size:12px;color:#ff7a6b;padding:6px 14px;border-radius:16px;border:1px solid rgba(255,122,107,.4);background:rgba(255,122,107,.06)">🔥 热门</span>
+<span style="font-size:12px;color:#b3a086;padding:6px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.12)">随便</span>
+<span style="font-size:12px;color:#b3a086;padding:6px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.12)">烧烤撸串</span>
+<span style="font-size:12px;color:#b3a086;padding:6px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.12)">嗦粉吃面</span>
+<span style="font-size:12px;color:#b3a086;padding:6px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.12)">火锅烫涮</span>
+<span style="font-size:12px;color:#b3a086;padding:6px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.12)">奶茶续命</span>
+<span style="font-size:12px;color:#b3a086;padding:6px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.12)">街头小吃</span>
+<span style="font-size:12px;color:#6d5c42;padding:6px 14px;border-radius:16px;border:1px dashed rgba(255,255,255,.18)">✏️ 自定义</span>
+</div>
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="flex-shrink:0;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:26px;padding:8px 12px">
+<span style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:15px;color:#6d5c42;font-weight:700">−</span>
+<span style="font-size:15px;font-weight:800;color:#ffe8c2;min-width:34px;text-align:center">1 份</span>
+<span style="width:26px;height:26px;border-radius:50%;background:rgba(255,178,64,.15);display:flex;align-items:center;justify-content:center;font-size:15px;color:#ffb240;font-weight:700">+</span>
+</div>
+<div style="flex:1;height:52px;background:linear-gradient(135deg,#ffb240,#ff9a1f);border-radius:26px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 0 30px rgba(255,178,64,.45)">
+<span style="font-size:17px;color:#1a140d;font-weight:800;letter-spacing:4px">开始抽</span><span style="font-size:15px">🔥</span>
+</div>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:rgba(18,13,8,.9);border-top:1px solid rgba(255,178,64,.15);display:flex;backdrop-filter:blur(8px)">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px">🎲</span><span style="font-size:10px;color:#ffb240;font-weight:700">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px;filter:grayscale(1);opacity:.4">🥬</span><span style="font-size:10px;color:#6d5c42">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 1g 抽取时刻 ===== -->
+<div class="dv-opt" id="1g"><div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>抽取时刻 · 老虎机仪式感：三轮滚筒 + 中奖窗 + 拉杆 + 出票口（滚动中的瞬间）</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:linear-gradient(180deg,#fff7ec 0%,#faf3e6 100%)">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#3a2c18"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;display:flex;align-items:center;justify-content:center"><span style="font-size:16px;font-weight:700;color:#2c2013">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2c2013;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.08)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2c2013">◉</span></span></div>
+<div style="padding:16px 20px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box;align-items:center">
+<div style="display:flex;align-items:center;gap:8px"><span style="width:6px;height:6px;border-radius:50%;background:#f5a623"></span><span style="font-size:12px;color:#a08256;letter-spacing:3px;font-weight:600">命运抽取中</span><span style="width:6px;height:6px;border-radius:50%;background:#f5a623"></span></div>
+<!-- 机身 -->
+<div style="margin-top:14px;width:100%;position:relative">
+<div style="background:linear-gradient(180deg,#ffcf7d,#f5a623);border-radius:24px;padding:14px 14px 18px;box-shadow:0 16px 36px rgba(200,130,30,.35),0 2px 0 rgba(255,255,255,.6) inset">
+<div style="display:flex;justify-content:center;gap:6px;margin-bottom:10px">
+<span style="width:8px;height:8px;border-radius:50%;background:#fff2d8;box-shadow:0 0 8px #fff2d8"></span><span style="width:8px;height:8px;border-radius:50%;background:#ffe4ad"></span><span style="width:8px;height:8px;border-radius:50%;background:#fff2d8;box-shadow:0 0 8px #fff2d8"></span><span style="width:8px;height:8px;border-radius:50%;background:#ffe4ad"></span><span style="width:8px;height:8px;border-radius:50%;background:#fff2d8;box-shadow:0 0 8px #fff2d8"></span>
+</div>
+<div style="background:#2c2013;border-radius:16px;padding:12px 10px;position:relative">
+<div style="display:flex;gap:8px">
+<div style="flex:1;background:linear-gradient(180deg,#4a3a22 0%,#fffdf8 28%,#fffdf8 72%,#4a3a22 100%);border-radius:8px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:9px;overflow:hidden">
+<span style="font-size:13px;color:#b9ac96;filter:blur(1.2px)">烤鸭</span><span style="font-size:13px;color:#8d7c60;filter:blur(.6px)">火锅</span><span style="font-size:16px;font-weight:900;color:#2c2013">红烧肉</span><span style="font-size:13px;color:#8d7c60;filter:blur(.6px)">寿司</span><span style="font-size:13px;color:#b9ac96;filter:blur(1.2px)">炸鸡</span>
+</div>
+<div style="flex:1;background:linear-gradient(180deg,#4a3a22 0%,#fffdf8 28%,#fffdf8 72%,#4a3a22 100%);border-radius:8px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:9px;overflow:hidden">
+<span style="font-size:13px;color:#b9ac96;filter:blur(1.2px)">奶茶</span><span style="font-size:13px;color:#8d7c60;filter:blur(.6px)">冒菜</span><span style="font-size:16px;font-weight:900;color:#2c2013">酸菜鱼</span><span style="font-size:13px;color:#8d7c60;filter:blur(.6px)">烤串</span><span style="font-size:13px;color:#b9ac96;filter:blur(1.2px)">披萨</span>
+</div>
+<div style="flex:1;background:linear-gradient(180deg,#4a3a22 0%,#fffdf8 28%,#fffdf8 72%,#4a3a22 100%);border-radius:8px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:9px;overflow:hidden">
+<span style="font-size:13px;color:#b9ac96;filter:blur(1.4px)">煲仔饭</span><span style="font-size:13px;color:#8d7c60;filter:blur(.8px)">拉面</span><span style="font-size:15px;font-weight:900;color:#8d7c60;filter:blur(.4px)">滚动中</span><span style="font-size:13px;color:#8d7c60;filter:blur(.8px)">汉堡</span><span style="font-size:13px;color:#b9ac96;filter:blur(1.4px)">麻辣烫</span>
+</div>
+</div>
+<div style="position:absolute;left:6px;right:6px;top:50%;height:34px;transform:translateY(-50%);border:2px solid #f5a623;border-radius:8px;box-shadow:0 0 14px rgba(245,166,35,.5);pointer-events:none"></div>
+<span style="position:absolute;left:-4px;top:50%;transform:translateY(-50%);font-size:12px;color:#f5a623">▶</span>
+<span style="position:absolute;right:-4px;top:50%;transform:translateY(-50%);font-size:12px;color:#f5a623">◀</span>
+</div>
+</div>
+<!-- 拉杆 -->
+<div style="position:absolute;right:-8px;top:26px;width:14px;height:120px;display:flex;flex-direction:column;align-items:center">
+<div style="width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a80,#d8443c);box-shadow:0 2px 6px rgba(216,68,60,.5)"></div>
+<div style="width:5px;flex:1;background:linear-gradient(180deg,#c9b088,#8d7c60);border-radius:3px"></div>
+</div>
+</div>
+<div style="margin-top:16px;display:flex;gap:6px;align-items:center"><span style="font-size:11px;color:#c2a377">随便 · 3 份 · 第 128 次抽取</span></div>
+<!-- 出票口 -->
+<div style="margin-top:14px;width:78%;background:#fffdf8;border:1px dashed #d9c9a6;border-radius:4px;padding:10px 14px;position:relative;box-shadow:0 4px 14px rgba(180,130,50,.12)">
+<div style="position:absolute;top:-1px;left:12px;right:12px;height:2px;background:repeating-linear-gradient(90deg,#d9c9a6 0 5px,transparent 5px 9px)"></div>
+<div style="font-size:10px;color:#c2a377;letter-spacing:2px;text-align:center">— 饭票打印中 —</div>
+<div style="margin-top:4px;font-size:12px;color:#8d7c60;text-align:center">吃到不合心意可单独「换一换」</div>
+</div>
+<div style="margin-top:auto;margin-bottom:16px;width:100%">
+<div style="height:52px;background:#e8e2d6;border-radius:26px;display:flex;align-items:center;justify-content:center"><span style="font-size:16px;color:#a89a86;font-weight:800;letter-spacing:4px">选择中 ···</span></div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:rgba(255,255,255,.92);border-top:1px solid rgba(0,0,0,.05);display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px">🎰</span><span style="font-size:10px;color:#f5a623;font-weight:700">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px;filter:grayscale(1);opacity:.5">🥬</span><span style="font-size:10px;color:#9a9a9a">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+<!-- ===== 1h 食材页重设计 ===== -->
+<div class="dv-opt" id="1h"><div class="dv-olabel"><a class="dv-oid" href="#1h">1h</a>食材页重设计 · 「灶台」隐喻：已选食材进锅，三步引导，大厨风格与 <a class="dv-oid" href="#1c">1c</a> 同语言</div>
+<div class="dv-card" style="width:375px">
+<div style="width:375px;height:812px;position:relative;overflow:hidden;background:linear-gradient(180deg,#fff7ec 0%,#faf6f0 100%)">
+<div style="height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;color:#3a2c18"><span>17:24</span><span style="letter-spacing:1px">▪▪▪ ⚡ 87%</span></div>
+<div style="height:40px;position:relative;display:flex;align-items:center;justify-content:center"><span style="font-size:16px;font-weight:700;color:#2c2013">到底吃啥哟</span><span style="position:absolute;right:10px;top:6px;width:78px;height:28px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center"><span style="flex:1;text-align:center;font-size:12px;color:#2c2013;letter-spacing:1px">•••</span><span style="width:1px;height:16px;background:rgba(0,0,0,.08)"></span><span style="flex:1;text-align:center;font-size:13px;color:#2c2013">◉</span></span></div>
+<div style="padding:14px 20px 0;display:flex;flex-direction:column;height:692px;box-sizing:border-box">
+<div style="display:flex;align-items:center;gap:6px">
+<span style="width:18px;height:18px;border-radius:50%;background:#f5a623;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">1</span><span style="font-size:12px;color:#2c2013;font-weight:700">选食材</span>
+<span style="width:24px;height:1px;background:#e0d2b4"></span>
+<span style="width:18px;height:18px;border-radius:50%;background:#f0e6d4;color:#c2a377;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">2</span><span style="font-size:12px;color:#c2a377">挑口味</span>
+<span style="width:24px;height:1px;background:#e0d2b4"></span>
+<span style="width:18px;height:18px;border-radius:50%;background:#f0e6d4;color:#c2a377;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center">3</span><span style="font-size:12px;color:#c2a377">大厨出菜</span>
+</div>
+<!-- 锅：已选食材 -->
+<div style="margin-top:14px;background:#fff;border-radius:18px;padding:16px 16px 14px;box-shadow:0 8px 24px rgba(180,130,50,.10);position:relative">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font-size:13px;font-weight:800;color:#2c2013">锅里已有 · 3 样</span><span style="font-size:11px;color:#c2a377">清空</span></div>
+<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:7px">
+<span style="display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,#f5a623,#f7b84e);border-radius:14px;padding:5px 10px 5px 12px;box-shadow:0 3px 8px rgba(245,166,35,.3)"><span style="font-size:13px;color:#fff;font-weight:600">番茄</span><span style="font-size:10px;color:rgba(255,255,255,.75)">✕</span></span>
+<span style="display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,#f5a623,#f7b84e);border-radius:14px;padding:5px 10px 5px 12px;box-shadow:0 3px 8px rgba(245,166,35,.3)"><span style="font-size:13px;color:#fff;font-weight:600">鸡蛋</span><span style="font-size:10px;color:rgba(255,255,255,.75)">✕</span></span>
+<span style="display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,#f5a623,#f7b84e);border-radius:14px;padding:5px 10px 5px 12px;box-shadow:0 3px 8px rgba(245,166,35,.3)"><span style="font-size:13px;color:#fff;font-weight:600">面条</span><span style="font-size:10px;color:rgba(255,255,255,.75)">✕</span></span>
+<span style="display:flex;align-items:center;background:#fff;border:1px dashed rgba(0,0,0,.18);border-radius:14px;padding:5px 12px"><span style="font-size:13px;color:#a89a86">＋ 输入食材</span></span>
+</div>
+<div style="margin-top:10px;font-size:11px;color:#a89a86">💡 3 样食材已能做 12 道菜，再加一样肉更妙</div>
+</div>
+<!-- 食材货架 -->
+<div style="margin-top:16px;display:flex;align-items:center;gap:10px">
+<span style="font-size:13px;font-weight:800;color:#2c2013;flex-shrink:0">食材货架</span>
+<div style="display:flex;gap:6px;overflow:hidden">
+<span style="font-size:11px;color:#fff;font-weight:700;padding:3px 10px;border-radius:11px;background:#2c2013">蔬菜</span>
+<span style="font-size:11px;color:#8d7c60;padding:3px 10px;border-radius:11px;background:#fff">肉类</span>
+<span style="font-size:11px;color:#8d7c60;padding:3px 10px;border-radius:11px;background:#fff">水产蛋奶</span>
+<span style="font-size:11px;color:#8d7c60;padding:3px 10px;border-radius:11px;background:#fff">主食</span>
+</div>
+</div>
+<div style="margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:7px">
+<span style="text-align:center;padding:7px 0;border-radius:12px;background:#fff3e0;box-shadow:0 0 0 1.5px #f5a623;font-size:12.5px;color:#b06a10;font-weight:700">番茄 ✓</span>
+<span style="text-align:center;padding:7px 0;border-radius:12px;background:#fff;border:1px solid rgba(0,0,0,.05);font-size:12.5px;color:#5d5142">土豆</span>
+<span style="text-align:center;padding:7px 0;border-radius:12px;background:#fff;border:1px solid rgba(0,0,0,.05);font-size:12.5px;color:#5d5142">白菜</span>
+<span style="text-align:center;padding:7px 0;border-radius:12px;background:#fff;border:1px solid rgba(0,0,0,.05);font-size:12.5px;color:#5d5142">青椒</span>
+<span style="text-align:center;padding:7px 0;border-radius:12px;background:#fff;border:1px solid rgba(0,0,0,.05);font-size:12.5px;color:#5d5142">黄瓜</span>
+<span style="text-align:center;padding:7px 0;border-radius:12px;background:#fff;border:1px solid rgba(0,0,0,.05);font-size:12.5px;color:#5d5142">茄子</span>
+<span style="text-align:center;padding:7px 0;border-radius:12px;background:#fff;border:1px solid rgba(0,0,0,.05);font-size:12.5px;color:#5d5142">西兰花</span>
+<span style="text-align:center;padding:7px 0;border-radius:12px;background:#fff;border:1px solid rgba(0,0,0,.05);font-size:12.5px;color:#5d5142">胡萝卜</span>
+</div>
+<!-- 口味 + 开关 -->
+<div style="margin-top:16px;display:flex;align-items:center;gap:8px">
+<span style="font-size:13px;font-weight:800;color:#2c2013;flex-shrink:0">口味</span>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<span style="font-size:12px;color:#fff;font-weight:700;padding:4px 12px;border-radius:13px;background:linear-gradient(135deg,#f5a623,#f7b84e)">不限</span>
+<span style="font-size:12px;color:#6d5f4d;padding:4px 12px;border-radius:13px;background:#fff;border:1px solid rgba(0,0,0,.05)">清淡</span>
+<span style="font-size:12px;color:#6d5f4d;padding:4px 12px;border-radius:13px;background:#fff;border:1px solid rgba(0,0,0,.05)">快手菜</span>
+<span style="font-size:12px;color:#6d5f4d;padding:4px 12px;border-radius:13px;background:#fff;border:1px solid rgba(0,0,0,.05)">下饭菜</span>
+<span style="font-size:12px;color:#6d5f4d;padding:4px 12px;border-radius:13px;background:#fff;border:1px solid rgba(0,0,0,.05)">减脂</span>
+</div>
+</div>
+<div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:14px;padding:10px 14px;border:1px solid rgba(0,0,0,.04)">
+<div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:13px;font-weight:700;color:#2c2013">允许额外买菜</span><span style="font-size:11px;color:#a89a86">可推荐需再买 1-2 样的菜</span></div>
+<div style="width:44px;height:24px;border-radius:12px;background:linear-gradient(135deg,#f5a623,#f7b84e);position:relative"><div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;right:2px;box-shadow:0 1px 2px rgba(0,0,0,.2)"></div></div>
+</div>
+<!-- 预览一道菜 -->
+<div style="margin-top:14px;background:#fffdf8;border:1px solid #f0e6d4;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+<span style="width:40px;height:40px;border-radius:10px;background:#fff3e0;display:flex;align-items:center;justify-content:center;font-size:20px">🍳</span>
+<div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:800;color:#2c2013">番茄鸡蛋拌面 <span style="font-size:10px;color:#f5a623;background:rgba(245,166,35,.1);border-radius:7px;padding:1px 7px;font-weight:600;margin-left:4px">新手友好</span></div><div style="font-size:11px;color:#a89a86;margin-top:2px">用你锅里的 3 样就能做 · 15 分钟</div></div>
+<span style="font-size:11px;color:#c2a377">先睹为快 ›</span>
+</div>
+<div style="margin-top:auto;margin-bottom:16px">
+<div style="height:52px;background:linear-gradient(135deg,#f7a11c,#ffbe55);border-radius:26px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 20px rgba(245,166,35,.4)">
+<span style="font-size:17px;color:#fff;font-weight:800;letter-spacing:3px">请大厨出菜</span><span style="font-size:15px">👨‍🍳</span>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:56px;background:rgba(255,255,255,.92);border-top:1px solid rgba(0,0,0,.05);display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px;filter:grayscale(1);opacity:.5">🎲</span><span style="font-size:10px;color:#9a9a9a">抽啥吃啥</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font-size:18px">🥬</span><span style="font-size:10px;color:#f5a623;font-weight:700">有啥做啥</span></div>
+</div>
+</div></div></div>
+
+</div>
+<p class="dv-next">试试对我说："<a class="dv-oid" href="#1c">1c</a> 方向不错，把结果页也做出来" · "<a class="dv-oid" href="#1d">1d</a> 和 <a class="dv-oid" href="#1f">1f</a> 融合一下" · "选定后做可交互原型"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { phase: 'idle' }; // idle → g-shake(2.4s) → g-drop(0.9s) → g-done
+  _timers = [];
+  _clear() { this._timers.forEach(clearTimeout); this._timers = []; }
+  componentWillUnmount() { this._clear(); }
+  start = () => {
+    const { phase } = this.state;
+    if (phase === 'g-shake' || phase === 'g-drop') return; // 抽取中不可打断
+    this._clear();
+    if (phase === 'g-done') { // 再来一发：先复位再起摇
+      this.setState({ phase: 'idle' });
+      this._timers.push(setTimeout(() => this.start(), 60));
+      return;
+    }
+    this.setState({ phase: 'g-shake' });
+    this._timers.push(setTimeout(() => this.setState({ phase: 'g-drop' }), 2400));
+    this._timers.push(setTimeout(() => this.setState({ phase: 'g-done' }), 3300));
+  };
+  renderVals() {
+    const p = this.state.phase;
+    return {
+      gachaPhase: p === 'idle' ? '' : p,
+      gachaToggle: this.start,
+      gachaTitle: { 'idle': '今晚吃啥，蛋说了算', 'g-shake': '咕噜噜…摇匀中', 'g-drop': '出蛋口有动静！', 'g-done': '🍖 是红烧肉！' }[p],
+      gachaHint: { 'idle': '点机器或按钮开抽', 'g-shake': '心里默念想吃的', 'g-drop': '咔哒——', 'g-done': '点机器再来一发' }[p],
+      gachaCta: { 'idle': '扭一下！🎰', 'g-shake': '咕噜咕噜…', 'g-drop': '出蛋中…', 'g-done': '就它了！🍚' }[p],
+      gachaBtnBg: p === 'g-done' ? '#8be28b' : (p === 'idle' ? '#ffb020' : '#e9e2d2'),
+    };
+  }
+}
+</script>
+</body>
+</html>
