@@ -1,0 +1,142 @@
+@use '../../styles/theme' as theme;
+
+.menu-grid-section {
+  width: 100%;
+}
+
+.menu-grid-header {
+  display: flex;
+  min-height: 88rpx;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 4rpx solid theme.$ink;
+}
+
+.menu-grid-title {
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 30rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
+}
+
+.menu-customize {
+  min-width: 176rpx;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 0 12rpx;
+  border: 0;
+  background: transparent;
+  color: theme.$gold-dim;
+  font-size: 22rpx;
+  line-height: 88rpx;
+
+  &::after {
+    border: 0;
+  }
+
+  &:focus-visible {
+    outline: 4rpx solid theme.$gold;
+    outline-offset: -4rpx;
+  }
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18rpx;
+  padding-top: 20rpx;
+}
+
+.menu-cell {
+  display: flex;
+  min-width: 0;
+  min-height: 104rpx;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 8rpx;
+  border: 2rpx solid theme.$border;
+  border-radius: 0;
+  background: theme.$card;
+  line-height: 1.2;
+  transition: transform .15s ease, background-color .15s ease, border-color .15s ease;
+
+  &::after {
+    border: 0;
+    border-radius: 0;
+  }
+
+  &:active {
+    transform: scale(.97);
+  }
+
+  &:focus-visible {
+    outline: 4rpx solid theme.$gold;
+    outline-offset: 2rpx;
+  }
+
+  &--active {
+    border-color: theme.$ink;
+    background: theme.$ink;
+    box-shadow:
+      inset 0 0 0 2rpx theme.$gold,
+      inset 0 0 0 6rpx theme.$ink,
+      inset 0 0 0 8rpx rgba(184, 147, 78, .5);
+
+    .menu-cell__name {
+      color: theme.$gold-text;
+    }
+
+    .menu-cell__note {
+      color: theme.$gold;
+    }
+  }
+
+  &--loading .menu-cell__note {
+    animation: menu-loading 1s ease-in-out infinite alternate;
+  }
+
+  &__name {
+    overflow: hidden;
+    max-width: 100%;
+    color: theme.$ink;
+    font-family: theme.$serif-stack;
+    font-size: 28rpx;
+    font-weight: 900;
+    letter-spacing: 6rpx;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__note {
+    overflow: hidden;
+    max-width: 100%;
+    margin-top: 6rpx;
+    color: theme.$weak;
+    font-size: 19rpx;
+    letter-spacing: 4rpx;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.menu-more {
+  border: 2rpx dashed theme.$border-dashed;
+  background: transparent;
+
+  &__arrow {
+    transform: rotate(0deg);
+    transition: transform .15s ease;
+  }
+
+  &--expanded .menu-more__arrow {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes menu-loading {
+  from { opacity: .45; }
+  to { opacity: 1; }
+}
