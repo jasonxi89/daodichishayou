@@ -49,6 +49,18 @@
   }
 }
 
+.count-stepper__symbol {
+  display: flex;
+  width: 56rpx;
+  height: 56rpx;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid theme.$border-2;
+  border-radius: 50%;
+  line-height: 52rpx;
+}
+
 .count-stepper__value {
   min-width: 48rpx;
   color: theme.$ink;

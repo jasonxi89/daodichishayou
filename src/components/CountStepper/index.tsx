@@ -27,7 +27,7 @@ export default function CountStepper({
         disabled={atMin}
         onClick={() => !atMin && onChange(value - 1)}
       >
-        −
+        <Text className='count-stepper__symbol'>−</Text>
       </Button>
       <Text className='count-stepper__value' aria-live='polite'>
         {toZhNumber(value)}
@@ -38,7 +38,7 @@ export default function CountStepper({
         disabled={atMax}
         onClick={() => !atMax && onChange(value + 1)}
       >
-        ＋
+        <Text className='count-stepper__symbol'>＋</Text>
       </Button>
     </View>
   )
