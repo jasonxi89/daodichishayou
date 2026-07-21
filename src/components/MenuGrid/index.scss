@@ -165,3 +165,11 @@
   from { opacity: .45; }
   to { opacity: 1; }
 }
+
+.menu-grid-scroll {
+  width: 100%;
+}
+
+.menu-grid-scroll--expanded {
+  max-height: 420rpx; // 3 行整 + 半行露出提示可滚，分类再多也不把底部操作行顶出屏幕
+}
