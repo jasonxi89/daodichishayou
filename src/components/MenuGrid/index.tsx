@@ -1,4 +1,4 @@
-import { Button, Text, View } from '@tarojs/components'
+import { Button, ScrollView, Text, View } from '@tarojs/components'
 import { useMemo, useState } from 'react'
 import { MENU_PRIMARY, getCategoryDisplay } from '../../data/categoryMeta'
 import './index.scss'
@@ -39,6 +39,10 @@ export default function MenuGrid({
           ＋ 自定义
         </Button>
       </View>
+      <ScrollView
+        scrollY={expanded}
+        className={`menu-grid-scroll ${expanded ? 'menu-grid-scroll--expanded' : ''}`}
+      >
       <View className='menu-grid'>
         {visible.map(category => {
           const display = getCategoryDisplay(category)
@@ -76,6 +80,7 @@ export default function MenuGrid({
           </Button>
         )}
       </View>
+      </ScrollView>
     </View>
   )
 }

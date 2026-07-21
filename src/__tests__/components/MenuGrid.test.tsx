@@ -59,6 +59,20 @@ describe('MenuGrid', () => {
     expect(screen.getByRole('button', { name: '收起更多分类' })).toHaveClass('menu-more--expanded')
   })
 
+  it('caps expanded grid height with an inner scroll area', () => {
+    const { container } = renderGrid()
+
+    expect(container.querySelector('.menu-grid-scroll--expanded')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: '展开更多分类' }))
+
+    expect(container.querySelector('.menu-grid-scroll--expanded')).not.toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: '收起更多分类' }))
+
+    expect(container.querySelector('.menu-grid-scroll--expanded')).toBeNull()
+  })
+
   it('marks the loading category and invokes customize', () => {
     const { props } = renderGrid({ loadingCategory: '奶茶续命' })
 
