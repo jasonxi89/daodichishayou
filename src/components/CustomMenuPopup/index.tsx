@@ -2,6 +2,7 @@ import { View, Text, ScrollView, Input } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useState, useCallback } from 'react'
 import { defaultCategories } from '../../data/defaultFoods'
+import './index.scss'
 
 interface CustomMenuPopupProps {
   customFoodList: Record<string, string[]>
@@ -71,8 +72,8 @@ export default function CustomMenuPopup(props: CustomMenuPopupProps) {
   }, [customFoodList, onSave])
 
   return (
-    <View className='recipe-overlay' onClick={onClose}>
-      <View className='recipe-popup custom-menu-popup' onClick={(e) => e.stopPropagation()}>
+    <View className='custom-menu-overlay' onClick={onClose}>
+      <View className='custom-menu-popup' onClick={(e) => e.stopPropagation()}>
         {/* 标题栏 */}
         <View className='custom-menu-header'>
           <Text className='custom-menu-title'>我的菜单</Text>

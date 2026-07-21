@@ -1,0 +1,18 @@
+@mixin overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, .45);
+}
+
+@mixin sheet {
+  width: 100%;
+  max-height: 70vh;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-radius: 32px 32px 0 0;
+  background: #fff;
+}

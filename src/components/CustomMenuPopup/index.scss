@@ -1,0 +1,218 @@
+@use '../../styles/popup-base' as popup;
+
+.custom-menu-overlay {
+  @include popup.overlay;
+}
+
+.custom-menu-popup {
+  @include popup.sheet;
+  padding: 40px;
+}
+
+.custom-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.custom-menu-title {
+  color: #333;
+  font-size: 36px;
+  font-weight: bold;
+}
+
+.custom-menu-close {
+  display: flex;
+  width: 56px;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f5f5f5;
+}
+
+.custom-menu-close-text {
+  color: #999;
+  font-size: 28px;
+}
+
+.custom-menu-body {
+  max-height: 55vh;
+}
+
+.custom-menu-empty {
+  padding: 48px 0;
+  text-align: center;
+}
+
+.custom-menu-empty-text {
+  color: #bbb;
+  font-size: 28px;
+}
+
+.custom-cat-section {
+  margin-bottom: 24px;
+  padding: 28px;
+  border-radius: 20px;
+  background: #fafafa;
+}
+
+.custom-cat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.custom-cat-info {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.custom-cat-name {
+  color: #333;
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.custom-cat-count {
+  color: #bbb;
+  font-size: 22px;
+}
+
+.custom-cat-delete {
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: #fff0f0;
+}
+
+.custom-cat-delete-text {
+  color: #e74c3c;
+  font-size: 24px;
+}
+
+.custom-food-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.custom-food-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 8px 20px;
+  border-radius: 24px;
+  background: #fff3e0;
+}
+
+.custom-food-tag-text {
+  color: #555;
+  font-size: 24px;
+}
+
+.custom-food-tag-x {
+  padding: 4px;
+  color: #ccc;
+  font-size: 20px;
+}
+
+.custom-add-food {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.custom-add-food-input {
+  height: 64px;
+  flex: 1;
+  padding: 0 24px;
+  border-radius: 32px;
+  background: #fff;
+  color: #333;
+  font-size: 26px;
+}
+
+.custom-add-food-btn {
+  display: flex;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5a623, #f7b84e);
+}
+
+.custom-add-food-btn-text {
+  width: 56px;
+  height: 56px;
+  color: #fff;
+  font-size: 32px;
+  font-weight: bold;
+  line-height: 56px;
+  text-align: center;
+}
+
+.custom-new-cat {
+  margin-top: 8px;
+}
+
+.custom-new-cat-input {
+  height: 72px;
+  margin-bottom: 16px;
+  padding: 0 28px;
+  border: 2px solid #f5a623;
+  border-radius: 36px;
+  background: #fff;
+  color: #333;
+  font-size: 28px;
+}
+
+.custom-new-cat-actions {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.custom-new-cat-confirm,
+.custom-new-cat-cancel {
+  padding: 12px 40px;
+  border-radius: 28px;
+}
+
+.custom-new-cat-confirm {
+  background: linear-gradient(135deg, #f5a623, #f7b84e);
+}
+
+.custom-new-cat-confirm-text {
+  color: #fff;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.custom-new-cat-cancel {
+  background: #f0f0f0;
+}
+
+.custom-new-cat-cancel-text {
+  color: #888;
+  font-size: 28px;
+}
+
+.custom-add-cat-btn {
+  margin-top: 8px;
+  padding: 20px 0;
+  border: 2px dashed #ddd;
+  border-radius: 20px;
+  text-align: center;
+}
+
+.custom-add-cat-btn-text {
+  color: #bbb;
+  font-size: 28px;
+  font-weight: 500;
+}
