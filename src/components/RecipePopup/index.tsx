@@ -1,5 +1,6 @@
 import { View, Text, ScrollView } from '@tarojs/components'
 import type { Recipe } from '../../data/recipes'
+import './index.scss'
 
 interface RecipePopupProps {
   foods: string[]
