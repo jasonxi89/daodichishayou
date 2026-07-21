@@ -273,8 +273,15 @@ export default function Index() {
 
   const hasResult = resultList.length > 0 || currentFood !== '今天吃啥？'
 
+  const singleScreen = resultList.length <= 3
+
   return (
-    <View className='index paper-texture'>
+    <View className={[
+      'index',
+      'paper-texture',
+      singleScreen ? 'index--single-screen' : '',
+      hasResult ? 'index--has-result' : '',
+    ].filter(Boolean).join(' ')}>
       <View className='custom-navigation' style={navStyle}>
         <Text className='custom-navigation__title'>到底吃啥哟</Text>
       </View>
@@ -322,7 +329,7 @@ export default function Index() {
           )}
         </View>
 
-        <DigestCard />
+        {!hasResult && <DigestCard />}
 
         <MenuGrid
           categories={allCategories}
@@ -341,7 +348,9 @@ export default function Index() {
             onClick={handleDecree}
           >
             <View className='decree-btn__line' />
-            <Text>{isRolling ? '选择中...' : '为我定夺'}</Text>
+            <Text className='decree-btn__label'>
+              {isRolling ? '选择中...' : '为我定夺'}
+            </Text>
             <View className='decree-btn__line' />
           </Button>
         </View>

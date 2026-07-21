@@ -6,6 +6,11 @@
   color: theme.$ink-body;
 }
 
+.index--single-screen {
+  height: 100vh;
+  overflow: hidden;
+}
+
 .custom-navigation {
   display: flex;
   box-sizing: border-box;
@@ -94,6 +99,21 @@
   color: theme.$weak;
   font-size: 24rpx;
   letter-spacing: 5rpx;
+}
+
+.index--has-result {
+  .date-row {
+    margin-bottom: 20rpx;
+  }
+
+  .hero {
+    min-height: 220rpx;
+    margin-bottom: 16rpx;
+  }
+
+  .draw-controls {
+    padding-top: 28rpx;
+  }
 }
 
 .hero__result {
@@ -225,11 +245,16 @@
   }
 }
 
+.decree-btn__label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .decree-btn__line {
-  width: 40rpx;
+  width: 28rpx;
   height: 2rpx;
   flex: 0 0 auto;
-  margin: 0 16rpx;
+  margin: 0 8rpx;
   @include theme.gold-line;
 }
 
