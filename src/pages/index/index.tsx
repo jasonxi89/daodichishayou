@@ -7,9 +7,12 @@ import { defaultFoodList, defaultCategories, AI_CATEGORIES } from '../../data/de
 import { fetchTrending, fetchCategories, generateFoodsByCategory, bulkGenerateFoodsByCategory } from '../../services/api'
 import useSlotMachine from '../../hooks/useSlotMachine'
 import DigestCard from '../../components/DigestCard'
-import FoodDecorIcons from '../../components/FoodDecorIcons'
+import MenuGrid from '../../components/MenuGrid'
+import CountStepper from '../../components/CountStepper'
 import CustomMenuPopup from '../../components/CustomMenuPopup'
 import RecipePopup from '../../components/RecipePopup'
+import { getDrawCount, incrementDrawCount } from '../../utils/drawStats'
+import { getDateLine } from '../../utils/dateLabel'
 import './index.scss'
 
 const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 1 day
@@ -22,6 +25,7 @@ export default function Index() {
     _setActiveCategory(cat)
   }, [])
   const [count, setCount] = useState(1)
+  const [drawCount, setDrawCount] = useState(() => getDrawCount())
   const [showRecipe, setShowRecipe] = useState(false)
   const [popupFoods, setPopupFoods] = useState<string[]>([])
   const [activePopupIndex, setActivePopupIndex] = useState(0)
@@ -40,6 +44,21 @@ export default function Index() {
   // 自定义菜单状态
   const [customFoodList, setCustomFoodList] = useState<Record<string, string[]>>({})
   const [showCustomMenu, setShowCustomMenu] = useState(false)
+  const dateLine = useMemo(() => getDateLine(), [])
+  const navStyle = useMemo(() => {
+    try {
+      const menu = Taro.getMenuButtonBoundingClientRect()
+      const system = Taro.getSystemInfoSync()
+      const sideInset = Math.max(24, system.windowWidth - menu.left + 8)
+      return {
+        minHeight: `${menu.bottom + 8}px`,
+        paddingLeft: `${sideInset}px`,
+        paddingRight: `${sideInset}px`,
+      }
+    } catch {
+      return { minHeight: '48px', paddingLeft: '24px', paddingRight: '24px' }
+    }
+  }, [])
 
   // 合并默认 + 热门 + 后端分类 + AI缓存 + 自定义
   // 优先级: AI缓存 > 自定义 > 默认硬编码 > 热门趋势
@@ -241,99 +260,104 @@ export default function Index() {
     }
   }, [setActiveCategory])
 
+  const handleDecree = useCallback(() => {
+    if (isRolling || categoryLoading !== null) return
+    const pool = getRollList()
+    if (!pool || pool.length === 0) {
+      handleStart()
+      return
+    }
+    setDrawCount(incrementDrawCount())
+    handleStart()
+  }, [categoryLoading, getRollList, handleStart, isRolling])
+
+  const hasResult = resultList.length > 0 || currentFood !== '今天吃啥？'
+
   return (
-    <View className='index'>
-      {/* 主内容 */}
-      <View className='content'>
-        {/* 食物名称展示 */}
-        <View className='food-display'>
-          {/* 装饰图标：仅在未显示结果列表时展示 */}
-          {resultList.length <= 1 && <FoodDecorIcons />}
-          {resultList.length > 1 ? (
-            <View className={`result-list ${resultList.length > 3 ? 'grid' : ''}`}>
-              {resultList.map((food, i) => (
-                <View key={i} className={`result-row ${showResult ? 'animate-in' : ''}`} style={{ animationDelay: `${i * 0.1}s` }}>
-                  <View className='result-item'>
-                    <Text className='result-index'>{i + 1}</Text>
-                    <Text className='result-food'>{food}</Text>
-                  </View>
-                  <View className='result-refresh' onClick={() => handleRefreshItem(i)}>
-                    <Text className='result-refresh-text'>换</Text>
-                  </View>
+    <View className='index paper-texture'>
+      <View className='custom-navigation' style={navStyle}>
+        <Text className='custom-navigation__title'>到底吃啥哟</Text>
+      </View>
+
+      <View className='content' role='main'>
+        <View className='date-row'>
+          <Text className='date-row__label'>{dateLine}</Text>
+          <Text className='date-row__count'>第 {drawCount} 次帮你定夺</Text>
+        </View>
+
+        <View className='hero' aria-live='polite'>
+          {!hasResult ? (
+            <>
+              <View className='hero__eyebrow'>
+                <View className='hero__gold-dot' />
+                <Text>今日一问</Text>
+              </View>
+              <Text className='hero__title'>今晚食何</Text>
+              <Text className='hero__subtitle'>三十道候选 · 把纠结交给大厨</Text>
+            </>
+          ) : resultList.length > 1 ? (
+            <View className={`result-list ${resultList.length > 3 ? 'result-list--grid' : ''}`}>
+              {resultList.map((food, index) => (
+                <View
+                  key={`${food}-${index}`}
+                  className={`result-row ${showResult ? 'result-row--visible' : ''}`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <Text className='result-index'>{index + 1}</Text>
+                  <Text className='result-food'>{food}</Text>
+                  <Button
+                    className='result-refresh'
+                    aria-label={`换掉${food}`}
+                    onClick={() => handleRefreshItem(index)}
+                  >
+                    换
+                  </Button>
                 </View>
               ))}
             </View>
           ) : (
-            <Text className={`food-name ${isRolling ? 'rolling' : ''} ${isLanded ? 'landed' : ''}`}>{currentFood}</Text>
+            <Text className={`hero__result ${isRolling ? 'hero__result--rolling' : ''} ${isLanded ? 'hero__result--landed' : ''}`}>
+              {currentFood}
+            </Text>
           )}
         </View>
 
-        {/* 今日风向快报 */}
         <DigestCard />
 
-        {/* 分类标签 */}
-        <View className='categories'>
-          {allCategories.map((cat) => (
-            <Text
-              key={cat}
-              className={`category-tag ${activeCategory === cat ? 'active' : ''} ${cat === '热门推荐' ? 'hot' : ''} ${categoryLoading === cat ? 'loading' : ''}`}
-              onClick={() => handleCategoryClick(cat)}
-            >
-              {cat}
-            </Text>
-          ))}
-          <Text className='category-tag edit-tag' onClick={() => setShowCustomMenu(true)}>✏️ 自定义</Text>
-        </View>
+        <MenuGrid
+          categories={allCategories}
+          active={activeCategory}
+          loadingCategory={categoryLoading}
+          onSelect={handleCategoryClick}
+          onCustomize={() => setShowCustomMenu(true)}
+        />
 
-        {/* 数量选择器 */}
-        <View className='count-selector'>
-          <Text className='count-label'>份数</Text>
-          <View
-            className={`count-btn ${count <= 1 ? 'disabled' : ''}`}
-            onClick={() => count > 1 && setCount(c => c - 1)}
+        <View className='draw-controls'>
+          <CountStepper value={count} onChange={setCount} />
+          <Button
+            className='decree-btn'
+            aria-label={isRolling ? '正在定夺' : '为我定夺'}
+            disabled={isRolling || categoryLoading !== null}
+            onClick={handleDecree}
           >
-            <Text className='count-btn-text'>-</Text>
-          </View>
-          <View className='count-num'>
-            <Text className='count-value'>{count}</Text>
-          </View>
-          <View
-            className={`count-btn ${count >= 10 ? 'disabled' : ''}`}
-            onClick={() => count < 10 && setCount(c => c + 1)}
-          >
-            <Text className='count-btn-text'>+</Text>
-          </View>
+            <View className='decree-btn__line' />
+            <Text>{isRolling ? '选择中...' : '为我定夺'}</Text>
+            <View className='decree-btn__line' />
+          </Button>
         </View>
 
-        {/* 开始按钮 */}
-        <View className='start-btn-wrapper'>
-          <View className={`start-btn ${isRolling || categoryLoading !== null ? 'disabled' : ''}`} onClick={handleStart}>
-            <Text className='start-btn-text'>{isRolling ? '选择中...' : '开始'}</Text>
-          </View>
-        </View>
-
-        {/* 结果操作按钮 — 选出食物后才显示 */}
-        {(resultList.length > 0 || currentFood !== '今天吃啥？') && (
-          <View className='actions'>
-            <View className='action-item' onClick={handleRecipeClick}>
-              <Text className='action-icon'>📋</Text>
-              <Text className='action-text'>查看菜谱</Text>
-            </View>
-            <Button className='share-btn' openType='share'>
-              <View className='action-item'>
-                <Text className='action-icon'>🔗</Text>
-                <Text className='action-text'>分享美食</Text>
-              </View>
+        {hasResult && (
+          <View className='result-actions'>
+            <Button className='result-action' onClick={handleRecipeClick}>
+              查看菜谱
+            </Button>
+            <Button className='result-action' openType='share'>
+              分享美食
             </Button>
           </View>
         )}
 
-        {/* 意见反馈悬浮按钮 */}
-        <Button className='feedback-fab' openType='feedback'>
-          <Text className='feedback-fab-text'>反馈</Text>
-        </Button>
-
-        {/* TabBar占位 */}
+        <Button className='feedback-fab' openType='feedback'>反馈</Button>
       </View>
 
       {/* 自定义菜单弹窗 */}

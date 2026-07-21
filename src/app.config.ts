@@ -1,32 +1,29 @@
 export default defineAppConfig({
   lazyCodeLoading: 'requiredComponents',
+  darkmode: false,
   pages: [
     'pages/index/index',
     'pages/ingredient/ingredient',
     'pages/recipe/recipe',
   ],
   tabBar: {
-    color: '#999999',
-    selectedColor: '#f5a623',
+    color: '#b9ac96',
+    selectedColor: '#a3803f',
     backgroundColor: '#ffffff',
     list: [
       {
         pagePath: 'pages/index/index',
-        text: '抽啥吃啥',
-        iconPath: 'assets/tab-home.png',
-        selectedIconPath: 'assets/tab-home-active.png',
+        text: '抽',
       },
       {
         pagePath: 'pages/ingredient/ingredient',
-        text: '有啥做啥',
-        iconPath: 'assets/tab-ingredient.png',
-        selectedIconPath: 'assets/tab-ingredient-active.png',
+        text: '做',
       },
     ],
   },
   window: {
-    backgroundTextStyle: 'light',
-    navigationBarBackgroundColor: '#fff',
+    backgroundTextStyle: 'dark',
+    navigationBarBackgroundColor: '#faf4e8',
     navigationBarTitleText: '到底吃啥哟',
     navigationBarTextStyle: 'black',
   },

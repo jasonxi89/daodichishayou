@@ -21,6 +21,7 @@ describe('MenuGrid', () => {
     renderGrid()
 
     expect(screen.getByText('菜单 · 择一挂')).toBeInTheDocument()
+    expect(screen.getByText('MENU')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '自定义菜单' })).toHaveTextContent('＋ 自定义')
     MENU_PRIMARY.forEach(category => {
       expect(screen.getByRole('button', { name: new RegExp(category === '热门推荐' ? '热门' : category) })).toBeInTheDocument()
@@ -34,6 +35,11 @@ describe('MenuGrid', () => {
     fireEvent.click(screen.getByRole('button', { name: /家常下饭/ }))
 
     expect(props.onSelect).toHaveBeenCalledWith('家常下饭')
+  })
+
+  it('uses the hot treatment without overriding active state', () => {
+    renderGrid()
+    expect(screen.getByRole('button', { name: /热门/ })).toHaveClass('menu-cell--hot')
   })
 
   it('marks the active category', () => {

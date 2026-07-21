@@ -27,7 +27,15 @@ const createSelectorQuery = jest.fn().mockReturnValue({
   }),
 })
 const canvasToTempFilePath = jest.fn()
-const getSystemInfoSync = jest.fn().mockReturnValue({ pixelRatio: 2 })
+const getSystemInfoSync = jest.fn().mockReturnValue({ pixelRatio: 2, windowWidth: 375 })
+const getMenuButtonBoundingClientRect = jest.fn().mockReturnValue({
+  top: 8,
+  bottom: 40,
+  left: 278,
+  right: 365,
+  width: 87,
+  height: 32,
+})
 
 // Tab bar related mocks
 const getCurrentInstance = jest.fn().mockReturnValue({ page: null })
@@ -52,6 +60,7 @@ const taroMock = {
   createSelectorQuery,
   canvasToTempFilePath,
   getSystemInfoSync,
+  getMenuButtonBoundingClientRect,
   getCurrentInstance,
   getCurrentPages,
   eventCenter,
@@ -76,6 +85,7 @@ export {
   createSelectorQuery,
   canvasToTempFilePath,
   getSystemInfoSync,
+  getMenuButtonBoundingClientRect,
   getCurrentInstance,
   getCurrentPages,
   eventCenter,

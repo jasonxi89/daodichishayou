@@ -1,4 +1,4 @@
-import { View, Text } from '@tarojs/components'
+import { Button, Text } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useEffect, useState } from 'react'
 import { fetchDigest, type FoodDigest } from '../../services/api'
@@ -50,12 +50,16 @@ export default function DigestCard() {
   if (!digest) return null
 
   return (
-    <View className='digest-card' onClick={() => setIsExpanded((prev) => !prev)}>
-      <View className='digest-header'>
-        <Text className='digest-title'>今日风向</Text>
-        <Text className='digest-badge'>AI 快报</Text>
-      </View>
-      <Text className={`digest-summary ${isExpanded ? 'expanded' : ''}`}>{digest.summary}</Text>
-    </View>
+    <Button
+      className='digest-card digest-card--quote'
+      aria-label={`今日风向：${digest.summary}`}
+      aria-expanded={isExpanded}
+      onClick={() => setIsExpanded(prev => !prev)}
+    >
+      <Text className='digest-title'>《今日风向》</Text>
+      <Text className={`digest-summary ${isExpanded ? 'expanded' : ''}`}>
+        {digest.summary}
+      </Text>
+    </Button>
   )
 }
