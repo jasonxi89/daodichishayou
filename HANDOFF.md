@@ -58,7 +58,7 @@ npx jest              # 跑测试（package.json 的 test 脚本是 jest --cover
 
 ## 进行中 / TODO
 **混血主题改版（→ v1.9.0）批1 已合并 main（2026-07-20，PR #1 rebase merge）**：主题 token 层、字体子集管线（真实产物 ~199KB）、MenuGrid（含展开限高内滚）、CountStepper、首页重构、tab 双行（衬线大字 PNG 图标 + 小字，未用 custom-tab-bar）。计划 `docs/plans/2026-07-20-hybrid-theme-redesign.md`，批2（抽取仪式+结果页）、批3（延伸+分享卡+版本 bump）待 Codex 执行。
-- **TODO（批2/批3 顺带）**：菜单格小字 fallback「私房甄选」重复感强 → ① 后端 categories 接口连同小字文案生成返回 `{name, note}`（AI 生成一次入库缓存），前端 `getCategoryDisplay` 优先用后端 note ② 自定义分类小字固定「你的地盘听你的」
+- **TODO（批2/批3 顺带）**：菜单格小字 fallback「私房甄选」重复感强 → ① **后端已就绪（v1.15.1 已上线）**：`GET /api/trending/categories/annotated` 返回 `{categories:[{name,note}]}`（note 可能 null，需兜底），前端接入并让 `getCategoryDisplay` 优先用后端 note ② 自定义分类小字固定「你的地盘听你的」（纯前端）
 - **真机待验证（批1 合并时未逐项确认）**：tab 双行效果与图标清晰度（如糊升 2x）、反馈钮 bottom 300rpx 新位置、菜单展开滚动手感
 - 零等待改造已收尾：v1.8.0 于 2026-07-20 发布，线上抽查通过。发布后留意小程序后台「运维中心」反馈。
 
