@@ -145,10 +145,13 @@
 }
 
 .menu-more {
+  flex-direction: row;
+  gap: 12rpx;
   border: 2rpx dashed theme.$border-dashed;
   background: transparent;
 
   &__arrow {
+    margin-top: 0;
     transform: rotate(0deg);
     transition: transform .15s ease;
   }
