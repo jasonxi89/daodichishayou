@@ -7,17 +7,21 @@ export default defineAppConfig({
     'pages/recipe/recipe',
   ],
   tabBar: {
-    color: '#a3937a',
-    selectedColor: '#2f261a',
+    color: '#b9ac96',
+    selectedColor: '#a3803f',
     backgroundColor: '#ffffff',
     list: [
       {
         pagePath: 'pages/index/index',
-        text: '抽',
+        text: '抽啥吃啥',
+        iconPath: 'assets/tab-draw.png',
+        selectedIconPath: 'assets/tab-draw-active.png',
       },
       {
         pagePath: 'pages/ingredient/ingredient',
-        text: '做',
+        text: '有啥做啥',
+        iconPath: 'assets/tab-make.png',
+        selectedIconPath: 'assets/tab-make-active.png',
       },
     ],
   },

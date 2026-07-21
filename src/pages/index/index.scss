@@ -286,7 +286,7 @@
 .feedback-fab {
   position: fixed;
   right: 28rpx;
-  bottom: 132rpx;
+  bottom: 300rpx; // 须高于底部操作行（108rpx 按钮 + padding），否则与「为我定夺」重叠
   z-index: 20;
   min-width: 88rpx;
   height: 88rpx;
