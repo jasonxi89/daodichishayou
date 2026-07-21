@@ -42,9 +42,10 @@ describe('DigestCard – 有数据时渲染', () => {
     render(<DigestCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('今日风向')).toBeInTheDocument()
+      expect(screen.getByText('《今日风向》')).toBeInTheDocument()
     })
     expect(screen.getByText(sampleDigest.summary)).toBeInTheDocument()
+    expect(screen.getByText('《今日风向》').closest('.digest-card')).toHaveClass('digest-card--quote')
   })
 
   it('caches the digest to storage keyed by today after a successful fetch', async () => {
@@ -66,7 +67,7 @@ describe('DigestCard – 有数据时渲染', () => {
     render(<DigestCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('今日风向')).toBeInTheDocument()
+      expect(screen.getByText('《今日风向》')).toBeInTheDocument()
     })
     expect(mockFetchDigest).not.toHaveBeenCalled()
   })
@@ -90,7 +91,7 @@ describe('DigestCard – 有数据时渲染', () => {
     const summary = await screen.findByText(sampleDigest.summary)
     expect(summary.className).not.toContain('expanded')
 
-    fireEvent.click(screen.getByText('今日风向'))
+    fireEvent.click(screen.getByText('《今日风向》'))
     expect(summary.className).toContain('expanded')
   })
 })
@@ -110,7 +111,7 @@ describe('DigestCard – 无数据/失败时整个不渲染', () => {
       expect(mockFetchDigest).toHaveBeenCalled()
     })
     expect(container).toBeEmptyDOMElement()
-    expect(screen.queryByText('今日风向')).not.toBeInTheDocument()
+    expect(screen.queryByText('《今日风向》')).not.toBeInTheDocument()
   })
 
   it('renders nothing and does not crash when API request fails', async () => {

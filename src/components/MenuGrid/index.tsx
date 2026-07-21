@@ -27,7 +27,10 @@ export default function MenuGrid({
   return (
     <View className='menu-grid-section'>
       <View className='menu-grid-header'>
-        <Text className='menu-grid-title'>菜单 · 择一挂</Text>
+        <View className='menu-grid-heading'>
+          <Text className='menu-grid-title'>菜单 · 择一挂</Text>
+          <Text className='menu-grid-english'>MENU</Text>
+        </View>
         <Button
           className='menu-customize'
           aria-label='自定义菜单'
@@ -36,7 +39,7 @@ export default function MenuGrid({
           ＋ 自定义
         </Button>
       </View>
-      <View className='menu-grid' role='list'>
+      <View className='menu-grid'>
         {visible.map(category => {
           const display = getCategoryDisplay(category)
           const isLoading = loadingCategory === category
@@ -47,6 +50,7 @@ export default function MenuGrid({
                 'menu-cell',
                 active === category ? 'menu-cell--active' : '',
                 isLoading ? 'menu-cell--loading' : '',
+                category === '热门推荐' ? 'menu-cell--hot' : '',
               ].filter(Boolean).join(' ')}
               aria-label={`${display.label}，${display.note}`}
               aria-pressed={active === category}

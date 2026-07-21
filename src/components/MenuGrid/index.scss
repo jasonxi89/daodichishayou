@@ -12,11 +12,23 @@
   border-bottom: 4rpx solid theme.$ink;
 }
 
+.menu-grid-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 20rpx;
+}
+
 .menu-grid-title {
   color: theme.$ink;
   font-family: theme.$serif-stack;
   font-size: 30rpx;
   font-weight: 900;
+  letter-spacing: 4rpx;
+}
+
+.menu-grid-english {
+  color: theme.$weaker;
+  font-size: 20rpx;
   letter-spacing: 4rpx;
 }
 
@@ -96,6 +108,16 @@
 
   &--loading .menu-cell__note {
     animation: menu-loading 1s ease-in-out infinite alternate;
+  }
+
+  &--hot:not(.menu-cell--active) {
+    .menu-cell__name {
+      color: theme.$hot-red;
+    }
+
+    .menu-cell__note {
+      color: theme.$seal-red;
+    }
   }
 
   &__name {
