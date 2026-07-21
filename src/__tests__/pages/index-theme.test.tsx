@@ -1,5 +1,5 @@
 import React from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import * as taroMock from '@tarojs/taro'
 
 jest.mock('../../data/recipes', () => ({
@@ -60,6 +60,29 @@ describe('Index hybrid-theme layout', () => {
     expect(screen.getByText('MENU')).toBeInTheDocument()
     expect(screen.getByText('壹')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
+  })
+
+  it('keeps the decree label on one line', () => {
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    expect(screen.getByRole('button', { name: '为我定夺' })).toHaveClass('decree-btn')
+    expect(screen.getByText('为我定夺')).toHaveClass('decree-btn__label')
+  })
+
+  it('uses the single-screen result layout for three results', () => {
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: '增加份数' }))
+    fireEvent.click(screen.getByRole('button', { name: '增加份数' }))
+    fireEvent.click(screen.getByRole('button', { name: '为我定夺' }))
+    act(() => {
+      jest.advanceTimersByTime(2000)
+    })
+
+    expect(document.querySelector('.index')).toHaveClass('index--single-screen')
+    expect(document.querySelector('.index')).toHaveClass('index--has-result')
   })
 
   it('increments draw count only when a draw actually starts', () => {

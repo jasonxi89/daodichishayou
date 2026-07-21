@@ -7,8 +7,8 @@ export default defineAppConfig({
     'pages/recipe/recipe',
   ],
   tabBar: {
-    color: '#b9ac96',
-    selectedColor: '#a3803f',
+    color: '#a3937a',
+    selectedColor: '#2f261a',
     backgroundColor: '#ffffff',
     list: [
       {
