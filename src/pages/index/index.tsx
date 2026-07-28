@@ -19,6 +19,12 @@ const RESULT_PAGE = '/pages/result/result'
 const DRAW_RESULT_KEY = 'lastDrawResult'
 const REDRAW_EVENT = 'ddcsy:redraw'
 
+interface DrawContext {
+  category: string
+  servings: number
+  pool: string[]
+}
+
 export default function Index() {
   const [activeCategory, _setActiveCategory] = useState('随便')
   const activeCategoryRef = useRef(activeCategory)
@@ -91,30 +97,59 @@ export default function Index() {
   }, [customFoodList, backendCategories])
 
   // 抽取仪式：结果不再留在首页，交给结果页
-  const getPool = useCallback(
-    () => mergedFoodList[activeCategoryRef.current],
-    [mergedFoodList],
-  )
   const countRef = useRef(count)
   countRef.current = count
+
+  // Freeze category, servings and pool when the draw is accepted so the
+  // handoff payload can never mix start-time foods with finish-time state.
+  const drawContextRef = useRef<DrawContext | null>(null)
+
+  const getPool = useCallback(() => {
+    const category = activeCategoryRef.current
+    const pool = mergedFoodList[category]
+    drawContextRef.current = {
+      category,
+      servings: countRef.current,
+      pool: pool ? [...pool] : [],
+    }
+    return pool
+  }, [mergedFoodList])
 
   const resetCeremonyRef = useRef<(() => void) | null>(null)
 
   const handleDrawDone = useCallback((foods: string[]) => {
-    const pool = getPool() ?? []
-    const nextIndex = incrementDrawCount()
-    setDrawCount(nextIndex)
-    Taro.setStorageSync(DRAW_RESULT_KEY, {
-      foods,
+    const context = drawContextRef.current ?? {
       category: activeCategoryRef.current,
       servings: countRef.current,
-      pool,
-      drawIndex: nextIndex,
-      ts: Date.now(),
-    })
-    Taro.navigateTo({ url: RESULT_PAGE })
+      pool: [],
+    }
+    drawContextRef.current = null
     resetCeremonyRef.current?.()
-  }, [getPool])
+
+    const nextIndex = getDrawCount() + 1
+    try {
+      // Result first: a stored count without a stored result would strand the user.
+      Taro.setStorageSync(DRAW_RESULT_KEY, {
+        foods,
+        category: context.category,
+        servings: context.servings,
+        pool: context.pool,
+        drawIndex: nextIndex,
+        ts: Date.now(),
+      })
+      setDrawCount(incrementDrawCount())
+    } catch {
+      Taro.showToast({ title: '结果没存下来，再试一次', icon: 'none' })
+      return
+    }
+
+    Taro.navigateTo({
+      url: RESULT_PAGE,
+      fail: () => {
+        Taro.showToast({ title: '结果页打开失败，请重试', icon: 'none' })
+      },
+    })
+  }, [])
 
   const { phase, mainResult, startDraw, skip, reset } = useDrawCeremony({
     count,
@@ -127,13 +162,18 @@ export default function Index() {
 
   const ceremonyActive = phase !== 'idle'
 
+  // Subscribe once; dispatch through a ref so a redraw event that lands between
+  // commit and effect flush still uses the latest startDraw.
+  const startDrawRef = useRef(startDraw)
+  startDrawRef.current = startDraw
+
   useEffect(() => {
-    const handleRedraw = () => startDraw()
+    const handleRedraw = () => startDrawRef.current()
     Taro.eventCenter.on(REDRAW_EVENT, handleRedraw)
     return () => {
       Taro.eventCenter.off(REDRAW_EVENT, handleRedraw)
     }
-  }, [startDraw])
+  }, [])
 
   useLoad(() => {
     console.log('Page loaded.')

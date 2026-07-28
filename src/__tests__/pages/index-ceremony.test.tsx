@@ -84,7 +84,7 @@ describe('Index draw ceremony wiring', () => {
     expect(payload.drawIndex).toBe(8)
     expect(typeof payload.ts).toBe('number')
 
-    expect(mockNavigateTo).toHaveBeenCalledWith({ url: '/pages/result/result' })
+    expect(mockNavigateTo).toHaveBeenCalledWith(expect.objectContaining({ url: '/pages/result/result' }))
     expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
   })
@@ -112,7 +112,7 @@ describe('Index draw ceremony wiring', () => {
     expect(container.querySelector('.ceremony')).toBeInTheDocument()
 
     finishCeremony()
-    expect(mockNavigateTo).toHaveBeenCalledWith({ url: '/pages/result/result' })
+    expect(mockNavigateTo).toHaveBeenCalledWith(expect.objectContaining({ url: '/pages/result/result' }))
   })
 
   it('does not keep result state on the home page anymore', () => {
@@ -124,5 +124,68 @@ describe('Index draw ceremony wiring', () => {
 
     expect(screen.queryByRole('button', { name: '查看菜谱' })).not.toBeInTheDocument()
     expect(screen.getByText('今晚食何')).toBeInTheDocument()
+  })
+})
+
+describe('Index draw handoff robustness', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    jest.useFakeTimers()
+    mockGetStorageSync.mockImplementation((key: string) => {
+      if (key === 'drawCountTotal') return 7
+      return {}
+    })
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('persists the result before advancing the global draw count', () => {
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    startCeremony()
+    finishCeremony()
+
+    const keys = mockSetStorageSync.mock.calls.map(([key]) => key)
+    expect(keys.indexOf('lastDrawResult')).toBeLessThan(keys.indexOf('drawCountTotal'))
+  })
+
+  it('keeps the ceremony recoverable when navigation fails', () => {
+    const toast = taroMock.showToast as jest.Mock
+    const navigateTo = taroMock.navigateTo as jest.Mock
+    navigateTo.mockImplementationOnce(({ fail }: { fail?: (err: unknown) => void }) => {
+      fail?.({ errMsg: 'navigateTo:fail page not found' })
+    })
+
+    const IndexPage = loadIndexPage()
+    const { container } = render(<IndexPage />)
+
+    startCeremony()
+    finishCeremony()
+
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '结果页打开失败，请重试' }),
+    )
+    expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
+  })
+
+  it('only completes once when the tube is tapped and timers still run', () => {
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    startCeremony()
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: '跳过摇签，立即揭晓' }))
+    })
+    finishCeremony()
+
+    const handoffs = mockSetStorageSync.mock.calls.filter(([key]) => key === 'lastDrawResult')
+    const counts = mockSetStorageSync.mock.calls.filter(([key]) => key === 'drawCountTotal')
+    expect(handoffs).toHaveLength(1)
+    expect(counts).toHaveLength(1)
+    expect(mockNavigateTo).toHaveBeenCalledTimes(1)
   })
 })

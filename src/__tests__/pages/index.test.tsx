@@ -381,7 +381,7 @@ describe('Index page – draw ceremony entry', () => {
       fireEvent.click(screen.getByRole('button', { name: '跳过摇签，立即揭晓' }))
     })
 
-    expect(mockNavigateTo).toHaveBeenCalledWith({ url: '/pages/result/result' })
+    expect(mockNavigateTo).toHaveBeenCalledWith(expect.objectContaining({ url: '/pages/result/result' }))
     expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
   })
 
