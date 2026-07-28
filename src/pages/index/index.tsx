@@ -9,7 +9,7 @@ import DigestCard from '../../components/DigestCard'
 import MenuGrid from '../../components/MenuGrid'
 import CountStepper from '../../components/CountStepper'
 import CustomMenuPopup from '../../components/CustomMenuPopup'
-import { getDrawCount, incrementDrawCount } from '../../utils/drawStats'
+import { getDrawCount, setDrawCount as persistDrawCount } from '../../utils/drawStats'
 import { getDateLine } from '../../utils/dateLabel'
 import { getFoodEmoji } from '../../utils/foodMeta'
 import './index.scss'
@@ -160,7 +160,7 @@ export default function Index() {
     }
 
     try {
-      Taro.setStorageSync('drawCountTotal', nextIndex)
+      persistDrawCount(nextIndex)
     } catch {
       // Count is derivable from the stored result; never block the user here.
     }

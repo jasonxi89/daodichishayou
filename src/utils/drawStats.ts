@@ -36,6 +36,12 @@ export function getDrawCount(): number {
   }
 }
 
+// Explicit value write: callers that already know the committed index
+// must not re-read a possibly stale stored count.
+export function setDrawCount(value: number): void {
+  Taro.setStorageSync(TOTAL_KEY, validCount(value))
+}
+
 export function incrementDrawCount(): number {
   const next = getDrawCount() + 1
   Taro.setStorageSync(TOTAL_KEY, next)
