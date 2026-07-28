@@ -1,4 +1,4 @@
-import { getFoodEmoji, isMeatDish } from '../../utils/foodMeta'
+import { classifyProtein, getFoodEmoji, isMeatDish } from '../../utils/foodMeta'
 
 const NOODLE = String.fromCodePoint(0x1f35c)
 const HOTPOT = String.fromCodePoint(0x1f372)
@@ -57,5 +57,34 @@ describe('isMeatDish', () => {
 
   it('handles empty input without throwing', () => {
     expect(isMeatDish('')).toBe(false)
+  })
+})
+
+describe('classifyProtein', () => {
+  it('reports unknown instead of pretending an unnamed dish is vegetarian', () => {
+    expect(classifyProtein('')).toBe('unknown')
+    expect(classifyProtein('不知名神秘菜')).toBe('unknown')
+  })
+
+  it('reports animal protein for obvious meat dishes', () => {
+    expect(classifyProtein('红烧肉')).toBe('animal-protein')
+    expect(classifyProtein('酸菜鱼')).toBe('animal-protein')
+  })
+
+  it('treats dairy as animal protein', () => {
+    expect(classifyProtein('芝士焙饭')).toBe('animal-protein')
+    expect(classifyProtein('奶油蘑菇汤')).toBe('animal-protein')
+  })
+
+  it('reports vegetarian only for explicit vegetarian markers', () => {
+    expect(classifyProtein('素鸡')).toBe('vegetarian')
+    expect(classifyProtein('植物肉汉堡')).toBe('vegetarian')
+    expect(classifyProtein('清炒西兰花')).toBe('vegetarian')
+  })
+
+  it('does not let vegetarian imitations count as meat', () => {
+    expect(isMeatDish('素鸡')).toBe(false)
+    expect(isMeatDish('植物肉汉堡')).toBe(false)
+    expect(isMeatDish('鸡腿菇')).toBe(false)
   })
 })
