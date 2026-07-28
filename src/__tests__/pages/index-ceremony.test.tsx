@@ -86,6 +86,10 @@ describe('Index draw ceremony wiring', () => {
 
     expect(mockNavigateTo).toHaveBeenCalledWith(expect.objectContaining({ url: '/pages/result/result' }))
     expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
+
+    // The draw CTA only comes back once navigation confirms success.
+    const navigateArgs = mockNavigateTo.mock.calls[0][0]
+    act(() => { navigateArgs.success?.() })
     expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
   })
 
@@ -259,6 +263,74 @@ describe('Index draw context and recovery', () => {
     expect(navigateTo).toHaveBeenCalledTimes(2)
     expect(mockSetStorageSync.mock.calls.filter(([key]) => key === 'lastDrawResult')).toHaveLength(1)
     expect(mockSetStorageSync.mock.calls.filter(([key]) => key === 'drawCountTotal')).toHaveLength(1)
+
+    act(() => { navigateTo.mock.calls[1][0].success?.() })
     expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
+  })
+})
+
+describe('Index navigation state machine', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    jest.useFakeTimers()
+    mockGetStorageSync.mockImplementation((key: string) => {
+      if (key === 'drawCountTotal') return 7
+      return {}
+    })
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('never exposes a fresh-draw button while navigation is in flight', () => {
+    const navigateTo = taroMock.navigateTo as jest.Mock
+    navigateTo.mockImplementation(() => undefined)
+
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    startCeremony()
+    finishCeremony()
+
+    expect(navigateTo).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('button', { name: '为我定夺' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '正在打开结果' })).toBeDisabled()
+  })
+
+  it('returns to the draw CTA only after navigation reports success', () => {
+    const navigateTo = taroMock.navigateTo as jest.Mock
+    let succeed: (() => void) | undefined
+    navigateTo.mockImplementation(({ success }: { success?: () => void }) => {
+      succeed = success
+    })
+
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    startCeremony()
+    finishCeremony()
+
+    expect(screen.queryByRole('button', { name: '为我定夺' })).not.toBeInTheDocument()
+
+    act(() => { succeed?.() })
+
+    expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
+  })
+
+  it('does not fire a second navigation while one is pending', () => {
+    const navigateTo = taroMock.navigateTo as jest.Mock
+    navigateTo.mockImplementation(() => undefined)
+
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    startCeremony()
+    finishCeremony()
+
+    fireEvent.click(screen.getByRole('button', { name: '正在打开结果' }))
+    fireEvent.click(screen.getByRole('button', { name: '正在打开结果' }))
+
+    expect(navigateTo).toHaveBeenCalledTimes(1)
   })
 })

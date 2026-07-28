@@ -48,3 +48,41 @@ describe('drawStats', () => {
     expect(incrementWeeklyDrawCount(new Date('2026-07-27T12:00:00Z'))).toBe(1)
   })
 })
+
+describe('getDrawCount recovery', () => {
+  let storage: Record<string, unknown>
+
+  beforeEach(() => {
+    storage = {}
+    jest.spyOn(Taro, 'getStorageSync').mockImplementation(key => storage[key])
+    jest.spyOn(Taro, 'setStorageSync').mockImplementation((key, value) => {
+      storage[key] = value
+    })
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it('recovers from a committed result when the count write was lost', () => {
+    storage.drawCountTotal = 5
+    storage.lastDrawResult = { drawIndex: 6 }
+
+    expect(getDrawCount()).toBe(6)
+    expect(incrementDrawCount()).toBe(7)
+  })
+
+  it('ignores a malformed stored result', () => {
+    storage.drawCountTotal = 5
+    storage.lastDrawResult = { drawIndex: 'nope' }
+
+    expect(getDrawCount()).toBe(5)
+  })
+
+  it('keeps the larger persisted count when the result is older', () => {
+    storage.drawCountTotal = 9
+    storage.lastDrawResult = { drawIndex: 4 }
+
+    expect(getDrawCount()).toBe(9)
+  })
+})

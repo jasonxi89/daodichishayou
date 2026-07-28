@@ -365,9 +365,12 @@ describe('Index page – draw ceremony entry', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
+      expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
     })
-    expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
+
+    // Navigation must confirm before the draw CTA is offered again.
+    act(() => { mockNavigateTo.mock.calls[0][0].success?.() })
+    expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
   })
 
   it('skips straight to the result page when the tube is tapped', () => {

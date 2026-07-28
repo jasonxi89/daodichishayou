@@ -19,6 +19,8 @@ const RESULT_PAGE = '/pages/result/result'
 const DRAW_RESULT_KEY = 'lastDrawResult'
 const REDRAW_EVENT = 'ddcsy:redraw'
 
+type NavState = 'idle' | 'navigating' | 'failed'
+
 interface DrawContext {
   category: string
   servings: number
@@ -117,21 +119,28 @@ export default function Index() {
 
   const resetCeremonyRef = useRef<(() => void) | null>(null)
 
-  const [pendingResult, setPendingResult] = useState(false)
+  // idle -> navigating -> idle on success, or -> failed so the committed draw
+  // stays reopenable instead of being overwritten by a fresh draw.
+  const [navState, setNavState] = useState<NavState>('idle')
+  const navStateRef = useRef<NavState>('idle')
+
+  const commitNavState = useCallback((next: NavState) => {
+    navStateRef.current = next
+    setNavState(next)
+  }, [])
 
   const openResultPage = useCallback(() => {
-    // Optimistic: only re-arm the recovery button if navigation actually fails.
-    setPendingResult(false)
+    if (navStateRef.current === 'navigating') return
+    commitNavState('navigating')
     Taro.navigateTo({
       url: RESULT_PAGE,
+      success: () => commitNavState('idle'),
       fail: () => {
-        // The draw is already persisted; offer to reopen it instead of
-        // leaving a fresh-draw button that would overwrite the saved result.
-        setPendingResult(true)
+        commitNavState('failed')
         Taro.showToast({ title: '结果页打开失败，请重试', icon: 'none' })
       },
     })
-  }, [])
+  }, [commitNavState])
 
   const handleDrawDone = useCallback((foods: string[]) => {
     const context = drawContextRef.current ?? {
@@ -286,6 +295,12 @@ export default function Index() {
     }
   }, [setActiveCategory])
 
+  const ctaLabel = navState === 'navigating'
+    ? '正在打开结果'
+    : navState === 'failed'
+      ? '重新打开结果'
+      : '为我定夺'
+
   if (ceremonyActive) {
     return (
       <View className="index paper-texture index--single-screen">
@@ -337,14 +352,12 @@ export default function Index() {
           <CountStepper value={count} onChange={setCount} />
           <Button
             className='decree-btn'
-            aria-label={pendingResult ? '重新打开结果' : '为我定夺'}
-            disabled={categoryLoading !== null}
-            onClick={pendingResult ? openResultPage : startDraw}
+            aria-label={ctaLabel}
+            disabled={categoryLoading !== null || navState === 'navigating'}
+            onClick={navState === 'idle' ? startDraw : openResultPage}
           >
             <View className='decree-btn__line' />
-            <Text className='decree-btn__label'>
-              {pendingResult ? '重新打开结果' : '为我定夺'}
-            </Text>
+            <Text className='decree-btn__label'>{ctaLabel}</Text>
             <View className='decree-btn__line' />
           </Button>
         </View>

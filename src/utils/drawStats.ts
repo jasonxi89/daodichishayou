@@ -1,6 +1,7 @@
 import Taro from '@tarojs/taro'
 
 const TOTAL_KEY = 'drawCountTotal'
+const LAST_RESULT_KEY = 'lastDrawResult'
 const WEEKLY_KEY = 'drawCountWeekly'
 
 interface WeeklyDrawCount {
@@ -28,12 +29,25 @@ function isoWeekKey(date: Date): string {
   return `${isoYear}-W${String(week).padStart(2, '0')}`
 }
 
-export function getDrawCount(): number {
+// The committed draw result carries its own drawIndex, so a lost count write
+// can be reconciled instead of handing out a duplicate index next time.
+function committedDrawIndex(): number {
   try {
-    return validCount(Taro.getStorageSync(TOTAL_KEY))
+    const stored = Taro.getStorageSync(LAST_RESULT_KEY) as { drawIndex?: unknown } | undefined
+    return validCount(stored?.drawIndex)
   } catch {
     return 0
   }
+}
+
+export function getDrawCount(): number {
+  let persisted = 0
+  try {
+    persisted = validCount(Taro.getStorageSync(TOTAL_KEY))
+  } catch {
+    persisted = 0
+  }
+  return Math.max(persisted, committedDrawIndex())
 }
 
 // Explicit value write: callers that already know the committed index
