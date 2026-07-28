@@ -11,3 +11,6 @@ node_modules/
 coverage/
 .wibey-test/
 tools/fonts-src/
+
+# WeChat DevTools per-machine settings (base library version, urlCheck, ...)
+project.private.config.json

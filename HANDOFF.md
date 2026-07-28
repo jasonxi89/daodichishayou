@@ -1,5 +1,5 @@
 # HANDOFF — 到底吃啥哟 · 微信小程序前端
-> 跨 agent/IDE 接手文档 | 最后更新: 2026-07-20 | 改动项目后请同步更新此文档
+> 跨 agent/IDE 接手文档 | 最后更新: 2026-07-27 | 改动项目后请同步更新此文档
 
 ## 项目定位
 「到底吃啥哟」帮用户解决"今天吃什么"。核心两块：
@@ -9,10 +9,12 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
-- **v1.8.0 已于 2026-07-20 审核通过并发布上线**（零等待改造：投机预取、两段式 quick/steps、NDJSON 流式步骤、静默本地降级；2026-07-18 提审）。
+- **v1.9.0（混血主题批 1）已于 2026-07-27 上传微信后台**：对应 `main @ e67eb70`；首页御厨纸感改版（design tokens、字体子集、MenuGrid、中文数字份数、为我定夺 CTA、双行 tab）。上传前验证：229 jest tests 全绿、`build:weapp` 成功、官方 CLI Preview 成功、真机扫码可用。**抽取交互仍为老虎机**，签筒仪式与结果页属于批 2。
+- v1.8.0 已于 2026-07-20 审核通过并发布上线（零等待改造：投机预取、两段式 quick/steps、NDJSON 流式步骤、静默本地降级；2026-07-18 提审）。
 - 发布日线上抽查（API 侧）：health 返回 1.14.1 ✓；`POST /api/recommend/quick` 预生成命中 0.07s ✓；`POST /api/recommend/steps` NDJSON 流 0.11s 返回完整做法（命中缓存）✓。降级场景为纯前端行为，已由审核前真机回归覆盖。
 - `feature/zero-wait` 已合并回 main 并推送（merge commit `31a5aea`）。
-- 测试 **184 jest tests** 全绿；`build:weapp` 可正常构建。
+- 测试 **229 jest tests** 全绿；`build:weapp` 可正常构建。
+- **本机开发者工具模拟器无法运行本项目**：`libVersion 3.14.2` 本机未下载（仅有 3.15.2/3.15.3）且开发者工具 CGI 登录报 41002，导致 Node 层 `ERR_INVALID_ARG_TYPE` 与 `routeTo appLaunch timeout`。属环境问题，**真机不受影响**；本机可在 `project.private.config.json` 里覆盖 `libVersion`（该文件已改为本地私有、不入仓）。
 - 后端配套 v1.14.1：菜谱步骤 LLM 补写已完成（653/656 条），465 组合矩阵 2026-07-20 手动一次性铺满（此前每日 03:30 cron 铺 120）。
 
 ## 技术栈与结构
