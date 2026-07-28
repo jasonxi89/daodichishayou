@@ -112,12 +112,34 @@ export function getFoodEmoji(name: string): string {
   return match ? match.emoji : DEFAULT_EMOJI
 }
 
-// Three states on purpose: "not matched as meat" is not proof of vegetarian.
+// Mask known non-animal compounds first, then look for animal words in what
+// is left. A vegetarian marker only clears its own span, never the whole name.
+function maskVegetarianSpans(name: string): string {
+  return VEGETARIAN_MARKERS.reduce(
+    (masked, marker) => masked.split(marker).join(' '),
+    name,
+  )
+}
+
+// Three states on purpose. "No animal keyword" is not proof of vegetarian:
+// the animal keyword list can never be complete.
 export function classifyProtein(name: string): ProteinClassification {
   if (!name) return 'unknown'
-  if (includesAny(name, VEGETARIAN_MARKERS)) return 'vegetarian'
+
+  const masked = maskVegetarianSpans(name)
+  if (includesAny(masked, ANIMAL_KEYWORDS)) return 'animal-protein'
+  if (masked !== name) return 'vegetarian'
   if (includesAny(name, ANIMAL_KEYWORDS)) return 'animal-protein'
-  if (includesAny(name, PLANT_ONLY_KEYWORDS)) return 'vegetarian'
+
+  const plantOnly = PLANT_ONLY_KEYWORDS.reduce(
+    (rest, keyword) => rest.split(keyword).join(' '),
+    name,
+  )
+  const hasPlant = plantOnly !== name
+  const remainder = plantOnly.replace(/\s+/g, '')
+  const onlyCookingWords = /^[\u7092\u62cc\u6e05\u84b8\u70e7\u716e\u70f9\u714e\u70e4\u9165\u916d\u62cc\u6cb9\u76d0\u9152\u918b\u7cd6\u8471\u59dc\u849c\u6912\u9999\u53e3\u5473\u5b50\u4e1d\u7247\u5757\u6bb5\u6c64\u9505\u76d8\u7c73\u996d\u9762\u7c89]*$/.test(remainder)
+
+  if (hasPlant && onlyCookingWords) return 'vegetarian'
   return 'unknown'
 }
 

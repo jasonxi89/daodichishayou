@@ -88,3 +88,22 @@ describe('classifyProtein', () => {
     expect(isMeatDish('鸡腿菇')).toBe(false)
   })
 })
+
+describe('classifyProtein mixed and unknown ingredients', () => {
+  it('does not let a vegetarian marker hide a separate animal ingredient', () => {
+    expect(classifyProtein('素鸡炒牛肉')).toBe('animal-protein')
+    expect(classifyProtein('鸡腿菇炒蛋')).toBe('animal-protein')
+    expect(classifyProtein('肉桂猪排')).toBe('animal-protein')
+  })
+
+  it('still reports vegetarian when only the marker span matches', () => {
+    expect(classifyProtein('素鸡')).toBe('vegetarian')
+    expect(classifyProtein('鸡腿菇拌黄瓜')).toBe('vegetarian')
+    expect(classifyProtein('肉桂卷')).toBe('vegetarian')
+  })
+
+  it('reports unknown when a plant word sits next to an unrecognized ingredient', () => {
+    expect(classifyProtein('蘑菇炖兔')).toBe('unknown')
+    expect(classifyProtein('西兰花配鹿排')).toBe('unknown')
+  })
+})
