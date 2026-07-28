@@ -169,7 +169,9 @@ describe('Index draw handoff robustness', () => {
       expect.objectContaining({ title: '结果页打开失败，请重试' }),
     )
     expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
+    // The saved draw must be reopenable instead of being overwritten by a new one.
+    expect(screen.getByRole('button', { name: '重新打开结果' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '为我定夺' })).not.toBeInTheDocument()
   })
 
   it('only completes once when the tube is tapped and timers still run', () => {
@@ -187,5 +189,76 @@ describe('Index draw handoff robustness', () => {
     expect(handoffs).toHaveLength(1)
     expect(counts).toHaveLength(1)
     expect(mockNavigateTo).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Index draw context and recovery', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    jest.useFakeTimers()
+    mockGetStorageSync.mockImplementation((key: string) => {
+      if (key === 'drawCountTotal') return 7
+      return {}
+    })
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('persists the context frozen at draw time, not at finish time', () => {
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: '增加份数' }))
+    startCeremony()
+
+    const handler = mockEventCenter.on.mock.calls.find(([event]) => event === 'ddcsy:redraw')![1]
+    act(() => { handler() })
+
+    finishCeremony()
+
+    const handoffs = mockSetStorageSync.mock.calls.filter(([key]) => key === 'lastDrawResult')
+    expect(handoffs).toHaveLength(1)
+    expect(handoffs[0][1].servings).toBe(2)
+    expect(handoffs[0][1].foods).toHaveLength(2)
+    expect(handoffs[0][1].category).toBe('随便')
+  })
+
+  it('keeps the saved result reachable when the count write fails', () => {
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    mockSetStorageSync.mockImplementation((key: string) => {
+      if (key === 'drawCountTotal') throw new Error('quota exceeded')
+      return undefined
+    })
+
+    startCeremony()
+    finishCeremony()
+
+    expect(mockNavigateTo).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('第 8 次帮你定夺')).toBeInTheDocument()
+  })
+
+  it('offers a retry that reopens the same result without drawing again', () => {
+    const navigateTo = taroMock.navigateTo as jest.Mock
+    navigateTo.mockImplementationOnce(({ fail }: { fail?: (err: unknown) => void }) => {
+      fail?.({ errMsg: 'navigateTo:fail' })
+    })
+
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    startCeremony()
+    finishCeremony()
+
+    expect(screen.queryByRole('button', { name: '为我定夺' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '重新打开结果' }))
+
+    expect(navigateTo).toHaveBeenCalledTimes(2)
+    expect(mockSetStorageSync.mock.calls.filter(([key]) => key === 'lastDrawResult')).toHaveLength(1)
+    expect(mockSetStorageSync.mock.calls.filter(([key]) => key === 'drawCountTotal')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
   })
 })

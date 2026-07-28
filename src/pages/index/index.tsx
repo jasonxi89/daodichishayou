@@ -117,6 +117,22 @@ export default function Index() {
 
   const resetCeremonyRef = useRef<(() => void) | null>(null)
 
+  const [pendingResult, setPendingResult] = useState(false)
+
+  const openResultPage = useCallback(() => {
+    // Optimistic: only re-arm the recovery button if navigation actually fails.
+    setPendingResult(false)
+    Taro.navigateTo({
+      url: RESULT_PAGE,
+      fail: () => {
+        // The draw is already persisted; offer to reopen it instead of
+        // leaving a fresh-draw button that would overwrite the saved result.
+        setPendingResult(true)
+        Taro.showToast({ title: '结果页打开失败，请重试', icon: 'none' })
+      },
+    })
+  }, [])
+
   const handleDrawDone = useCallback((foods: string[]) => {
     const context = drawContextRef.current ?? {
       category: activeCategoryRef.current,
@@ -128,7 +144,8 @@ export default function Index() {
 
     const nextIndex = getDrawCount() + 1
     try {
-      // Result first: a stored count without a stored result would strand the user.
+      // The stored result is the commit record: it carries drawIndex, so a
+      // failed count write can be reconciled from it instead of stranding it.
       Taro.setStorageSync(DRAW_RESULT_KEY, {
         foods,
         category: context.category,
@@ -137,19 +154,20 @@ export default function Index() {
         drawIndex: nextIndex,
         ts: Date.now(),
       })
-      setDrawCount(incrementDrawCount())
     } catch {
       Taro.showToast({ title: '结果没存下来，再试一次', icon: 'none' })
       return
     }
 
-    Taro.navigateTo({
-      url: RESULT_PAGE,
-      fail: () => {
-        Taro.showToast({ title: '结果页打开失败，请重试', icon: 'none' })
-      },
-    })
-  }, [])
+    try {
+      Taro.setStorageSync('drawCountTotal', nextIndex)
+    } catch {
+      // Count is derivable from the stored result; never block the user here.
+    }
+    setDrawCount(nextIndex)
+
+    openResultPage()
+  }, [openResultPage])
 
   const { phase, mainResult, startDraw, skip, reset } = useDrawCeremony({
     count,
@@ -319,12 +337,14 @@ export default function Index() {
           <CountStepper value={count} onChange={setCount} />
           <Button
             className='decree-btn'
-            aria-label='为我定夺'
+            aria-label={pendingResult ? '重新打开结果' : '为我定夺'}
             disabled={categoryLoading !== null}
-            onClick={startDraw}
+            onClick={pendingResult ? openResultPage : startDraw}
           >
             <View className='decree-btn__line' />
-            <Text className='decree-btn__label'>为我定夺</Text>
+            <Text className='decree-btn__label'>
+              {pendingResult ? '重新打开结果' : '为我定夺'}
+            </Text>
             <View className='decree-btn__line' />
           </Button>
         </View>
