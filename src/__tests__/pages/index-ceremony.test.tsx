@@ -1,0 +1,128 @@
+import React from 'react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
+import * as taroMock from '@tarojs/taro'
+
+jest.mock('../../data/recipes', () => ({
+  __esModule: true,
+  getLocalRecipe: jest.fn().mockReturnValue(null),
+  fetchRecipeFromAPI: jest.fn().mockResolvedValue(null),
+  default: {},
+}))
+
+jest.mock('../../services/api', () => ({
+  __esModule: true,
+  fetchTrending: jest.fn().mockResolvedValue({ total: 0, items: [] }),
+  fetchCategories: jest.fn().mockResolvedValue([]),
+  generateFoodsByCategory: jest.fn().mockResolvedValue({ foods: [], category: '' }),
+  bulkGenerateFoodsByCategory: jest.fn().mockResolvedValue({ results: {} }),
+  fetchDigest: jest.fn().mockResolvedValue(null),
+}))
+
+const mockGetStorageSync = taroMock.getStorageSync as jest.Mock
+const mockSetStorageSync = taroMock.setStorageSync as jest.Mock
+const mockNavigateTo = taroMock.navigateTo as jest.Mock
+const mockEventCenter = taroMock.eventCenter as unknown as {
+  on: jest.Mock
+  off: jest.Mock
+  trigger: jest.Mock
+}
+
+function loadIndexPage() {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require('../../pages/index/index').default as React.ComponentType
+}
+
+function startCeremony() {
+  fireEvent.click(screen.getByRole('button', { name: '为我定夺' }))
+}
+
+function finishCeremony() {
+  act(() => { jest.advanceTimersByTime(2500) })
+}
+
+describe('Index draw ceremony wiring', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    jest.useFakeTimers()
+    mockGetStorageSync.mockImplementation((key: string) => {
+      if (key === 'drawCountTotal') return 7
+      return {}
+    })
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('enters the ceremony and hides the regular home content', () => {
+    const IndexPage = loadIndexPage()
+    const { container } = render(<IndexPage />)
+
+    startCeremony()
+
+    expect(container.querySelector('.ceremony')).toBeInTheDocument()
+    expect(screen.queryByText('菜单 · 择一挂')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '为我定夺' })).not.toBeInTheDocument()
+  })
+
+  it('hands the draw to the result page and returns to idle', () => {
+    const IndexPage = loadIndexPage()
+    const { container } = render(<IndexPage />)
+
+    startCeremony()
+    finishCeremony()
+
+    const handoff = mockSetStorageSync.mock.calls.find(([key]) => key === 'lastDrawResult')
+    expect(handoff).toBeDefined()
+
+    const payload = handoff![1]
+    expect(Array.isArray(payload.foods)).toBe(true)
+    expect(payload.foods.length).toBeGreaterThan(0)
+    expect(payload.category).toBe('随便')
+    expect(payload.servings).toBe(1)
+    expect(Array.isArray(payload.pool)).toBe(true)
+    expect(payload.drawIndex).toBe(8)
+    expect(typeof payload.ts).toBe('number')
+
+    expect(mockNavigateTo).toHaveBeenCalledWith({ url: '/pages/result/result' })
+    expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
+  })
+
+  it('subscribes to the redraw event and cleans up on unmount', () => {
+    const IndexPage = loadIndexPage()
+    const { unmount } = render(<IndexPage />)
+
+    expect(mockEventCenter.on).toHaveBeenCalledWith('ddcsy:redraw', expect.any(Function))
+
+    const handler = mockEventCenter.on.mock.calls.find(([event]) => event === 'ddcsy:redraw')![1]
+
+    unmount()
+    expect(mockEventCenter.off).toHaveBeenCalledWith('ddcsy:redraw', handler)
+  })
+
+  it('starts a fresh ceremony when the result page asks for a redraw', () => {
+    const IndexPage = loadIndexPage()
+    const { container } = render(<IndexPage />)
+
+    const handler = mockEventCenter.on.mock.calls.find(([event]) => event === 'ddcsy:redraw')![1]
+
+    act(() => { handler() })
+
+    expect(container.querySelector('.ceremony')).toBeInTheDocument()
+
+    finishCeremony()
+    expect(mockNavigateTo).toHaveBeenCalledWith({ url: '/pages/result/result' })
+  })
+
+  it('does not keep result state on the home page anymore', () => {
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    startCeremony()
+    finishCeremony()
+
+    expect(screen.queryByRole('button', { name: '查看菜谱' })).not.toBeInTheDocument()
+    expect(screen.getByText('今晚食何')).toBeInTheDocument()
+  })
+})

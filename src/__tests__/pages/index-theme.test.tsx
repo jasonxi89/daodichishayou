@@ -70,30 +70,22 @@ describe('Index hybrid-theme layout', () => {
     expect(screen.getByText('为我定夺')).toHaveClass('decree-btn__label')
   })
 
-  it('uses the single-screen result layout for three results', () => {
+  it('keeps the home screen locked to one screen', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
-
-    fireEvent.click(screen.getByRole('button', { name: '增加份数' }))
-    fireEvent.click(screen.getByRole('button', { name: '增加份数' }))
-    fireEvent.click(screen.getByRole('button', { name: '为我定夺' }))
-    act(() => {
-      jest.advanceTimersByTime(2000)
-    })
 
     expect(document.querySelector('.index')).toHaveClass('index--single-screen')
-    expect(document.querySelector('.index')).toHaveClass('index--has-result')
   })
 
-  it('increments draw count only when a draw actually starts', () => {
+  it('increments the draw count once the ceremony completes', () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
-    const decree = screen.getByRole('button', { name: '为我定夺' })
 
-    fireEvent.click(decree)
-    fireEvent.click(screen.getByRole('button', { name: '正在定夺' }))
+    fireEvent.click(screen.getByRole('button', { name: '为我定夺' }))
+    act(() => {
+      jest.advanceTimersByTime(2500)
+    })
 
-    expect(mockSetStorageSync).toHaveBeenCalledTimes(1)
     expect(mockSetStorageSync).toHaveBeenCalledWith('drawCountTotal', 5)
     expect(screen.getByText('第 5 次帮你定夺')).toBeInTheDocument()
   })
