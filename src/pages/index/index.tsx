@@ -9,14 +9,13 @@ import DigestCard from '../../components/DigestCard'
 import MenuGrid from '../../components/MenuGrid'
 import CountStepper from '../../components/CountStepper'
 import CustomMenuPopup from '../../components/CustomMenuPopup'
-import { getDrawCount, setDrawCount as persistDrawCount } from '../../utils/drawStats'
+import { commitDrawResult, getDrawCount } from '../../utils/drawStats'
 import { getDateLine } from '../../utils/dateLabel'
 import { getFoodEmoji } from '../../utils/foodMeta'
 import './index.scss'
 
 const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 1 day
 const RESULT_PAGE = '/pages/result/result'
-const DRAW_RESULT_KEY = 'lastDrawResult'
 const REDRAW_EVENT = 'ddcsy:redraw'
 
 type NavState = 'idle' | 'navigating' | 'failed'
@@ -151,27 +150,17 @@ export default function Index() {
     drawContextRef.current = null
     resetCeremonyRef.current?.()
 
-    const nextIndex = getDrawCount() + 1
+    let nextIndex: number
     try {
-      // The stored result is the commit record: it carries drawIndex, so a
-      // failed count write can be reconciled from it instead of stranding it.
-      Taro.setStorageSync(DRAW_RESULT_KEY, {
+      nextIndex = commitDrawResult({
         foods,
         category: context.category,
         servings: context.servings,
         pool: context.pool,
-        drawIndex: nextIndex,
-        ts: Date.now(),
       })
     } catch {
       Taro.showToast({ title: '结果没存下来，再试一次', icon: 'none' })
       return
-    }
-
-    try {
-      persistDrawCount(nextIndex)
-    } catch {
-      // Count is derivable from the stored result; never block the user here.
     }
     setDrawCount(nextIndex)
 

@@ -4,6 +4,18 @@ const TOTAL_KEY = 'drawCountTotal'
 const LAST_RESULT_KEY = 'lastDrawResult'
 const WEEKLY_KEY = 'drawCountWeekly'
 
+export interface DrawResultInput {
+  foods: string[]
+  category: string
+  servings: number
+  pool: string[]
+}
+
+export interface DrawResult extends DrawResultInput {
+  drawIndex: number
+  ts: number
+}
+
 interface WeeklyDrawCount {
   weekKey: string
   count: number
@@ -50,16 +62,20 @@ export function getDrawCount(): number {
   return Math.max(persisted, committedDrawIndex())
 }
 
-// Explicit value write: callers that already know the committed index
-// must not re-read a possibly stale stored count.
-export function setDrawCount(value: number): void {
-  Taro.setStorageSync(TOTAL_KEY, validCount(value))
-}
+// Single owner of the two-key commit. The result is written first because it
+// carries drawIndex, so a failed count write can still be reconciled.
+export function commitDrawResult(input: DrawResultInput): number {
+  const drawIndex = getDrawCount() + 1
+  const result: DrawResult = { ...input, drawIndex, ts: Date.now() }
 
-export function incrementDrawCount(): number {
-  const next = getDrawCount() + 1
-  Taro.setStorageSync(TOTAL_KEY, next)
-  return next
+  Taro.setStorageSync(LAST_RESULT_KEY, result)
+  try {
+    Taro.setStorageSync(TOTAL_KEY, drawIndex)
+  } catch {
+    // Recoverable: getDrawCount reads drawIndex back from the stored result.
+  }
+
+  return drawIndex
 }
 
 export function getWeeklyDrawCount(date = new Date()): number {

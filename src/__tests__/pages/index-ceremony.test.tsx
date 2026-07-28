@@ -154,6 +154,12 @@ describe('Index draw handoff robustness', () => {
 
     const keys = mockSetStorageSync.mock.calls.map(([key]) => key)
     expect(keys.indexOf('lastDrawResult')).toBeLessThan(keys.indexOf('drawCountTotal'))
+
+    // Cross-key invariant: the persisted count must equal the committed index.
+    const result = mockSetStorageSync.mock.calls.find(([key]) => key === 'lastDrawResult')![1]
+    const count = mockSetStorageSync.mock.calls.find(([key]) => key === 'drawCountTotal')![1]
+    expect(result.drawIndex).toBe(8)
+    expect(count).toBe(8)
   })
 
   it('keeps the ceremony recoverable when navigation fails', () => {
