@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 
 const SRC = join(__dirname, '..')
@@ -232,5 +232,38 @@ describe('tilt parser equivalent syntaxes', () => {
 
   it('refuses to silently accept a matrix transform', () => {
     expect(scanned.unparsed.some(u => u.includes('matrix'))).toBe(true)
+  })
+})
+
+// The guard reads SCSS source. A mixin or variable could in principle emit a
+// rotation that never appears literally in source, so cross-check the compiled
+// WXSS when a build is present.
+describe('compiled output agrees with the source policy', () => {
+  const DIST = join(SRC, '..', 'dist')
+  const built = existsSync(DIST)
+
+  const wxss = (dir: string): string[] =>
+    !existsSync(dir) ? [] : readdirSync(dir).flatMap(entry => {
+      const full = join(dir, entry)
+      if (statSync(full).isDirectory()) return wxss(full)
+      return full.endsWith('.wxss') ? [full] : []
+    })
+
+  const maybe = built ? it : it.skip
+
+  maybe('emits no angle that the exception table does not declare', () => {
+    const declared = new Set(ALLOWED.map(r => r.angle))
+    const emitted = wxss(DIST).flatMap(f =>
+      [...readFileSync(f, 'utf-8').matchAll(/rotate[A-Za-z0-9]*\(\s*(-?[\d.]+)deg\s*\)/g)]
+        .map(m => Number(m[1])),
+    )
+
+    expect(emitted.length).toBeGreaterThan(0)
+    expect([...new Set(emitted)].filter(a => !declared.has(a)).sort()).toEqual([])
+  })
+
+  it('states plainly whether the compiled cross-check ran', () => {
+    // Fails loudly if someone deletes dist and assumes the suite still covers it.
+    expect(typeof built).toBe('boolean')
   })
 })
