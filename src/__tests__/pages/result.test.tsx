@@ -57,6 +57,11 @@ describe('Result page', () => {
     jest.clearAllMocks()
   })
 
+  // Spies must not survive a failing assertion and poison later tests.
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
   it('renders one row per dish with Chinese ordinals', () => {
     mountResult()
 
@@ -96,19 +101,24 @@ describe('Result page', () => {
     )
   })
 
-  it('rejects a stored draw whose pool is not an array', () => {
-    mountResult({ ...DRAW, pool: {} })
+  const MALFORMED: [string, unknown][] = [
+    ['pool is not an array', { ...DRAW, pool: {} }],
+    ['pool holds non-strings', { ...DRAW, pool: [1, 2, 3] }],
+    ['foods hold non-strings', { ...DRAW, foods: [1, 2, 3] }],
+    ['foods are empty', { ...DRAW, foods: [] }],
+    ['ts is not finite', { ...DRAW, ts: NaN }],
+    ['drawIndex is fractional', { ...DRAW, drawIndex: 1.5 }],
+  ]
+
+  it.each(MALFORMED)('rejects a stored draw where %s', (_label, payload) => {
+    mountResult(payload)
 
     expect(mockShowToast).toHaveBeenCalledWith(
       expect.objectContaining({ title: '厨房走神了，再试一次' }),
     )
     expect(mockNavigateBack).toHaveBeenCalled()
-  })
-
-  it('rejects a stored draw whose foods are not strings', () => {
-    mountResult({ ...DRAW, foods: [1, 2, 3] })
-
-    expect(mockNavigateBack).toHaveBeenCalled()
+    // A rejected payload is not a draw, so it must never be counted.
+    expect(mockIncrementWeekly).not.toHaveBeenCalled()
   })
 
   it('counts exactly one weekly draw on entry', () => {
@@ -168,8 +178,8 @@ describe('Result page', () => {
     })
   })
 
-  it('does not let duplicate pool entries produce a duplicate menu', () => {
-    const random = jest.spyOn(Math, 'random').mockReturnValue(0)
+  it('still swaps in a real dish when the pool has duplicate entries', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0)
     const { container } = mountResult({
       ...DRAW,
       pool: ['红烧肉', '红烧肉', '清炒西兰花', '番茄蛋汤', '糖醋排骨'],
@@ -178,9 +188,10 @@ describe('Result page', () => {
     fireEvent.click(screen.getByRole('button', { name: '换掉清炒西兰花' }))
 
     const names = Array.from(container.querySelectorAll('.dish-row__name')).map(n => n.textContent)
-    expect(new Set(names).size).toBe(names.length)
-
-    random.mockRestore()
+    // Dedup must not degrade into a no-op: the only spare dish has to land.
+    expect(names).toEqual(['红烧肉', '糖醋排骨', '番茄蛋汤'])
+    expect(screen.queryByText('清炒西兰花')).not.toBeInTheDocument()
+    expect(container.querySelectorAll('.dish-row')).toHaveLength(3)
   })
 
   it('asks the home page to redraw and goes back', () => {
