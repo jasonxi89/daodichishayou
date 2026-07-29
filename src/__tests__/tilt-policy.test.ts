@@ -29,35 +29,82 @@ function scssFiles(dir: string): string[] {
 
 // Tracks the nearest enclosing selector so a rotation is attributed to the
 // element that actually carries it.
+//
+// Every syntax expressing a planar rotation must be covered, or the guard is
+// bypassable by spelling alone: rotate(), rotateZ(), rotate3d(), the individual
+// rotate property, and matrix() which hides rotation inside raw numbers.
+const ROTATION_FN = /\b(rotate3d|rotateZ|rotate)\s*\(([^)]*)\)/g
+const ROTATION_PROP = /(?:^|[;{])\s*rotate\s*:\s*([^;}]+)/g
+const OPAQUE_FN = /\b(matrix3d|matrix)\s*\(/
+
+const DEGREES = /^(-?[\d.]+)deg$/
+
+function angleFrom(fn: string, args: string): number | null {
+  if (fn === 'rotate3d') {
+    // rotate3d(x, y, z, angle): only a pure z-axis turn is a planar tilt.
+    const parts = args.split(',').map(p => p.trim())
+    if (parts.length !== 4) return null
+    const match = parts[3].match(DEGREES)
+    return match ? Number(match[1]) : null
+  }
+  const match = args.trim().match(DEGREES)
+  return match ? Number(match[1]) : null
+}
+
 function rotationsIn(file: string, text: string) {
   const found: Rotation[] = []
   const unparsed: string[] = []
   const stack: string[] = []
 
+  const selectorNow = () => {
+    const inKeyframes = stack.some(s => s.startsWith('@keyframes'))
+    if (!inKeyframes) return stack[stack.length - 1] ?? ''
+    return stack.filter(s => s.startsWith('@keyframes') || /^[\d%,\s]+$/.test(s)).join(' ')
+  }
+
+  const push = (selector: string, angle: number) => {
+    found.push({ file, selector, angle })
+  }
+
+  const scan = (raw: string) => {
+    const selector = selectorNow()
+
+    for (const m of raw.matchAll(ROTATION_FN)) {
+      const angle = angleFrom(m[1], m[2])
+      if (angle === null) unparsed.push(file + ' :: ' + raw)
+      else push(selector, angle)
+    }
+
+    for (const m of raw.matchAll(ROTATION_PROP)) {
+      const literal = m[1].trim().match(DEGREES)
+      if (literal) push(selector, Number(literal[1]))
+      else unparsed.push(file + ' :: ' + raw)
+    }
+
+    // A matrix encodes rotation numerically; it cannot be audited statically.
+    if (OPAQUE_FN.test(raw)) unparsed.push(file + ' :: ' + raw)
+  }
+
+  // Declarations may span lines, so buffer until the statement terminates.
+  let buffer = ''
+
   text.split('\n').forEach(line => {
     const trimmed = line.trim()
+    if (trimmed.startsWith('//') || trimmed.startsWith('/*')) return
+
     const opener = trimmed.match(/^(.+?)\s*\{/)
     if (opener) stack.push(opener[1].trim())
 
-    if (trimmed.includes('rotate(')) {
-      const inKeyframes = stack.filter(s => s.startsWith('@keyframes'))
-      const selector = inKeyframes.length > 0
-        ? stack.filter(s => s.startsWith('@keyframes') || /^[\d%,\s]+$/.test(s)).join(' ')
-        : (stack[stack.length - 1] ?? '')
-
-      const literals = [...trimmed.matchAll(/rotate\((-?[\d.]+)deg\)/g)]
-      const every = [...trimmed.matchAll(/rotate\(([^)]*)\)/g)]
-
-      // A non-literal argument cannot be audited; surface it, never skip it.
-      if (every.length !== literals.length) unparsed.push(`${file} :: ${trimmed}`)
-
-      literals.forEach(m => {
-        found.push({ file, selector, angle: Number(m[1]) })
-      })
+    buffer = buffer ? buffer + ' ' + trimmed : trimmed
+    if (/[;}{]/.test(trimmed) || trimmed === '') {
+      if (buffer) scan(buffer)
+      buffer = ''
     }
 
     if (trimmed.endsWith('}')) stack.pop()
   })
+
+  if (buffer) scan(buffer)
 
   return { found, unparsed }
 }
@@ -97,6 +144,12 @@ describe('iron rule 4: tilt policy', () => {
   it('finds every rotation with a literal, auditable angle', () => {
     // rotate($a) or rotate(var(--a)) cannot be audited, so it must not pass silently.
     expect(unparsed).toEqual([])
+  })
+
+  it('matches the exception table occurrence for occurrence', () => {
+    // Multiset, not set: rotate(4deg) rotate(4deg) composes to 8deg while
+    // producing a key that is individually allowed, so counts must match too.
+    expect(all.map(key).sort()).toEqual(ALLOWED.map(key).sort())
   })
 
   it('permits no rotation outside the named exception table', () => {
@@ -141,11 +194,43 @@ describe('tilt parser edge cases', () => {
   })
 
   it('reports non-literal angles rather than silently ignoring them', () => {
-    // rotate(var(--a)) and rotate($tilt) cannot be audited statically.
-    expect(scanned.unparsed).toHaveLength(2)
+    // rotate(var(--a)), rotate($tilt) and matrix() cannot be audited statically.
+    expect(scanned.unparsed).toHaveLength(3)
   })
 
   it('finds every literal rotation in the fixture', () => {
-    expect(scanned.found.map(r => r.angle).sort((a, b) => a - b)).toEqual([3, 7, 13, 17])
+    expect(scanned.found.map(r => r.angle).sort((a, b) => a - b))
+      .toEqual([3, 7, 13, 17, 23, 23, 29, 31, 37])
+  })
+})
+
+// Equivalent syntaxes must not become a bypass: rotateZ, the individual
+// rotate property, rotate3d and matrix all express the same visual tilt.
+describe('tilt parser equivalent syntaxes', () => {
+  const scanned = rotationsIn(
+    'fixture',
+    readFileSync(join(__dirname, 'fixtures/tilt-edge.scss'), 'utf-8'),
+  )
+  const anglesFor = (selector: string) =>
+    scanned.found.filter(r => r.selector === selector).map(r => r.angle)
+
+  it('counts a composed double rotation as two occurrences', () => {
+    expect(anglesFor('.composed-double')).toEqual([23, 23])
+  })
+
+  it('sees rotateZ', () => {
+    expect(anglesFor('.z-axis')).toEqual([29])
+  })
+
+  it('sees the individual rotate property', () => {
+    expect(anglesFor('.individual-prop')).toEqual([31])
+  })
+
+  it('sees rotate3d', () => {
+    expect(anglesFor('.three-d')).toEqual([37])
+  })
+
+  it('refuses to silently accept a matrix transform', () => {
+    expect(scanned.unparsed.some(u => u.includes('matrix'))).toBe(true)
   })
 })
