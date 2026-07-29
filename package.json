@@ -32,7 +32,8 @@
     "dev:qq": "npm run build:qq -- --watch",
     "dev:jd": "npm run build:jd -- --watch",
     "dev:harmony-hybrid": "npm run build:harmony-hybrid -- --watch",
-    "subset-fonts": "node tools/subset-fonts.mjs"
+    "subset-fonts": "node tools/subset-fonts.mjs",
+    "postbuild:weapp": "node scripts/write-style-manifest.js"
   },
   "browserslist": {
     "development": [

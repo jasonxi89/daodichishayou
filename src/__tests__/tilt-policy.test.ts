@@ -8,6 +8,7 @@
  *
  * The build must be current: staleness is asserted, never skipped.
  */
+import { createHash } from 'crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 
@@ -57,8 +58,24 @@ function filesUnder(dir: string, ext: string): string[] {
   })
 }
 
-const newest = (paths: string[]) =>
-  paths.reduce((max, p) => Math.max(max, statSync(p).mtimeMs), 0)
+// Provenance, not timestamps. dist/.style-manifest.json is written only after
+// a successful build and records a digest of every SCSS input that produced it.
+// Comparing digests proves the audited output came from this exact source tree;
+// comparing mtimes would pass whenever any unrelated output happened to be
+// touched more recently, while the artifact under audit stayed stale.
+const MANIFEST = join(DIST, '.style-manifest.json')
+
+function styleDigest(): string {
+  const hash = createHash('sha256')
+  filesUnder(SRC, '.scss')
+    .map(f => f.slice(SRC.length + 1))
+    .sort()
+    .forEach(rel => {
+      hash.update(rel)
+      hash.update(readFileSync(join(SRC, rel)))
+    })
+  return hash.digest('hex')
+}
 
 const RULE = /([^{}]+)\{([^{}]*)\}/g
 
@@ -184,11 +201,12 @@ describe('iron rule 4: tilt policy', () => {
     expect(all.length).toBeGreaterThan(0)
   })
 
-  it('runs against a build that is not stale', () => {
-    const sources = filesUnder(SRC, '.scss')
-    expect(sources.length).toBeGreaterThan(5)
-    // A stale dist would audit styles nobody is shipping any more.
-    expect(newest(wxss)).toBeGreaterThanOrEqual(newest(sources))
+  it('runs against a build produced by exactly this source tree', () => {
+    expect(filesUnder(SRC, '.scss').length).toBeGreaterThan(5)
+    expect(existsSync(MANIFEST)).toBe(true)
+
+    const recorded = JSON.parse(readFileSync(MANIFEST, 'utf-8')).styleDigest
+    expect(recorded).toBe(styleDigest())
   })
 
   it('emits no rotation it cannot audit', () => {
