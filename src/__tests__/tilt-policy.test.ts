@@ -20,6 +20,8 @@ const key = (r: Rotation) => `${r.file} :: ${r.selector} :: ${r.angle}`
 function scssFiles(dir: string): string[] {
   return readdirSync(dir).flatMap(entry => {
     const full = join(dir, entry)
+    // Fixtures exist to exercise the parser and deliberately break the policy.
+    if (entry === 'fixtures') return []
     if (statSync(full).isDirectory()) return scssFiles(full)
     return full.endsWith('.scss') ? [full] : []
   })
@@ -110,5 +112,40 @@ describe('iron rule 4: tilt policy', () => {
     const stale = ALLOWED.map(key).filter(k => !actual.has(k))
 
     expect(stale).toEqual([])
+  })
+})
+
+// A policy guard is only as strong as its parser. These pin the SCSS shapes
+// that could silently misattribute a rotation or drop one entirely.
+describe('tilt parser edge cases', () => {
+  const scanned = rotationsIn(
+    'fixture',
+    readFileSync(join(__dirname, 'fixtures/tilt-edge.scss'), 'utf-8'),
+  )
+  const at = (angle: number) => scanned.found.find(r => r.angle === angle)
+
+  it('keeps a comma-separated selector list intact', () => {
+    expect(at(3)?.selector).toBe('.a, .b')
+  })
+
+  it('attributes a nested rotation to the child, not the parent', () => {
+    expect(at(7)?.selector).toBe('.nested-child')
+  })
+
+  it('catches a rotation sharing its line with another declaration', () => {
+    expect(at(13)?.selector).toBe('.two-decls')
+  })
+
+  it('catches a rotation split across lines', () => {
+    expect(at(17)?.selector).toBe('.multiline-decl')
+  })
+
+  it('reports non-literal angles rather than silently ignoring them', () => {
+    // rotate(var(--a)) and rotate($tilt) cannot be audited statically.
+    expect(scanned.unparsed).toHaveLength(2)
+  })
+
+  it('finds every literal rotation in the fixture', () => {
+    expect(scanned.found.map(r => r.angle).sort((a, b) => a - b)).toEqual([3, 7, 13, 17])
   })
 })
