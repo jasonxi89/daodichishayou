@@ -10,13 +10,13 @@ import MenuGrid from '../../components/MenuGrid'
 import CountStepper from '../../components/CountStepper'
 import CustomMenuPopup from '../../components/CustomMenuPopup'
 import { commitDrawResult, getDrawCount } from '../../utils/drawStats'
+import { REDRAW_EVENT, RESULT_PAGE } from '../../utils/drawContract'
 import { getDateLine } from '../../utils/dateLabel'
 import { getFoodEmoji } from '../../utils/foodMeta'
 import './index.scss'
 
 const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 1 day
-const RESULT_PAGE = '/pages/result/result'
-const REDRAW_EVENT = 'ddcsy:redraw'
+
 
 type NavState = 'idle' | 'navigating' | 'failed'
 

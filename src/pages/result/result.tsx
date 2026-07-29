@@ -1,16 +1,14 @@
 import { Button, ScrollView, Text, View } from '@tarojs/components'
 import Taro, { useLoad, useShareAppMessage } from '@tarojs/taro'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import type { DrawResult } from '../../utils/drawStats'
+import type { DrawResult } from '../../utils/drawContract'
+import { HOME_PAGE, LAST_RESULT_KEY, REDRAW_EVENT } from '../../utils/drawContract'
 import { incrementWeeklyDrawCount } from '../../utils/drawStats'
 import { classifyProtein, getFoodEmoji } from '../../utils/foodMeta'
 import { toZhNumber } from '../../utils/zhNumber'
 import { getDateLine } from '../../utils/dateLabel'
 import './result.scss'
 
-const DRAW_RESULT_KEY = 'lastDrawResult'
-const HOME_PAGE = '/pages/index/index'
-const REDRAW_EVENT = 'ddcsy:redraw'
 const LUCKY_THRESHOLD = 5
 
 const PROTEIN_CLASS = {
@@ -26,7 +24,7 @@ const isStringList = (value: unknown): value is string[] =>
 // A TypeScript cast alone would let a stale payload crash the swap handler.
 function readDraw(): DrawResult | null {
   try {
-    const stored = Taro.getStorageSync(DRAW_RESULT_KEY) as Partial<DrawResult> | undefined
+    const stored = Taro.getStorageSync(LAST_RESULT_KEY) as Partial<DrawResult> | undefined
     if (!stored || typeof stored !== 'object') return null
     if (!isStringList(stored.foods) || stored.foods.length === 0) return null
     if (!isStringList(stored.pool)) return null
@@ -83,7 +81,7 @@ export default function Result() {
 
   useShareAppMessage(() => ({
     title: foods.length > 0 ? `今晚吃：${foods.join('、')}` : '不知道吃啥？来抽一签',
-    path: '/pages/index/index',
+    path: HOME_PAGE,
   }))
 
   if (!draw) return null

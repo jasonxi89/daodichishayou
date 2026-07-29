@@ -1,20 +1,10 @@
 import Taro from '@tarojs/taro'
+import { LAST_RESULT_KEY, TOTAL_KEY } from './drawContract'
+import type { DrawResult, DrawResultInput } from './drawContract'
 
-const TOTAL_KEY = 'drawCountTotal'
-const LAST_RESULT_KEY = 'lastDrawResult'
 const WEEKLY_KEY = 'drawCountWeekly'
 
-export interface DrawResultInput {
-  foods: string[]
-  category: string
-  servings: number
-  pool: string[]
-}
-
-export interface DrawResult extends DrawResultInput {
-  drawIndex: number
-  ts: number
-}
+export type { DrawResult, DrawResultInput }
 
 interface WeeklyDrawCount {
   weekKey: string
