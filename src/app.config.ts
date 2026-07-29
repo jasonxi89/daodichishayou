@@ -4,6 +4,7 @@ export default defineAppConfig({
   pages: [
     'pages/index/index',
     'pages/ingredient/ingredient',
+    'pages/result/result',
     'pages/recipe/recipe',
   ],
   tabBar: {

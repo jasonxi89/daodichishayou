@@ -1,0 +1,235 @@
+@use '../../styles/theme' as theme;
+
+.result {
+  display: flex;
+  min-height: 100vh;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 48rpx 60rpx;
+}
+
+.result__divider {
+  width: 100%;
+  height: 2rpx;
+  @include theme.gold-line;
+}
+
+.result__eyebrow {
+  margin-top: 24rpx;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 24rpx;
+  letter-spacing: 8rpx;
+}
+
+.scroll-card {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 32rpx;
+  padding: 36rpx 32rpx 28rpx;
+  border: 2rpx solid #e6d9bf;
+  border-radius: 12rpx;
+  background: theme.$card;
+  @include theme.paper-shadow;
+}
+
+.scroll-card__gold {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 6rpx;
+  border-radius: 12rpx 12rpx 0 0;
+  @include theme.gold-line;
+}
+
+.scroll-card__badge {
+  position: absolute;
+  top: -22rpx;
+  right: 24rpx;
+  padding: 8rpx 18rpx;
+  border: 4rpx solid theme.$outline-black;
+  border-radius: 14rpx;
+  background: theme.$sticker-red;
+  transform: rotate(4deg);
+  @include theme.sticker-shadow(6rpx, 6rpx);
+}
+
+.scroll-card__badge-text {
+  color: #fff;
+  font-family: theme.$happy-stack;
+  font-size: 22rpx;
+}
+
+.scroll-card__date {
+  display: block;
+  color: theme.$gold-dim;
+  font-size: 22rpx;
+  text-align: center;
+}
+
+.dish-list {
+  max-height: 640rpx;
+  margin-top: 20rpx;
+}
+
+.dish-row {
+  display: flex;
+  min-height: 116rpx;
+  align-items: center;
+  border-bottom: 2rpx solid theme.$divider;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.dish-row__index {
+  width: 40rpx;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 26rpx;
+  font-weight: 900;
+}
+
+.dish-chip {
+  display: flex;
+  width: 76rpx;
+  height: 76rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20rpx;
+  font-size: 40rpx;
+}
+
+.dish-chip--meat {
+  background: #fff3e0;
+}
+
+.dish-chip--vegetarian {
+  background: #f0f7ec;
+}
+
+.dish-chip--unknown {
+  background: theme.$divider;
+}
+
+.dish-row__name {
+  min-width: 0;
+  flex: 1;
+  margin-left: 18rpx;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 38rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
+  overflow-wrap: anywhere;
+}
+
+.dish-row__refresh {
+  min-width: 120rpx;
+  min-height: 88rpx;
+  margin: 0;
+  padding: 0 16rpx;
+  border: 4rpx solid theme.$outline-black;
+  border-radius: 24rpx;
+  background: #fff;
+  color: theme.$outline-black;
+  font-family: theme.$happy-stack;
+  font-size: 22rpx;
+  line-height: 80rpx;
+  @include theme.sticker-shadow(4rpx, 4rpx);
+
+  &::after {
+    border: 0;
+  }
+}
+
+.scroll-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx dashed theme.$divider;
+}
+
+.scroll-card__note {
+  color: theme.$weak;
+  font-size: 21rpx;
+}
+
+.seal {
+  display: flex;
+  width: 84rpx;
+  height: 84rpx;
+  align-items: center;
+  justify-content: center;
+  border: 3rpx solid theme.$seal-red;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 6rpx transparent, inset 0 0 0 8rpx rgba(197, 48, 48, .7);
+  transform: rotate(-12deg);
+}
+
+.seal__text {
+  width: 40rpx;
+  color: theme.$seal-red;
+  font-family: theme.$serif-stack;
+  font-size: 19rpx;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.result__easter-egg {
+  margin-top: 28rpx;
+  color: theme.$weak;
+  font-size: 21rpx;
+}
+
+.result__actions {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 24rpx;
+  margin-top: auto;
+  padding-top: 48rpx;
+}
+
+.result__secondary {
+  min-width: 200rpx;
+  min-height: 108rpx;
+  margin: 0;
+  border: 2rpx solid theme.$border-2;
+  border-radius: 54rpx;
+  background: theme.$card;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 28rpx;
+  font-weight: 900;
+  line-height: 104rpx;
+
+  &::after {
+    border: 0;
+  }
+}
+
+.result__primary {
+  min-height: 108rpx;
+  flex: 1;
+  margin: 0 8rpx 8rpx 0;
+  border: 5rpx solid theme.$outline-black;
+  border-radius: 54rpx;
+  background: theme.$sticker-orange;
+  color: theme.$outline-black;
+  font-family: theme.$happy-stack;
+  font-size: 36rpx;
+  line-height: 98rpx;
+  @include theme.sticker-shadow(8rpx, 8rpx);
+
+  &::after {
+    border: 0;
+  }
+}

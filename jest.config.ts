@@ -2,6 +2,9 @@ import type { Config } from 'jest'
 
 const config: Config = {
   preset: 'ts-jest',
+  // The tilt guard audits compiled WXSS, so every run needs a current build,
+  // not just the one that happens to go through `npm test`.
+  globalSetup: '<rootDir>/jest.globalSetup.js',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['./src/test/setup.ts'],
   moduleNameMapper: {

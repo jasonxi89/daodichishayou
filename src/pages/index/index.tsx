@@ -1,21 +1,30 @@
 import { View, Text, Button } from '@tarojs/components'
-import Taro, { useLoad, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import { useState, useCallback, useRef, useMemo } from 'react'
-import type { Recipe } from '../../data/recipes'
-import { getLocalRecipe, fetchRecipeFromAPI } from '../../data/recipes'
+import Taro, { useLoad } from '@tarojs/taro'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { defaultFoodList, defaultCategories, AI_CATEGORIES } from '../../data/defaultFoods'
 import { fetchTrending, fetchCategories, generateFoodsByCategory, bulkGenerateFoodsByCategory } from '../../services/api'
-import useSlotMachine from '../../hooks/useSlotMachine'
+import useDrawCeremony from '../../hooks/useDrawCeremony'
+import DrawCeremony from '../../components/DrawCeremony'
 import DigestCard from '../../components/DigestCard'
 import MenuGrid from '../../components/MenuGrid'
 import CountStepper from '../../components/CountStepper'
 import CustomMenuPopup from '../../components/CustomMenuPopup'
-import RecipePopup from '../../components/RecipePopup'
-import { getDrawCount, incrementDrawCount } from '../../utils/drawStats'
+import { commitDrawResult, getDrawCount } from '../../utils/drawStats'
+import { REDRAW_EVENT, RESULT_PAGE } from '../../utils/drawContract'
 import { getDateLine } from '../../utils/dateLabel'
+import { getFoodEmoji } from '../../utils/foodMeta'
 import './index.scss'
 
 const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 1 day
+
+
+type NavState = 'idle' | 'navigating' | 'failed'
+
+interface DrawContext {
+  category: string
+  servings: number
+  pool: string[]
+}
 
 export default function Index() {
   const [activeCategory, _setActiveCategory] = useState('随便')
@@ -26,11 +35,6 @@ export default function Index() {
   }, [])
   const [count, setCount] = useState(1)
   const [drawCount, setDrawCount] = useState(() => getDrawCount())
-  const [showRecipe, setShowRecipe] = useState(false)
-  const [popupFoods, setPopupFoods] = useState<string[]>([])
-  const [activePopupIndex, setActivePopupIndex] = useState(0)
-  const [recipeLoading, setRecipeLoading] = useState(false)
-  const recipeCacheRef = useRef<Record<string, Recipe | null>>({})
 
   // 后端热门数据
   const [trendingFoods, setTrendingFoods] = useState<string[]>([])
@@ -93,11 +97,99 @@ export default function Index() {
     return base
   }, [customFoodList, backendCategories])
 
-  // 老虎机滚动
-  const getRollList = useCallback(() => mergedFoodList[activeCategoryRef.current], [mergedFoodList])
-  const {
-    currentFood, isRolling, isLanded, resultList, showResult, handleStart, handleRefreshItem,
-  } = useSlotMachine({ count, isBlocked: categoryLoading !== null, getRollList })
+  // 抽取仪式：结果不再留在首页，交给结果页
+  const countRef = useRef(count)
+  countRef.current = count
+
+  // Freeze category, servings and pool when the draw is accepted so the
+  // handoff payload can never mix start-time foods with finish-time state.
+  const drawContextRef = useRef<DrawContext | null>(null)
+
+  const getPool = useCallback(() => {
+    const category = activeCategoryRef.current
+    const pool = mergedFoodList[category]
+    drawContextRef.current = {
+      category,
+      servings: countRef.current,
+      pool: pool ? [...pool] : [],
+    }
+    return pool
+  }, [mergedFoodList])
+
+  const resetCeremonyRef = useRef<(() => void) | null>(null)
+
+  // idle -> navigating -> idle on success, or -> failed so the committed draw
+  // stays reopenable instead of being overwritten by a fresh draw.
+  const [navState, setNavState] = useState<NavState>('idle')
+  const navStateRef = useRef<NavState>('idle')
+
+  const commitNavState = useCallback((next: NavState) => {
+    navStateRef.current = next
+    setNavState(next)
+  }, [])
+
+  const openResultPage = useCallback(() => {
+    if (navStateRef.current === 'navigating') return
+    commitNavState('navigating')
+    Taro.navigateTo({
+      url: RESULT_PAGE,
+      success: () => commitNavState('idle'),
+      fail: () => {
+        commitNavState('failed')
+        Taro.showToast({ title: '结果页打开失败，请重试', icon: 'none' })
+      },
+    })
+  }, [commitNavState])
+
+  const handleDrawDone = useCallback((foods: string[]) => {
+    const context = drawContextRef.current ?? {
+      category: activeCategoryRef.current,
+      servings: countRef.current,
+      pool: [],
+    }
+    drawContextRef.current = null
+    resetCeremonyRef.current?.()
+
+    let nextIndex: number
+    try {
+      nextIndex = commitDrawResult({
+        foods,
+        category: context.category,
+        servings: context.servings,
+        pool: context.pool,
+      })
+    } catch {
+      Taro.showToast({ title: '结果没存下来，再试一次', icon: 'none' })
+      return
+    }
+    setDrawCount(nextIndex)
+
+    openResultPage()
+  }, [openResultPage])
+
+  const { phase, mainResult, startDraw, skip, reset } = useDrawCeremony({
+    count,
+    isBlocked: categoryLoading !== null,
+    getPool,
+    onDone: handleDrawDone,
+  })
+
+  resetCeremonyRef.current = reset
+
+  const ceremonyActive = phase !== 'idle'
+
+  // Subscribe once; dispatch through a ref so a redraw event that lands between
+  // commit and effect flush still uses the latest startDraw.
+  const startDrawRef = useRef(startDraw)
+  startDrawRef.current = startDraw
+
+  useEffect(() => {
+    const handleRedraw = () => startDrawRef.current()
+    Taro.eventCenter.on(REDRAW_EVENT, handleRedraw)
+    return () => {
+      Taro.eventCenter.off(REDRAW_EVENT, handleRedraw)
+    }
+  }, [])
 
   useLoad(() => {
     console.log('Page loaded.')
@@ -180,74 +272,6 @@ export default function Index() {
     }
   }, [mergedFoodList, categoryLoading, aiCategoryCache, setActiveCategory])
 
-  // 分享到聊天
-  useShareAppMessage(() => {
-    const food = resultList.length > 0 ? resultList.join('、') : currentFood
-    return {
-      title: food !== '今天吃啥？' ? `今天吃：${food}` : '不知道吃啥？来随机一个！',
-      path: '/pages/index/index',
-    }
-  })
-
-  // 分享到朋友圈
-  useShareTimeline(() => {
-    const food = resultList.length > 0 ? resultList.join('、') : currentFood
-    return {
-      title: food !== '今天吃啥？' ? `今天吃：${food}` : '不知道吃啥？来随机一个！',
-    }
-  })
-
-  // 加载某个食物的菜谱
-  const loadRecipe = useCallback(async (food: string) => {
-    if (recipeCacheRef.current[food] !== undefined) {
-      setRecipeLoading(false)
-      return
-    }
-    setRecipeLoading(true)
-    let recipe = getLocalRecipe(food)
-    if (!recipe) {
-      recipe = await fetchRecipeFromAPI(food)
-    }
-    recipeCacheRef.current[food] = recipe
-    setRecipeLoading(false)
-  }, [])
-
-  const handleRecipeClick = useCallback(async () => {
-    // 收集所有已选食物
-    let foods: string[]
-    if (resultList.length > 0) {
-      foods = [...resultList]
-    } else if (currentFood !== '今天吃啥？') {
-      foods = [currentFood]
-    } else {
-      Taro.showToast({ title: '先选一个食物吧', icon: 'none' })
-      return
-    }
-
-    recipeCacheRef.current = {}
-    setPopupFoods(foods)
-    setActivePopupIndex(0)
-    setShowRecipe(true)
-    await loadRecipe(foods[0])
-  }, [resultList, currentFood, loadRecipe])
-
-  const handleSwitchFood = useCallback(async (index: number) => {
-    setActivePopupIndex(index)
-    await loadRecipe(popupFoods[index])
-  }, [popupFoods, loadRecipe])
-
-  const handleViewDetail = useCallback(() => {
-    const food = popupFoods[activePopupIndex]
-    const recipe = recipeCacheRef.current[food]
-    if (!recipe) return
-    setShowRecipe(false)
-    const difficulty = (recipe as any).difficulty || ''
-    const cookTime = (recipe as any).cook_time || ''
-    Taro.navigateTo({
-      url: `/pages/recipe/recipe?name=${encodeURIComponent(recipe.name)}&difficulty=${encodeURIComponent(difficulty)}&cook_time=${encodeURIComponent(cookTime)}`,
-    })
-  }, [popupFoods, activePopupIndex])
-
   // ===== 自定义菜单操作 =====
   const saveCustomList = useCallback((newList: Record<string, string[]>) => {
     setCustomFoodList(newList)
@@ -260,28 +284,30 @@ export default function Index() {
     }
   }, [setActiveCategory])
 
-  const handleDecree = useCallback(() => {
-    if (isRolling || categoryLoading !== null) return
-    const pool = getRollList()
-    if (!pool || pool.length === 0) {
-      handleStart()
-      return
-    }
-    setDrawCount(incrementDrawCount())
-    handleStart()
-  }, [categoryLoading, getRollList, handleStart, isRolling])
+  const ctaLabel = navState === 'navigating'
+    ? '正在打开结果'
+    : navState === 'failed'
+      ? '重新打开结果'
+      : '为我定夺'
 
-  const hasResult = resultList.length > 0 || currentFood !== '今天吃啥？'
-
-  const singleScreen = resultList.length <= 3
+  if (ceremonyActive) {
+    return (
+      <View className="index paper-texture index--single-screen">
+        <DrawCeremony
+          phase={phase}
+          mainResult={mainResult}
+          emoji={getFoodEmoji(mainResult)}
+          category={activeCategory}
+          servings={count}
+          drawIndex={drawCount + 1}
+          onSkip={skip}
+        />
+      </View>
+    )
+  }
 
   return (
-    <View className={[
-      'index',
-      'paper-texture',
-      singleScreen ? 'index--single-screen' : '',
-      hasResult ? 'index--has-result' : '',
-    ].filter(Boolean).join(' ')}>
+    <View className="index paper-texture index--single-screen">
       <View className='custom-navigation' style={navStyle}>
         <Text className='custom-navigation__title'>到底吃啥哟</Text>
       </View>
@@ -292,44 +318,16 @@ export default function Index() {
           <Text className='date-row__count'>第 {drawCount} 次帮你定夺</Text>
         </View>
 
-        <View className='hero' aria-live='polite'>
-          {!hasResult ? (
-            <>
-              <View className='hero__eyebrow'>
-                <View className='hero__gold-dot' />
-                <Text>今日一问</Text>
-              </View>
-              <Text className='hero__title'>今晚食何</Text>
-              <Text className='hero__subtitle'>三十道候选 · 把纠结交给大厨</Text>
-            </>
-          ) : resultList.length > 1 ? (
-            <View className={`result-list ${resultList.length > 3 ? 'result-list--grid' : ''}`}>
-              {resultList.map((food, index) => (
-                <View
-                  key={`${food}-${index}`}
-                  className={`result-row ${showResult ? 'result-row--visible' : ''}`}
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <Text className='result-index'>{index + 1}</Text>
-                  <Text className='result-food'>{food}</Text>
-                  <Button
-                    className='result-refresh'
-                    aria-label={`换掉${food}`}
-                    onClick={() => handleRefreshItem(index)}
-                  >
-                    换
-                  </Button>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <Text className={`hero__result ${isRolling ? 'hero__result--rolling' : ''} ${isLanded ? 'hero__result--landed' : ''}`}>
-              {currentFood}
-            </Text>
-          )}
+        <View className='hero'>
+          <View className='hero__eyebrow'>
+            <View className='hero__gold-dot' />
+            <Text>今日一问</Text>
+          </View>
+          <Text className='hero__title'>今晚食何</Text>
+          <Text className='hero__subtitle'>三十道候选 · 把纠结交给大厨</Text>
         </View>
 
-        {!hasResult && <DigestCard />}
+        <DigestCard />
 
         <MenuGrid
           categories={allCategories}
@@ -343,28 +341,15 @@ export default function Index() {
           <CountStepper value={count} onChange={setCount} />
           <Button
             className='decree-btn'
-            aria-label={isRolling ? '正在定夺' : '为我定夺'}
-            disabled={isRolling || categoryLoading !== null}
-            onClick={handleDecree}
+            aria-label={ctaLabel}
+            disabled={categoryLoading !== null || navState === 'navigating'}
+            onClick={navState === 'idle' ? startDraw : openResultPage}
           >
             <View className='decree-btn__line' />
-            <Text className='decree-btn__label'>
-              {isRolling ? '选择中...' : '为我定夺'}
-            </Text>
+            <Text className='decree-btn__label'>{ctaLabel}</Text>
             <View className='decree-btn__line' />
           </Button>
         </View>
-
-        {hasResult && (
-          <View className='result-actions'>
-            <Button className='result-action' onClick={handleRecipeClick}>
-              查看菜谱
-            </Button>
-            <Button className='result-action' openType='share'>
-              分享美食
-            </Button>
-          </View>
-        )}
 
         <Button className='feedback-fab' openType='feedback'>反馈</Button>
       </View>
@@ -377,19 +362,6 @@ export default function Index() {
           onClose={() => setShowCustomMenu(false)}
           onCategoryAdded={setActiveCategory}
           onCategoryDeleted={handleCategoryDeleted}
-        />
-      )}
-
-      {/* 菜谱弹窗 */}
-      {showRecipe && (
-        <RecipePopup
-          foods={popupFoods}
-          activeIndex={activePopupIndex}
-          recipes={recipeCacheRef.current}
-          isLoading={recipeLoading}
-          onSwitchFood={handleSwitchFood}
-          onViewDetail={handleViewDetail}
-          onClose={() => setShowRecipe(false)}
         />
       )}
 

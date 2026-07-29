@@ -333,7 +333,7 @@ describe('Index page – custom menu', () => {
   })
 })
 
-describe('Index page – start button logic', () => {
+describe('Index page – draw ceremony entry', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetStorageSync.mockReturnValue({})
@@ -344,62 +344,66 @@ describe('Index page – start button logic', () => {
     jest.useRealTimers()
   })
 
-  it('changes button text to 选择中... while rolling', () => {
+  it('replaces the home content with the ceremony while drawing', () => {
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
+    const { container } = render(<IndexPage />)
 
     fireEvent.click(screen.getByRole('button', { name: '为我定夺' }))
 
-    expect(screen.getByText('选择中...')).toBeInTheDocument()
+    expect(container.querySelector('.ceremony')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '为我定夺' })).not.toBeInTheDocument()
   })
 
-  it('reverts to 开始 text after rolling completes', async () => {
+  it('returns to the idle home screen after the ceremony completes', async () => {
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
+    const { container } = render(<IndexPage />)
 
     fireEvent.click(screen.getByRole('button', { name: '为我定夺' }))
 
     await act(async () => {
-      jest.advanceTimersByTime(2000) // 15 ticks * 100ms + buffer
+      jest.advanceTimersByTime(2500)
     })
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
+      expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
     })
+
+    // Navigation must confirm before the draw CTA is offered again.
+    act(() => { mockNavigateTo.mock.calls[0][0].success?.() })
+    expect(screen.getByRole('button', { name: '为我定夺' })).toBeInTheDocument()
   })
 
-  it('clicking start again while rolling has no effect (idempotent)', () => {
+  it('skips straight to the result page when the tube is tapped', () => {
     const IndexPage = loadIndexPage()
-    render(<IndexPage />)
+    const { container } = render(<IndexPage />)
 
     fireEvent.click(screen.getByRole('button', { name: '为我定夺' }))
-    // At this point the button reads 选择中...
-    const rollingBtn = screen.getByRole('button', { name: '正在定夺' })
-    fireEvent.click(rollingBtn)
+    expect(container.querySelectorAll('.ceremony')).toHaveLength(1)
 
-    // Still rolling – only one interval was started
-    expect(screen.getByText('选择中...')).toBeInTheDocument()
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: '跳过摇签，立即揭晓' }))
+    })
+
+    expect(mockNavigateTo).toHaveBeenCalledWith(expect.objectContaining({ url: '/pages/result/result' }))
+    expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
   })
 
-  it('shows 换 buttons when count > 1 and rolling completes', async () => {
+  it('sends multi-serving results to the result page instead of the home page', async () => {
     const IndexPage = loadIndexPage()
     render(<IndexPage />)
 
-    // Set count to 3
     fireEvent.click(screen.getByRole('button', { name: '增加份数' }))
     fireEvent.click(screen.getByRole('button', { name: '增加份数' }))
-
     fireEvent.click(screen.getByRole('button', { name: '为我定夺' }))
 
     await act(async () => {
-      jest.advanceTimersByTime(2000)
+      jest.advanceTimersByTime(2500)
     })
 
-    await waitFor(() => {
-      // After count=3 roll completes, 换 buttons appear
-      const refreshBtns = screen.queryAllByText('换')
-      expect(refreshBtns.length).toBeGreaterThan(0)
-    })
+    const handoff = mockSetStorageSync.mock.calls.find(([key]) => key === 'lastDrawResult')
+    expect(handoff).toBeDefined()
+    expect(handoff![1].foods).toHaveLength(3)
+    expect(screen.queryAllByText('换')).toHaveLength(0)
   })
 })
 

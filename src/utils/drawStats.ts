@@ -1,7 +1,10 @@
 import Taro from '@tarojs/taro'
+import { LAST_RESULT_KEY, TOTAL_KEY } from './drawContract'
+import type { DrawResult, DrawResultInput } from './drawContract'
 
-const TOTAL_KEY = 'drawCountTotal'
 const WEEKLY_KEY = 'drawCountWeekly'
+
+export type { DrawResult, DrawResultInput }
 
 interface WeeklyDrawCount {
   weekKey: string
@@ -28,18 +31,41 @@ function isoWeekKey(date: Date): string {
   return `${isoYear}-W${String(week).padStart(2, '0')}`
 }
 
-export function getDrawCount(): number {
+// The committed draw result carries its own drawIndex, so a lost count write
+// can be reconciled instead of handing out a duplicate index next time.
+function committedDrawIndex(): number {
   try {
-    return validCount(Taro.getStorageSync(TOTAL_KEY))
+    const stored = Taro.getStorageSync(LAST_RESULT_KEY) as { drawIndex?: unknown } | undefined
+    return validCount(stored?.drawIndex)
   } catch {
     return 0
   }
 }
 
-export function incrementDrawCount(): number {
-  const next = getDrawCount() + 1
-  Taro.setStorageSync(TOTAL_KEY, next)
-  return next
+export function getDrawCount(): number {
+  let persisted = 0
+  try {
+    persisted = validCount(Taro.getStorageSync(TOTAL_KEY))
+  } catch {
+    persisted = 0
+  }
+  return Math.max(persisted, committedDrawIndex())
+}
+
+// Single owner of the two-key commit. The result is written first because it
+// carries drawIndex, so a failed count write can still be reconciled.
+export function commitDrawResult(input: DrawResultInput): number {
+  const drawIndex = getDrawCount() + 1
+  const result: DrawResult = { ...input, drawIndex, ts: Date.now() }
+
+  Taro.setStorageSync(LAST_RESULT_KEY, result)
+  try {
+    Taro.setStorageSync(TOTAL_KEY, drawIndex)
+  } catch {
+    // Recoverable: getDrawCount reads drawIndex back from the stored result.
+  }
+
+  return drawIndex
 }
 
 export function getWeeklyDrawCount(date = new Date()): number {
