@@ -9,6 +9,9 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
+- **v1.9.1（混血主题批 2）待上传微信后台**：对应 `main @ ab9d454`（PR #2 squash merge）；签筒抽取仪式取代老虎机（`useDrawCeremony` + `DrawCeremony`）、新增结果页「今晚菜单」（卷轴卡 / 换一换 / 印章 / 本周彩蛋）、`foodMeta` 三态荤素判定、交接契约常量收敛到 `drawContract.ts`。上传前验证：**30 suites / 334 jest tests 全绿**、`build:weapp` 成功、官方 CLI Preview 610.8 KB、真机扫码走通全链路（定夺→仪式→跳过→结果→换一换→再抽→就它了）。
+  - 版本号说明：1.9.0 已于批 1 占用，故批 2 取 1.9.1。计划文档 Task 18 写的「bump → 1.9.0」已过时，批 3 收尾时需另定号。
+  - 铁律 4（倾角）已修订为「默认档位 ±2°/±6° + 具名例外表」，Owner 裁决保留现有视觉（角标 +4°、印章 -12°）。`tilt-policy.test.ts` 审计编译产物强制执行，`jest.globalSetup.js` 保证任何入口都先构建。
 - **v1.9.0（混血主题批 1）已于 2026-07-27 上传微信后台**：对应 `main @ e67eb70`；首页御厨纸感改版（design tokens、字体子集、MenuGrid、中文数字份数、为我定夺 CTA、双行 tab）。上传前验证：229 jest tests 全绿、`build:weapp` 成功、官方 CLI Preview 成功、真机扫码可用。**抽取交互仍为老虎机**，签筒仪式与结果页属于批 2。
 - v1.8.0 已于 2026-07-20 审核通过并发布上线（零等待改造：投机预取、两段式 quick/steps、NDJSON 流式步骤、静默本地降级；2026-07-18 提审）。
 - 发布日线上抽查（API 侧）：health 返回 1.14.1 ✓；`POST /api/recommend/quick` 预生成命中 0.07s ✓；`POST /api/recommend/steps` NDJSON 流 0.11s 返回完整做法（命中缓存）✓。降级场景为纯前端行为，已由审核前真机回归覆盖。
