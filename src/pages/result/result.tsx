@@ -1,6 +1,6 @@
 import { Button, ScrollView, Text, View } from '@tarojs/components'
 import Taro, { useLoad, useShareAppMessage } from '@tarojs/taro'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { DrawResult } from '../../utils/drawStats'
 import { incrementWeeklyDrawCount } from '../../utils/drawStats'
 import { classifyProtein, getFoodEmoji } from '../../utils/foodMeta'
@@ -9,14 +9,30 @@ import { getDateLine } from '../../utils/dateLabel'
 import './result.scss'
 
 const DRAW_RESULT_KEY = 'lastDrawResult'
+const HOME_PAGE = '/pages/index/index'
 const REDRAW_EVENT = 'ddcsy:redraw'
 const LUCKY_THRESHOLD = 5
 
+const PROTEIN_CLASS = {
+  'animal-protein': 'meat',
+  vegetarian: 'vegetarian',
+  unknown: 'unknown',
+} as const
+
+const isStringList = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every(item => typeof item === 'string')
+
+// Storage survives app upgrades, so the stored shape is untrusted input.
+// A TypeScript cast alone would let a stale payload crash the swap handler.
 function readDraw(): DrawResult | null {
   try {
-    const stored = Taro.getStorageSync(DRAW_RESULT_KEY) as DrawResult | undefined
-    if (!stored || !Array.isArray(stored.foods) || stored.foods.length === 0) return null
-    return stored
+    const stored = Taro.getStorageSync(DRAW_RESULT_KEY) as Partial<DrawResult> | undefined
+    if (!stored || typeof stored !== 'object') return null
+    if (!isStringList(stored.foods) || stored.foods.length === 0) return null
+    if (!isStringList(stored.pool)) return null
+    if (!Number.isFinite(stored.ts)) return null
+    if (!Number.isInteger(stored.drawIndex)) return null
+    return stored as DrawResult
   } catch {
     return null
   }
@@ -37,7 +53,8 @@ export default function Result() {
     const stored = readDraw()
     if (!stored) {
       Taro.showToast({ title: '厨房走神了，再试一次', icon: 'none' })
-      Taro.navigateBack()
+      // Scene-code or restored entry can make this the only page on the stack.
+      Taro.navigateBack({ fail: () => Taro.reLaunch({ url: HOME_PAGE }) })
       return
     }
     setDraw(stored)
@@ -45,16 +62,19 @@ export default function Result() {
     setWeeklyCount(incrementWeeklyDrawCount())
   })
 
+  // Deduplicated so an accidentally repeated pool entry does not get double odds.
+  const uniquePool = useMemo(() => [...new Set(draw?.pool ?? [])], [draw])
+  const hasSpare = uniquePool.some(name => !foods.includes(name))
+
   const refreshDish = useCallback((index: number) => {
     setFoods(current => {
-      const pool = draw?.pool ?? []
       const taken = new Set(current)
-      const available = pool.filter(name => !taken.has(name))
+      const available = uniquePool.filter(name => !taken.has(name))
       if (available.length === 0) return current
       const replacement = available[Math.floor(Math.random() * available.length)]
       return current.map((name, i) => (i === index ? replacement : name))
     })
-  }, [draw])
+  }, [uniquePool])
 
   const handleRedraw = useCallback(() => {
     Taro.eventCenter.trigger(REDRAW_EVENT)
@@ -82,20 +102,16 @@ export default function Result() {
 
         <ScrollView scrollY className='dish-list'>
           {foods.map((food, index) => (
-            <View className='dish-row' key={`${index}-${food}`}>
+            <View className='dish-row' key={`${draw.drawIndex}-${index}`}>
               <Text className='dish-row__index'>{toZhNumber(index + 1)}</Text>
-              <Text
-                className={`dish-chip dish-chip--${classifyProtein(food) === 'animal-protein'
-                  ? 'meat'
-                  : classifyProtein(food) === 'vegetarian' ? 'vegetarian' : 'unknown'}`}
-                aria-hidden
-              >
+              <Text className={`dish-chip dish-chip--${PROTEIN_CLASS[classifyProtein(food)]}`} aria-hidden>
                 {getFoodEmoji(food)}
               </Text>
               <Text className='dish-row__name'>{food}</Text>
               <Button
                 className='dish-row__refresh'
                 aria-label={`换掉${food}`}
+                disabled={!hasSpare}
                 onClick={() => refreshDish(index)}
               >
                 换一换
@@ -120,7 +136,7 @@ export default function Result() {
         <Button className='result__secondary' aria-label='再抽' onClick={handleRedraw}>
           再抽
         </Button>
-        <Button className='result__primary' openType='share' aria-label='就它了'>
+        <Button className='result__primary' openType='share' aria-label='就它了，分享这份菜单'>
           就它了！
         </Button>
       </View>

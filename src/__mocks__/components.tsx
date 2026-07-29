@@ -89,8 +89,8 @@ export const Button = ({
 export const ScrollView = ({
   children,
   className,
-  scrollX: _scrollX,
-  scrollY: _scrollY,
+  scrollX,
+  scrollY,
   style,
   ...props
 }: React.PropsWithChildren<{
@@ -100,7 +100,14 @@ export const ScrollView = ({
   style?: React.CSSProperties | string
   [key: string]: unknown
 }>) => (
-  <div className={className} style={style as React.CSSProperties} {...props}>
+  // Surface the scroll axis so tests can assert it instead of swallowing it.
+  <div
+    className={className}
+    style={style as React.CSSProperties}
+    {...(scrollX ? { 'scroll-x': 'true' } : {})}
+    {...(scrollY ? { 'scroll-y': 'true' } : {})}
+    {...props}
+  >
     {children}
   </div>
 )

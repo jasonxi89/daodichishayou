@@ -1,5 +1,5 @@
 import React from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import * as taroMock from '@tarojs/taro'
 
 jest.mock('../../data/recipes', () => ({
@@ -9,9 +9,19 @@ jest.mock('../../data/recipes', () => ({
   default: {},
 }))
 
+// The ISO week key belongs to drawStats and is tested there; the page only
+// renders whatever count it is handed.
+jest.mock('../../utils/drawStats', () => ({
+  __esModule: true,
+  incrementWeeklyDrawCount: jest.fn(() => 1),
+}))
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const mockIncrementWeekly = require('../../utils/drawStats').incrementWeeklyDrawCount as jest.Mock
+
 const mockGetStorageSync = taroMock.getStorageSync as jest.Mock
-const mockSetStorageSync = taroMock.setStorageSync as jest.Mock
 const mockNavigateBack = taroMock.navigateBack as jest.Mock
+const mockReLaunch = taroMock.reLaunch as jest.Mock
 const mockShowToast = taroMock.showToast as jest.Mock
 const mockUseLoad = taroMock.useLoad as jest.Mock
 const mockEventCenter = taroMock.eventCenter as unknown as { trigger: jest.Mock }
@@ -75,22 +85,102 @@ describe('Result page', () => {
     expect(mockNavigateBack).toHaveBeenCalled()
   })
 
-  it('counts one weekly draw on entry', () => {
-    mountResult()
+  it('relaunches home when there is no page to go back to', () => {
+    // Scoped to this test: clearAllMocks keeps implementations, resetting is explicit.
+    mockNavigateBack.mockImplementationOnce((opts?: { fail?: () => void }) => opts?.fail?.())
 
-    const weekly = mockSetStorageSync.mock.calls.find(([key]) => key === 'drawCountWeekly')
-    expect(weekly).toBeDefined()
-    expect(weekly![1].count).toBe(1)
+    mountResult(null)
+
+    expect(mockReLaunch).toHaveBeenCalledWith(
+      expect.objectContaining({ url: '/pages/index/index' }),
+    )
   })
 
-  it('swaps a single dish without duplicating the others', () => {
+  it('rejects a stored draw whose pool is not an array', () => {
+    mountResult({ ...DRAW, pool: {} })
+
+    expect(mockShowToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '厨房走神了，再试一次' }),
+    )
+    expect(mockNavigateBack).toHaveBeenCalled()
+  })
+
+  it('rejects a stored draw whose foods are not strings', () => {
+    mountResult({ ...DRAW, foods: [1, 2, 3] })
+
+    expect(mockNavigateBack).toHaveBeenCalled()
+  })
+
+  it('counts exactly one weekly draw on entry', () => {
     mountResult()
+
+    expect(mockIncrementWeekly).toHaveBeenCalledTimes(1)
+  })
+
+  it('counts the draw once even if the host replays the load callback', () => {
+    let loadCallback: (() => void) | undefined
+    mockGetStorageSync.mockImplementation((key: string) => {
+      if (key === 'lastDrawResult') return DRAW
+      return {}
+    })
+    mockUseLoad.mockImplementationOnce((cb: () => void) => {
+      loadCallback = cb
+      cb()
+    })
+    const ResultPage = loadResultPage()
+    render(<ResultPage />)
+
+    act(() => { loadCallback?.() })
+
+    expect(mockIncrementWeekly).toHaveBeenCalledTimes(1)
+  })
+
+  it('swaps one slot with a pool dish and leaves the rest untouched', () => {
+    // Deterministic pick: first candidate not already on the menu.
+    const random = jest.spyOn(Math, 'random').mockReturnValue(0)
+    const { container } = mountResult()
 
     fireEvent.click(screen.getByRole('button', { name: '换掉清炒西兰花' }))
 
-    expect(screen.queryByText('清炒西兰花')).not.toBeInTheDocument()
-    expect(screen.getByText('红烧肉')).toBeInTheDocument()
-    expect(screen.getByText('番茄蛋汤')).toBeInTheDocument()
+    const names = Array.from(container.querySelectorAll('.dish-row__name')).map(n => n.textContent)
+    expect(names).toEqual(['红烧肉', '糖醋排骨', '番茄蛋汤'])
+    expect(new Set(names).size).toBe(names.length)
+    names.forEach(name => expect(DRAW.pool).toContain(name))
+    expect(container.querySelectorAll('.dish-row')).toHaveLength(3)
+
+    random.mockRestore()
+  })
+
+  it('keeps the menu intact when the pool is exhausted', () => {
+    const { container } = mountResult({ ...DRAW, pool: DRAW.foods })
+
+    fireEvent.click(screen.getByRole('button', { name: '换掉清炒西兰花' }))
+
+    const names = Array.from(container.querySelectorAll('.dish-row__name')).map(n => n.textContent)
+    expect(names).toEqual(DRAW.foods)
+  })
+
+  it('disables every swap button when no replacement exists', () => {
+    mountResult({ ...DRAW, pool: DRAW.foods })
+
+    DRAW.foods.forEach(food => {
+      expect(screen.getByRole('button', { name: `换掉${food}` })).toBeDisabled()
+    })
+  })
+
+  it('does not let duplicate pool entries produce a duplicate menu', () => {
+    const random = jest.spyOn(Math, 'random').mockReturnValue(0)
+    const { container } = mountResult({
+      ...DRAW,
+      pool: ['红烧肉', '红烧肉', '清炒西兰花', '番茄蛋汤', '糖醋排骨'],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '换掉清炒西兰花' }))
+
+    const names = Array.from(container.querySelectorAll('.dish-row__name')).map(n => n.textContent)
+    expect(new Set(names).size).toBe(names.length)
+
+    random.mockRestore()
   })
 
   it('asks the home page to redraw and goes back', () => {
@@ -115,32 +205,21 @@ describe('Result page', () => {
   })
 
   it('unlocks the lucky-carp tail at the weekly threshold', () => {
-    const week = new Date()
-    const target = new Date(Date.UTC(week.getUTCFullYear(), week.getUTCMonth(), week.getUTCDate()))
-    const day = target.getUTCDay() || 7
-    target.setUTCDate(target.getUTCDate() + 4 - day)
-    const isoYear = target.getUTCFullYear()
-    const yearStart = new Date(Date.UTC(isoYear, 0, 1))
-    const weekNo = Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
-    const weekKey = `${isoYear}-W${String(weekNo).padStart(2, '0')}`
-
-    mockGetStorageSync.mockImplementation((key: string) => {
-      if (key === 'lastDrawResult') return DRAW
-      if (key === 'drawCountWeekly') return { weekKey, count: 4 }
-      return {}
-    })
-    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
-    const ResultPage = loadResultPage()
-    render(<ResultPage />)
+    // Presentation only: the ISO week key is the util's job, tested there.
+    mockIncrementWeekly.mockReturnValueOnce(5)
+    mountResult()
 
     expect(screen.getByText(/本周第 5 次听天由命 · 已解锁「干饭锦鲤」/)).toBeInTheDocument()
   })
 
-  it('keeps many dishes inside a scrollable card', () => {
+  it('renders every dish inside a vertically scrollable dish-list', () => {
     const many = ['红烧肉', '清炒西兰花', '番茄蛋汤', '糖醋排骨', '蒜蓉生菜']
     const { container } = mountResult({ ...DRAW, foods: many, servings: many.length })
 
     expect(container.querySelectorAll('.dish-row')).toHaveLength(5)
-    expect(container.querySelector('.dish-list')).toBeInTheDocument()
+    // jsdom cannot prove scrolling; assert the ScrollView opted into vertical scroll.
+    const list = container.querySelector('.dish-list')
+    expect(list).toBeInTheDocument()
+    expect(list).toHaveAttribute('scroll-y')
   })
 })
