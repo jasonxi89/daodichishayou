@@ -51,4 +51,28 @@ describe('popup style ownership', () => {
     expect(styles).not.toContain('background: #fff;')
     expect(concreteSelectorLines).toEqual([])
   })
+
+  it('keeps popup sheet heights relative to the viewport', () => {
+    const baseStyles = source('styles/popup-base.scss')
+    const customMenuStyles = source('components/CustomMenuPopup/index.scss')
+
+    expect(baseStyles).toMatch(/@mixin sheet\s*\{[\s\S]*?max-height:\s*70vh;/)
+    expect(customMenuStyles).toMatch(
+      /\.custom-menu-body\s*\{[^}]*max-height:\s*55vh;/,
+    )
+  })
+
+  it('pins popup gold rules to their scrolling backgrounds', () => {
+    const popupStyles = [
+      source('components/RecipePopup/index.scss'),
+      source('components/CustomMenuPopup/index.scss'),
+    ]
+
+    popupStyles.forEach(styles => {
+      expect(styles).toContain('background-size: 100% 6rpx;')
+      expect(styles).not.toMatch(
+        /&::before\s*\{[\s\S]*?(?:position:\s*absolute|@include popup\.gold-rule)/,
+      )
+    })
+  })
 })
