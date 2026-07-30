@@ -7,6 +7,7 @@ import { incrementWeeklyDrawCount } from '../../utils/drawStats'
 import { classifyProtein, getFoodEmoji } from '../../utils/foodMeta'
 import { toZhNumber } from '../../utils/zhNumber'
 import { getDateLine } from '../../utils/dateLabel'
+import { CHEF_ERROR } from '../../utils/toastCopy'
 import './result.scss'
 
 const LUCKY_THRESHOLD = 5
@@ -50,7 +51,7 @@ export default function Result() {
 
     const stored = readDraw()
     if (!stored) {
-      Taro.showToast({ title: '厨房走神了，再试一次', icon: 'none' })
+      Taro.showToast({ title: CHEF_ERROR, icon: 'none' })
       // Scene-code or restored entry can make this the only page on the stack.
       Taro.navigateBack({ fail: () => Taro.reLaunch({ url: HOME_PAGE }) })
       return

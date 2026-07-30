@@ -118,7 +118,7 @@ describe('useDrawCeremony', () => {
     expect(result.current.phase).toBe('idle')
     expect(onDone).not.toHaveBeenCalled()
     expect(showToast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: '该分类正在加载中，请稍后' }),
+      expect.objectContaining({ title: '这道菜单还空着，先添两样吧' }),
     )
   })
 

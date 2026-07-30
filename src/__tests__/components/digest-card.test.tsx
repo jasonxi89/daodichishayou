@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import * as taroMock from '@tarojs/taro'
 
 // ─── Mock API service ─────────────────────────────────────────────────────────
@@ -29,6 +29,92 @@ const sampleDigest = {
   recommendation: '来一顿热气腾腾的火锅吧',
   updated_at: '2026-07-04T08:00:00Z',
 }
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, resolve, reject }
+}
+
+describe('DigestCard – 加载骨架', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockGetStorageSync.mockReturnValue({})
+  })
+
+  it('renders a quote-shaped skeleton while the digest request is pending', () => {
+    mockFetchDigest.mockReturnValueOnce(new Promise(() => {}))
+
+    const { container } = render(<DigestCard />)
+
+    expect(container.querySelector('.digest-card--loading')).toBeInTheDocument()
+    expect(container.querySelectorAll('.digest-skeleton__bar')).toHaveLength(2)
+    expect(screen.queryByText('《今日风向》')).not.toBeInTheDocument()
+  })
+
+  it('replaces the skeleton with digest content after the request resolves', async () => {
+    const request = deferred<typeof sampleDigest | null>()
+    mockFetchDigest.mockReturnValueOnce(request.promise)
+
+    const { container } = render(<DigestCard />)
+    expect(container.querySelector('.digest-card--loading')).toBeInTheDocument()
+
+    await act(async () => {
+      request.resolve(sampleDigest)
+      await request.promise
+    })
+
+    expect(container.querySelector('.digest-card--loading')).not.toBeInTheDocument()
+    expect(screen.getByText('《今日风向》')).toBeInTheDocument()
+    expect(screen.getByText(sampleDigest.summary)).toBeInTheDocument()
+  })
+
+  it('removes the skeleton and the entire card when the request rejects', async () => {
+    const request = deferred<typeof sampleDigest | null>()
+    mockFetchDigest.mockReturnValueOnce(request.promise)
+
+    const { container } = render(<DigestCard />)
+    expect(container.querySelector('.digest-card--loading')).toBeInTheDocument()
+
+    await act(async () => {
+      request.reject(new Error('Network error'))
+      await request.promise.catch(() => undefined)
+    })
+
+    expect(container.querySelector('.digest-card--loading')).not.toBeInTheDocument()
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('removes the skeleton and the entire card when the request returns null', async () => {
+    const request = deferred<typeof sampleDigest | null>()
+    mockFetchDigest.mockReturnValueOnce(request.promise)
+
+    const { container } = render(<DigestCard />)
+    expect(container.querySelector('.digest-card--loading')).toBeInTheDocument()
+
+    await act(async () => {
+      request.resolve(null)
+      await request.promise
+    })
+
+    expect(container.querySelector('.digest-card--loading')).not.toBeInTheDocument()
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('never shows the skeleton on the first render when today cache is available', () => {
+    mockGetStorageSync.mockReturnValue({ date: getTodayKey(), digest: sampleDigest })
+
+    const { container } = render(<DigestCard />)
+
+    expect(container.querySelector('.digest-card--loading')).not.toBeInTheDocument()
+    expect(screen.getByText('《今日风向》')).toBeInTheDocument()
+    expect(mockFetchDigest).not.toHaveBeenCalled()
+  })
+})
 
 describe('DigestCard – 有数据时渲染', () => {
   beforeEach(() => {
@@ -109,8 +195,8 @@ describe('DigestCard – 无数据/失败时整个不渲染', () => {
 
     await waitFor(() => {
       expect(mockFetchDigest).toHaveBeenCalled()
+      expect(container).toBeEmptyDOMElement()
     })
-    expect(container).toBeEmptyDOMElement()
     expect(screen.queryByText('《今日风向》')).not.toBeInTheDocument()
   })
 
@@ -121,24 +207,25 @@ describe('DigestCard – 无数据/失败时整个不渲染', () => {
 
     await waitFor(() => {
       expect(mockFetchDigest).toHaveBeenCalled()
+      expect(container).toBeEmptyDOMElement()
     })
-    expect(container).toBeEmptyDOMElement()
   })
 
   it('does not cache anything when the fetch fails', async () => {
     mockFetchDigest.mockRejectedValueOnce(new Error('Network error'))
 
-    render(<DigestCard />)
+    const { container } = render(<DigestCard />)
 
     await waitFor(() => {
       expect(mockFetchDigest).toHaveBeenCalled()
+      expect(container).toBeEmptyDOMElement()
     })
     expect(mockSetStorageSync).not.toHaveBeenCalled()
   })
 
-  it('handles non-object storage values gracefully', async () => {
+  it('handles non-object storage values gracefully', () => {
     mockGetStorageSync.mockReturnValue('not-an-object')
-    mockFetchDigest.mockResolvedValueOnce(null)
+    mockFetchDigest.mockReturnValueOnce(new Promise(() => {}))
 
     expect(() => render(<DigestCard />)).not.toThrow()
   })

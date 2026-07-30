@@ -176,12 +176,30 @@ describe('Index draw handoff robustness', () => {
     finishCeremony()
 
     expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: '结果页打开失败，请重试' }),
+      expect.objectContaining({ title: '厨房走神了，再试一次' }),
     )
     expect(container.querySelector('.ceremony')).not.toBeInTheDocument()
     // The saved draw must be reopenable instead of being overwritten by a new one.
     expect(screen.getByRole('button', { name: '重新打开结果' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '为我定夺' })).not.toBeInTheDocument()
+  })
+
+  it('shows the chef error and does not navigate when result persistence fails', () => {
+    const toast = taroMock.showToast as jest.Mock
+    mockSetStorageSync.mockImplementationOnce(() => {
+      throw new Error('quota exceeded')
+    })
+
+    const IndexPage = loadIndexPage()
+    render(<IndexPage />)
+
+    startCeremony()
+    finishCeremony()
+
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: '厨房走神了，再试一次' }),
+    )
+    expect(mockNavigateTo).not.toHaveBeenCalled()
   })
 
   it('only completes once when the tube is tapped and timers still run', () => {
