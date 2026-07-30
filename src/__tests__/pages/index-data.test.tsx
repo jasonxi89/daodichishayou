@@ -262,6 +262,33 @@ describe('Index page – AI category cache persistence', () => {
       expect(api.generateFoodsByCategory).toHaveBeenCalledWith('过期分类')
     })
   })
+
+  it('keeps the failed AI category in the chef-tone toast copy', async () => {
+    const api = require('../../services/api')
+    api.generateFoodsByCategory.mockRejectedValueOnce(new Error('Network error'))
+    api.fetchCategories.mockResolvedValueOnce(['断粮分类'])
+
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+    mockGetStorageSync.mockReturnValue({})
+
+    const IndexPage = loadIndexPage()
+    await act(async () => {
+      render(<IndexPage />)
+    })
+    expandMoreCategories()
+
+    await waitFor(() => {
+      expect(screen.getByText('断粮分类')).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByText('断粮分类'))
+
+    await waitFor(() => {
+      expect(taroMock.showToast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: '「断粮分类」这一味没备下，再试一次' }),
+      )
+    })
+  })
 })
 
 // ─── Bulk fetch loading ────────────────────────────────────────────────────

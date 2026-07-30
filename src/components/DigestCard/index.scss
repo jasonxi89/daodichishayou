@@ -49,3 +49,33 @@
     -webkit-line-clamp: unset;
   }
 }
+
+.digest-skeleton {
+  display: flex;
+  width: 100%;
+  min-height: 44rpx;
+  align-items: center;
+  gap: 12rpx;
+
+  &__bar {
+    height: 20rpx;
+    border-radius: 999rpx;
+    // 从正文中性色降透明度，保留纸感且不新增主题外骨架色。
+    background: rgba(theme.$ink-sub, .14);
+    animation: digest-loading 1s ease-in-out infinite alternate;
+
+    &--title {
+      flex: 0 0 120rpx;
+    }
+
+    &--summary {
+      flex: 1;
+      animation-delay: .15s;
+    }
+  }
+}
+
+@keyframes digest-loading {
+  from { opacity: .45; }
+  to { opacity: 1; }
+}

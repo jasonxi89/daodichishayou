@@ -1,5 +1,6 @@
 import Taro from '@tarojs/taro'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { EMPTY_MENU } from '../utils/toastCopy'
 
 export type DrawPhase = 'idle' | 'shaking' | 'rising' | 'done'
 
@@ -89,7 +90,7 @@ export default function useDrawCeremony({
     const pool = getPool()
     const uniquePool = Array.from(new Set(pool ?? []))
     if (uniquePool.length === 0) {
-      Taro.showToast({ title: '该分类正在加载中，请稍后', icon: 'none' })
+      Taro.showToast({ title: EMPTY_MENU, icon: 'none' })
       return
     }
 

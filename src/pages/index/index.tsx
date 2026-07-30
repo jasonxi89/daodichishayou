@@ -13,6 +13,7 @@ import { commitDrawResult, getDrawCount } from '../../utils/drawStats'
 import { REDRAW_EVENT, RESULT_PAGE } from '../../utils/drawContract'
 import { getDateLine } from '../../utils/dateLabel'
 import { getFoodEmoji } from '../../utils/foodMeta'
+import { CHEF_ERROR, getCategoryGenerationError } from '../../utils/toastCopy'
 import './index.scss'
 
 const AI_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 1 day
@@ -136,7 +137,7 @@ export default function Index() {
       success: () => commitNavState('idle'),
       fail: () => {
         commitNavState('failed')
-        Taro.showToast({ title: '结果页打开失败，请重试', icon: 'none' })
+        Taro.showToast({ title: CHEF_ERROR, icon: 'none' })
       },
     })
   }, [commitNavState])
@@ -159,7 +160,7 @@ export default function Index() {
         pool: context.pool,
       })
     } catch {
-      Taro.showToast({ title: '结果没存下来，再试一次', icon: 'none' })
+      Taro.showToast({ title: CHEF_ERROR, icon: 'none' })
       return
     }
     setDrawCount(nextIndex)
@@ -264,7 +265,7 @@ export default function Index() {
           })
         })
         .catch(() => {
-          Taro.showToast({ title: `"${cat}"分类生成失败`, icon: 'none' })
+          Taro.showToast({ title: getCategoryGenerationError(cat), icon: 'none' })
         })
         .finally(() => {
           setCategoryLoading(null)

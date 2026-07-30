@@ -1,4 +1,4 @@
-import { Button, Text } from '@tarojs/components'
+import { Button, Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useEffect, useState } from 'react'
 import { fetchDigest, type FoodDigest } from '../../services/api'
@@ -27,15 +27,13 @@ function readTodayCachedDigest(): FoodDigest | null {
 }
 
 export default function DigestCard() {
-  const [digest, setDigest] = useState<FoodDigest | null>(null)
+  const [digest, setDigest] = useState<FoodDigest | null>(() => readTodayCachedDigest())
+  const [isLoading, setIsLoading] = useState(() => digest === null)
   const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
-    const cached = readTodayCachedDigest()
-    if (cached) {
-      setDigest(cached)
-      return
-    }
+    if (digest) return
+
     fetchDigest()
       .then((data) => {
         if (!data) return
@@ -45,7 +43,25 @@ export default function DigestCard() {
       .catch(() => {
         // 静默降级：请求失败整个卡片不渲染，不占位、不弹错误
       })
-  }, [])
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }, [digest])
+
+  if (isLoading) {
+    return (
+      <View
+        className='digest-card digest-card--quote digest-card--loading'
+        aria-busy='true'
+        aria-label='今日风向加载中'
+      >
+        <View className='digest-skeleton' aria-hidden='true'>
+          <View className='digest-skeleton__bar digest-skeleton__bar--title' />
+          <View className='digest-skeleton__bar digest-skeleton__bar--summary' />
+        </View>
+      </View>
+    )
+  }
 
   if (!digest) return null
 
