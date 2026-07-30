@@ -45,7 +45,6 @@ export default function RecipePopup(props: RecipePopupProps) {
           </View>
         ) : !activeRecipe ? (
           <View className='recipe-popup-empty'>
-            <Text className='recipe-popup-empty-icon'>🤷</Text>
             <Text className='recipe-popup-empty-text'>暂无「{activeFoodName}」的菜谱</Text>
             <View className='recipe-popup-close-btn' onClick={onClose}>
               <Text className='recipe-popup-close-btn-text'>知道了</Text>

@@ -1,3 +1,4 @@
+@use '../../styles/theme' as theme;
 @use '../../styles/popup-base' as popup;
 
 .custom-menu-overlay {
@@ -6,213 +7,289 @@
 
 .custom-menu-popup {
   @include popup.sheet;
-  padding: 40px;
+  padding: 40rpx;
+
+  &::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    border-radius: 24rpx 24rpx 0 0;
+    content: '';
+    @include popup.gold-rule(6rpx);
+  }
 }
 
 .custom-menu-header {
   display: flex;
+  min-height: 88rpx;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
+  margin-bottom: 32rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 4rpx solid theme.$ink;
 }
 
 .custom-menu-title {
-  color: #333;
-  font-size: 36px;
-  font-weight: bold;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 36rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
 }
 
 .custom-menu-close {
   display: flex;
-  width: 56px;
-  height: 56px;
+  width: 88rpx;
+  min-width: 88rpx;
+  height: 88rpx;
+  min-height: 88rpx;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: #f5f5f5;
+  border-radius: 44rpx;
+  background: transparent;
+  transition: transform .15s ease, opacity .15s ease;
+
+  &:active {
+    transform: scale(.97);
+    opacity: .7;
+  }
 }
 
 .custom-menu-close-text {
-  color: #999;
-  font-size: 28px;
+  color: theme.$weak;
+  font-size: 28rpx;
 }
 
 .custom-menu-body {
-  max-height: 55vh;
+  max-height: 880rpx;
 }
 
 .custom-menu-empty {
-  padding: 48px 0;
+  padding: 48rpx 0;
   text-align: center;
 }
 
 .custom-menu-empty-text {
-  color: #bbb;
-  font-size: 28px;
+  color: theme.$weak;
+  font-family: theme.$serif-stack;
+  font-size: 28rpx;
 }
 
 .custom-cat-section {
-  margin-bottom: 24px;
-  padding: 28px;
-  border-radius: 20px;
-  background: #fafafa;
+  margin-bottom: 24rpx;
+  padding: 28rpx;
+  border: 2rpx solid theme.$border;
+  border-radius: 12rpx;
+  background: theme.$card;
 }
 
 .custom-cat-header {
   display: flex;
+  min-height: 88rpx;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 20rpx;
+  border-bottom: 2rpx solid theme.$divider;
 }
 
 .custom-cat-info {
   display: flex;
+  min-width: 0;
   align-items: baseline;
-  gap: 12px;
+  gap: 12rpx;
 }
 
 .custom-cat-name {
-  color: #333;
-  font-size: 30px;
-  font-weight: bold;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 30rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
 }
 
 .custom-cat-count {
-  color: #bbb;
-  font-size: 22px;
+  color: theme.$weaker;
+  font-size: 22rpx;
 }
 
 .custom-cat-delete {
-  padding: 8px 20px;
-  border-radius: 20px;
-  background: #fff0f0;
+  @include popup.chef-capsule;
+  min-width: 112rpx;
+  padding: 0 20rpx;
+
+  &:active {
+    transform: scale(.97);
+    opacity: .8;
+  }
 }
 
 .custom-cat-delete-text {
-  color: #e74c3c;
-  font-size: 24px;
+  color: theme.$hot-red;
+  font-family: theme.$serif-stack;
+  font-size: 24rpx;
+  font-weight: 900;
 }
 
 .custom-food-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
 }
 
 .custom-food-tag {
   display: flex;
+  min-height: 88rpx;
+  box-sizing: border-box;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px 8px 20px;
-  border-radius: 24px;
-  background: #fff3e0;
+  padding-left: 20rpx;
+  border: 2rpx solid theme.$border;
+  border-radius: 44rpx;
+  background: theme.$card;
 }
 
 .custom-food-tag-text {
-  color: #555;
-  font-size: 24px;
+  color: theme.$ink-body;
+  font-size: 24rpx;
 }
 
 .custom-food-tag-x {
-  padding: 4px;
-  color: #ccc;
-  font-size: 20px;
+  display: flex;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  align-items: center;
+  justify-content: center;
+  color: theme.$weak;
+  font-size: 20rpx;
 }
 
 .custom-add-food {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 12rpx;
 }
 
 .custom-add-food-input {
-  height: 64px;
+  height: 88rpx;
+  min-width: 0;
+  box-sizing: border-box;
   flex: 1;
-  padding: 0 24px;
-  border-radius: 32px;
-  background: #fff;
-  color: #333;
-  font-size: 26px;
+  padding: 0 24rpx;
+  border: 2rpx solid theme.$border-2;
+  border-radius: 52rpx;
+  background: theme.$card;
+  color: theme.$ink-body;
+  font-size: 26rpx;
 }
 
 .custom-add-food-btn {
-  display: flex;
-  width: 56px;
-  height: 56px;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #f5a623, #f7b84e);
+  @include popup.chef-capsule;
+  width: 88rpx;
+  min-width: 88rpx;
+  height: 88rpx;
+  padding: 0;
+
+  &:active {
+    transform: scale(.97);
+    opacity: .8;
+  }
 }
 
 .custom-add-food-btn-text {
-  width: 56px;
-  height: 56px;
-  color: #fff;
-  font-size: 32px;
-  font-weight: bold;
-  line-height: 56px;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 32rpx;
+  font-weight: 900;
+  line-height: 88rpx;
   text-align: center;
 }
 
 .custom-new-cat {
-  margin-top: 8px;
+  margin-top: 8rpx;
 }
 
 .custom-new-cat-input {
-  height: 72px;
-  margin-bottom: 16px;
-  padding: 0 28px;
-  border: 2px solid #f5a623;
-  border-radius: 36px;
-  background: #fff;
-  color: #333;
-  font-size: 28px;
+  height: 88rpx;
+  box-sizing: border-box;
+  margin-bottom: 16rpx;
+  padding: 0 28rpx;
+  border: 2rpx solid theme.$border-2;
+  border-radius: 52rpx;
+  background: theme.$card;
+  color: theme.$ink-body;
+  font-size: 28rpx;
 }
 
 .custom-new-cat-actions {
   display: flex;
   justify-content: center;
-  gap: 24px;
+  gap: 24rpx;
 }
 
 .custom-new-cat-confirm,
 .custom-new-cat-cancel {
-  padding: 12px 40px;
-  border-radius: 28px;
+  min-width: 176rpx;
 }
 
 .custom-new-cat-confirm {
-  background: linear-gradient(135deg, #f5a623, #f7b84e);
+  display: flex;
+  min-height: 88rpx;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 0 40rpx;
+  border: 0;
+  border-radius: 52rpx;
+  background: theme.$ink;
+  transition: transform .15s ease, opacity .15s ease;
+
+  &:active {
+    transform: scale(.97);
+    opacity: .9;
+  }
 }
 
 .custom-new-cat-confirm-text {
-  color: #fff;
-  font-size: 28px;
-  font-weight: bold;
+  color: theme.$gold-text;
+  font-family: theme.$serif-stack;
+  font-size: 28rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
 }
 
 .custom-new-cat-cancel {
-  background: #f0f0f0;
+  @include popup.chef-capsule;
+
+  &:active {
+    transform: scale(.97);
+    opacity: .8;
+  }
 }
 
 .custom-new-cat-cancel-text {
-  color: #888;
-  font-size: 28px;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 28rpx;
+  font-weight: 900;
 }
 
 .custom-add-cat-btn {
-  margin-top: 8px;
-  padding: 20px 0;
-  border: 2px dashed #ddd;
-  border-radius: 20px;
-  text-align: center;
+  @include popup.chef-capsule;
+  width: 100%;
+  margin-top: 8rpx;
+  border: 2rpx dashed theme.$border-dashed;
+
+  &:active {
+    transform: scale(.97);
+    opacity: .8;
+  }
 }
 
 .custom-add-cat-btn-text {
-  color: #bbb;
-  font-size: 28px;
-  font-weight: 500;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 28rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
 }
