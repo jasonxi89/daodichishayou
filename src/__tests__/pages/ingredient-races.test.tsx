@@ -52,11 +52,11 @@ describe('ingredient async request ownership', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
     fireEvent.click(screen.getByText('土豆'))
 
-    await waitFor(() => expect(screen.getByText('开始推荐')).toBeInTheDocument())
-    fireEvent.click(screen.getByText('开始推荐'))
+    await waitFor(() => expect(screen.getByText('开做！')).toBeInTheDocument())
+    fireEvent.click(screen.getByText('开做！'))
     second.resolve(potatoQuick)
     await waitFor(() => expect(screen.getByText('土豆丝')).toBeInTheDocument())
 
@@ -79,12 +79,12 @@ describe('ingredient async request ownership', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
     await waitFor(() => expect(screen.getByText('番茄炒蛋')).toBeInTheDocument())
     fireEvent.click(screen.getByText('番茄炒蛋'))
 
     fireEvent.click(screen.getByText('土豆'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
     await waitFor(() => expect(screen.getByText('土豆丝')).toBeInTheDocument())
 
     emitProgress?.(['旧步骤'])
@@ -110,7 +110,7 @@ describe('ingredient async request ownership', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
     await waitFor(() => expect(screen.getByText('番茄炒蛋')).toBeInTheDocument())
 
     fireEvent.click(screen.getByText('番茄炒蛋'))
@@ -128,7 +128,7 @@ describe('ingredient async request ownership', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
     await waitFor(() => expect(screen.getByText('加载更多 ▼')).toBeInTheDocument())
 
     const button = screen.getByText('加载更多 ▼')
@@ -144,7 +144,7 @@ describe('ingredient async request ownership', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
     await waitFor(() => expect(screen.getByText('番茄炒蛋')).toBeInTheDocument())
 
     fireEvent.click(screen.getByText('土豆'))
@@ -171,12 +171,12 @@ describe('ingredient async request ownership', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
     await waitFor(() => expect(screen.getByText('加载更多 ▼')).toBeInTheDocument())
     fireEvent.click(screen.getByText('加载更多 ▼'))
     await waitFor(() => expect(screen.getByText('加载中...')).toBeInTheDocument())
 
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
     await waitFor(() => {
       expect(screen.getByText('番茄蛋汤')).toBeInTheDocument()
       expect(screen.getByText('加载更多 ▼')).toBeInTheDocument()
@@ -198,7 +198,7 @@ describe('ingredient async request ownership', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('网络开小差，先看看这些经典搭配')).toBeInTheDocument()

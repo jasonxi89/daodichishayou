@@ -18,7 +18,7 @@ const remoteResponse = {
 async function selectAndRecommend() {
   render(<IngredientPage />)
   fireEvent.click(screen.getByText('番茄'))
-  fireEvent.click(screen.getByText('开始推荐'))
+  fireEvent.click(screen.getByText('开做！'))
   await waitFor(() => {
     expect(screen.getByText('网络开小差，先看看这些经典搭配')).toBeInTheDocument()
   })

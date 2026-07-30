@@ -1,5 +1,6 @@
 import { Text, View } from '@tarojs/components'
 import type { QuickDish, RecommendedDish } from '../../services/api'
+import { classifyProtein, getFoodEmoji } from '../../utils/foodMeta'
 
 export type DisplayDish = QuickDish & Partial<Pick<
   RecommendedDish,
@@ -9,6 +10,12 @@ export type DisplayDish = QuickDish & Partial<Pick<
 }
 
 const EXTRA_MARKER = String.fromCodePoint(0x1f6d2)
+
+const PROTEIN_CLASS = {
+  'animal-protein': 'meat',
+  vegetarian: 'vegetarian',
+  unknown: 'unknown',
+} as const
 
 interface DishCardProps {
   dish: DisplayDish
@@ -28,6 +35,12 @@ export default function DishCard({
   return (
     <View className='dish-card' onClick={onToggle}>
       <View className='dish-header'>
+        <Text
+          className={`dish-emoji dish-emoji--${PROTEIN_CLASS[classifyProtein(dish.name)]}`}
+          aria-hidden
+        >
+          {getFoodEmoji(dish.name)}
+        </Text>
         <View className='dish-info'>
           <Text className='dish-name'>{dish.name}</Text>
           <Text className='dish-summary'>{dish.summary}</Text>

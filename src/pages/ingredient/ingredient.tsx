@@ -134,7 +134,7 @@ export default function Ingredient() {
       ctx.stroke()
 
       // 顶部装饰线
-      ctx.fillStyle = '#f5a623'
+      ctx.fillStyle = '#b8934e'
       ctx.fillRect(cardX, cardY, cardW, 5)
       // 修圆角
       ctx.fillStyle = '#ffffff'
@@ -142,7 +142,7 @@ export default function Ingredient() {
 
       // 标题区
       ctx.textAlign = 'center'
-      ctx.fillStyle = '#f5a623'
+      ctx.fillStyle = '#b8934e'
       ctx.font = 'bold 13px sans-serif'
       ctx.fillText('- - -  御 厨 推 荐  - - -', W / 2, cardY + 32)
 
@@ -166,7 +166,7 @@ export default function Ingredient() {
       dishes.slice(0, maxDishes).forEach((dish, i) => {
         const y = startY + i * 56
         // 序号圆点
-        ctx.fillStyle = '#f5a623'
+        ctx.fillStyle = '#b8934e'
         ctx.beginPath()
         ctx.arc(cardX + 30, y, 13, 0, Math.PI * 2)
         ctx.fill()
@@ -448,7 +448,7 @@ export default function Ingredient() {
   }, [dishes, expandedIndex, selected, preference, allowExtra])
 
   return (
-    <View className='ingredient'>
+    <View className='ingredient paper-texture'>
       {/* 隐藏的分享卡片画布 */}
       <Canvas type='2d' id='shareCanvas' style={{ position: 'fixed', left: '-9999px', width: '500px', height: '400px' }} />
       <ScrollView scrollY className='ingredient-scroll'>
@@ -551,7 +551,7 @@ export default function Ingredient() {
               className={`recommend-btn ${selected.length === 0 ? 'disabled' : ''}`}
               onClick={handleRecommend}
             >
-              <Text className='recommend-btn-text'>开始推荐</Text>
+              <Text className='recommend-btn-text'>开做！</Text>
             </View>
           </View>
         )}

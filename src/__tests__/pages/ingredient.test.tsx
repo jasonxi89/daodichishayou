@@ -68,11 +68,11 @@ describe('Ingredient page – initial render', () => {
     expect(screen.getByText('减脂')).toBeInTheDocument()
   })
 
-  it('renders the 开始推荐 button', () => {
+  it('renders the 开做！ button', () => {
     const IngredientPage = loadIngredientPage()
     render(<IngredientPage />)
 
-    expect(screen.getByText('开始推荐')).toBeInTheDocument()
+    expect(screen.getByText('开做！')).toBeInTheDocument()
   })
 
   it('renders the ingredient text input', () => {
@@ -337,7 +337,7 @@ describe('Ingredient page – recommend button', () => {
     const IngredientPage = loadIngredientPage()
     render(<IngredientPage />)
 
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith(
@@ -354,7 +354,7 @@ describe('Ingredient page – recommend button', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('正在翻 2 万本菜谱...')).toBeInTheDocument()
@@ -382,7 +382,7 @@ describe('Ingredient page – recommend button', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('为你推荐')).toBeInTheDocument()
@@ -398,7 +398,7 @@ describe('Ingredient page – recommend button', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(mockRequest).toHaveBeenCalledWith(
@@ -429,7 +429,7 @@ describe('Ingredient page – recommend button', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('中等')).toBeInTheDocument()
@@ -444,7 +444,7 @@ describe('Ingredient page – recommend button', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('网络开小差，先看看这些经典搭配')).toBeInTheDocument()
@@ -459,7 +459,7 @@ describe('Ingredient page – recommend button', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('网络开小差，先看看这些经典搭配')).toBeInTheDocument()
@@ -467,17 +467,17 @@ describe('Ingredient page – recommend button', () => {
     expect(mockShowToast).not.toHaveBeenCalled()
   })
 
-  it('reverts button to 开始推荐 after request completes', async () => {
+  it('reverts button to 开做！ after request completes', async () => {
     mockRequest.mockResolvedValue({ statusCode: 500, data: {} })
 
     const IngredientPage = loadIngredientPage()
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
-      expect(screen.getByText('开始推荐')).toBeInTheDocument()
+      expect(screen.getByText('开做！')).toBeInTheDocument()
     })
   })
 })
@@ -502,7 +502,7 @@ describe('Ingredient page – dish card expand/collapse', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('番茄蛋花汤')).toBeInTheDocument()
@@ -598,7 +598,7 @@ describe('Ingredient page – load more', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('加载更多 ▼')).toBeInTheDocument()
@@ -617,7 +617,7 @@ describe('Ingredient page – load more', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('番茄炒蛋')).toBeInTheDocument()
@@ -641,7 +641,7 @@ describe('Ingredient page – load more', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('番茄炒蛋')).toBeInTheDocument()
@@ -677,7 +677,7 @@ describe('Ingredient page – extra ingredients highlight', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('番茄牛腩')).toBeInTheDocument()
@@ -712,7 +712,7 @@ describe('Ingredient page – extra ingredients highlight', () => {
     render(<IngredientPage />)
 
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('番茄牛腩')).toBeInTheDocument()
