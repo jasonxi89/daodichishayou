@@ -21,13 +21,14 @@ const useShareTimeline = jest.fn()
 const useLaunch = jest.fn()
 
 // Canvas / share image mocks
-const createSelectorQuery = jest.fn().mockReturnValue({
+const createEmptySelectorQuery = () => ({
   select: jest.fn().mockReturnValue({
     fields: jest.fn().mockReturnValue({
       exec: jest.fn((cb) => cb([null])),
     }),
   }),
 })
+const createSelectorQuery = jest.fn(createEmptySelectorQuery)
 const canvasToTempFilePath = jest.fn()
 const getSystemInfoSync = jest.fn().mockReturnValue({ pixelRatio: 2, windowWidth: 375 })
 const getMenuButtonBoundingClientRect = jest.fn().mockReturnValue({

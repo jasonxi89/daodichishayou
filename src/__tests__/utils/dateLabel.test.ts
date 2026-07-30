@@ -1,4 +1,4 @@
-import { getDateLine, getMealPeriod } from '../../utils/dateLabel'
+import { getDateLine, getDateShort, getMealPeriod } from '../../utils/dateLabel'
 
 describe('dateLabel', () => {
   it.each([
@@ -14,5 +14,10 @@ describe('dateLabel', () => {
   it('renders the approved Chinese month, day and meal period', () => {
     expect(getDateLine(new Date(2026, 6, 19, 18))).toBe('七月十九 · 晚膳时分')
     expect(getDateLine(new Date(2026, 9, 31, 12))).toBe('十月三十一 · 午膳时分')
+  })
+
+  it('renders only the Chinese month and day for compact labels', () => {
+    expect(getDateShort(new Date(2026, 6, 19, 18))).toBe('七月十九')
+    expect(getDateShort(new Date(2026, 9, 31, 12))).toBe('十月三十一')
   })
 })

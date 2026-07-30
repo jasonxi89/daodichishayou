@@ -18,7 +18,11 @@ export function getMealPeriod(hour: number): string {
   return '点心时分'
 }
 
-export function getDateLine(date = new Date()): string {
+export function getDateShort(date = new Date()): string {
   const month = MONTHS[date.getMonth()] ?? String(date.getMonth() + 1)
-  return `${month}月${chineseDay(date.getDate())} · ${getMealPeriod(date.getHours())}`
+  return `${month}月${chineseDay(date.getDate())}`
+}
+
+export function getDateLine(date = new Date()): string {
+  return `${getDateShort(date)} · ${getMealPeriod(date.getHours())}`
 }
