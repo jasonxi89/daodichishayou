@@ -163,7 +163,8 @@ const ALLOWED = [
 
 describe('iron rule 4: tilt policy', () => {
   const wxss = filesUnder(DIST, '.wxss')
-  const scanned = wxss.map(f => rotationsInCss(f.slice(DIST.length + 1), readFileSync(f, 'utf-8')))
+  // join() emits the OS separator; ALLOWED keys are written with '/'.
+  const scanned = wxss.map(f => rotationsInCss(f.slice(DIST.length + 1).replace(/\\/g, '/'), readFileSync(f, 'utf-8')))
   const all = scanned.flatMap(s => s.found)
   const unparsed = scanned.flatMap(s => s.unparsed)
 
