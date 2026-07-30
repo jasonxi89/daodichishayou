@@ -1,5 +1,5 @@
 # HANDOFF — 到底吃啥哟 · 微信小程序前端
-> 跨 agent/IDE 接手文档 | 最后更新: 2026-07-27 | 改动项目后请同步更新此文档
+> 跨 agent/IDE 接手文档 | 最后更新: 2026-07-29 | 改动项目后请同步更新此文档
 
 ## 项目定位
 「到底吃啥哟」帮用户解决"今天吃什么"。核心两块：
@@ -9,6 +9,12 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
+- **v1.9.2（混血主题批 3）待上传微信后台**：对应 PR #3；DigestCard 加载骨架 + 御厨语气错误态与空结果兜底（`src/utils/toastCopy.ts` 集中文案）；食材页「有啥做啥」混血主题延伸（纸面底 / 衬线区块标题 / 墨块金线选中态 / 贴纸黄「开做！」CTA / 御厨纸卡结果卡）；菜谱与自定义菜单弹窗纸面化；分享卡按 3e 稿重绘为「御厨手谕」并抽出 `src/pages/ingredient/shareCard.ts`。
+  - 上传前验证：**34 suites / 363 jest tests 全绿**、`build:weapp` Compiled successfully、`dist` 740K（预算 2MB）、`npx tsc --noEmit` 的 `^src/` 错误仍为 7（本批新增 0）。
+  - 批 3 删除了加载态装饰 emoji（🤔）与空态装饰 emoji（🤷），并清理了 `tilt-policy.test.ts` 里 `@keyframes wobble` 的三条陈旧例外；该债务由 Task 15 承接并已清偿。
+  - Canvas 分享卡此前零测试覆盖：`src/__mocks__/taro.ts` 的 `createSelectorQuery` 恒返回 `[null]`，绘制代码在测试中从未执行；本批补齐了 `shareCard` 单测与管道集成测试。
+  - `RecipePopup` 目前未被任何页面 import，样式不进 `dist`；已按规格纸面化但无法真机验证，本批未接线（属逻辑改动）。
+  - 版本号说明：1.9.0 / 1.9.1 已被批 1 / 批 2 占用，批 3 取 1.9.2；计划文档 Task 18 写的「bump → 1.9.0」已过时。
 - **v1.9.1（混血主题批 2）待上传微信后台**：对应 `main @ ab9d454`（PR #2 squash merge）；签筒抽取仪式取代老虎机（`useDrawCeremony` + `DrawCeremony`）、新增结果页「今晚菜单」（卷轴卡 / 换一换 / 印章 / 本周彩蛋）、`foodMeta` 三态荤素判定、交接契约常量收敛到 `drawContract.ts`。上传前验证：**30 suites / 334 jest tests 全绿**、`build:weapp` 成功、官方 CLI Preview 610.8 KB、真机扫码走通全链路（定夺→仪式→跳过→结果→换一换→再抽→就它了）。
   - 版本号说明：1.9.0 已于批 1 占用，故批 2 取 1.9.1。计划文档 Task 18 写的「bump → 1.9.0」已过时，批 3 收尾时需另定号。
   - 铁律 4（倾角）已修订为「默认档位 ±2°/±6° + 具名例外表」，Owner 裁决保留现有视觉（角标 +4°、印章 -12°）。`tilt-policy.test.ts` 审计编译产物强制执行，`jest.globalSetup.js` 保证任何入口都先构建。
@@ -31,11 +37,16 @@ src/
   pages/
     index/             首页（抽啥吃啥），index.tsx 已拆分瘦身
     ingredient/        食材页（有啥做啥），AI 配菜
+      shareCard.ts     「御厨手谕」Canvas 分享卡纯绘制函数
     recipe/            菜谱详情页（URL params 传 difficulty/cook_time）
-  components/          DigestCard（今日风向卡）/ FoodDecorIcons / CustomMenuPopup / RecipePopup
-  hooks/               useSlotMachine（老虎机滚动动画逻辑）
+    result/            结果页（今晚菜单）
+  components/          CountStepper / CustomMenuPopup / DigestCard / DrawCeremony / MenuGrid / RecipePopup
+  hooks/               useDrawCeremony.ts（签筒抽取仪式状态机）
   services/api.ts      后端接口封装（trending/categories/health/recommend/recipes/digest…）
   data/                recipes.ts（RecipeOut→Recipe 映射 + 硬编码菜谱）/ defaultFoods.ts（硬编码食物）
+  utils/toastCopy.ts   御厨语气 toast / 空结果文案集中定义
+  styles/popup-base.scss 弹窗纸面基础 mixin
+  styles/theme.scss    全局混血主题 token 与字体
   __tests__/           与源文件对应的测试；__mocks__/ 有 taro/components mock
   native-tab-bar/      历史遗留 copy:tabbar 素材，当前未启用（用内置 tabBar）
 ```
@@ -58,6 +69,7 @@ npx jest              # 跑测试（package.json 的 test 脚本是 jest --cover
 - **真机与开发工具行为常不一致**：开发工具正常不代表真机正常，改交互后务必真机验证。
 - **API 失败静默降级**：接口挂了不弹错，回落到 `data/defaultFoods.ts` / `data/recipes.ts` 的硬编码数据，保证可用。
 - **版本号每次功能更新必须 bump**：`package.json` 的 `version`，遵循 semver。
+- **`rpx` 与 `vh` / `vw` 不可互换**：`rpx` 按屏幕宽度换算，`vh` / `vw` 按视口换算；做 `px → rpx` 统一时不要顺手替换视口单位。批 3 review 曾抓到弹窗抽屉 `max-height: 70vh` 被换成固定 `1120rpx`，会在矮宽屏上顶穿视口；`popup-styles.test.ts` 已加守卫。
 - **git commit 不加 Co-Authored-By 行**，commit message 用 `type: 描述` 祈使句。
 - 上传压缩（es6/postcss/minified）已在 v1.7.0 于 project.config.json 开启。
 
