@@ -17,10 +17,6 @@ import './ingredient.scss'
 
 export { COMMON_INGREDIENTS } from './recommendationConfig'
 
-// Preserve the legacy fallback title while keeping the retired Canvas watermark out of source scans.
-const EMPTY_SHARE_TITLE = '有材料不知道做什么？到底吃啥哟，专业智能'
-  + '推荐！'
-
 export default function Ingredient() {
   const [selected, setSelected] = useState<string[]>([])
   const [activeCategory, setActiveCategory] = useState('蔬菜')
@@ -142,7 +138,7 @@ export default function Ingredient() {
     const foodNames = dishes.length > 0 ? dishes.map(d => d.name).join('、') : ''
     const ingredientText = selected.length > 0 ? selected.join('、') : ''
     const result: any = {
-      title: foodNames ? `用${ingredientText}做了：${foodNames}` : EMPTY_SHARE_TITLE,
+      title: foodNames ? `用${ingredientText}做了：${foodNames}` : '有材料不知道做什么？到底吃啥哟，专业智能推荐！',
       path: '/pages/ingredient/ingredient',
     }
     if (shareImagePath.current) result.imageUrl = shareImagePath.current
@@ -152,7 +148,7 @@ export default function Ingredient() {
   useShareTimeline(() => {
     const foodNames = dishes.length > 0 ? dishes.map(d => d.name).join('、') : ''
     const result: any = {
-      title: foodNames ? `御厨推荐：${foodNames}` : EMPTY_SHARE_TITLE,
+      title: foodNames ? `御厨推荐：${foodNames}` : '有材料不知道做什么？到底吃啥哟，专业智能推荐！',
     }
     if (shareImagePath.current) result.imageUrl = shareImagePath.current
     return result

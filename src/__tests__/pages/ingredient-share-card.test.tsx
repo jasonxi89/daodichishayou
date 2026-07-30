@@ -18,9 +18,6 @@ const mockCanvasToTempFilePath = taroMock.canvasToTempFilePath as jest.Mock
 const mockUseShareAppMessage = taroMock.useShareAppMessage as jest.Mock
 const mockUseShareTimeline = taroMock.useShareTimeline as jest.Mock
 const mockDrawShareCard = drawShareCard as jest.Mock
-const EMPTY_SHARE_TITLE = '有材料不知道做什么？到底吃啥哟，专业智能'
-  + '推荐！'
-
 function latestShareCallback(mock: jest.Mock) {
   return mock.mock.calls[mock.mock.calls.length - 1][0]
 }
@@ -37,11 +34,11 @@ describe('Ingredient share-card Canvas pipeline', () => {
     const timelineShare = latestShareCallback(mockUseShareTimeline)
 
     expect(appShare()).toEqual({
-      title: EMPTY_SHARE_TITLE,
+      title: '有材料不知道做什么？到底吃啥哟，专业智能推荐！',
       path: '/pages/ingredient/ingredient',
     })
     expect(timelineShare()).toEqual({
-      title: EMPTY_SHARE_TITLE,
+      title: '有材料不知道做什么？到底吃啥哟，专业智能推荐！',
     })
   })
 
