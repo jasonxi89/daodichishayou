@@ -1,3 +1,4 @@
+@use '../../styles/theme' as theme;
 @use '../../styles/popup-base' as popup;
 
 .recipe-overlay {
@@ -6,85 +7,114 @@
 
 .recipe-popup {
   @include popup.sheet;
-  padding: 40px 40px 60px;
+  padding: 40rpx 40rpx 60rpx;
+
+  &::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    border-radius: 24rpx 24rpx 0 0;
+    content: '';
+    @include popup.gold-rule(6rpx);
+  }
 }
 
 .recipe-tab-scroll {
   width: 100%;
-  margin-bottom: 28px;
+  margin-bottom: 28rpx;
   white-space: nowrap;
 }
 
 .recipe-tabs {
   display: inline-flex;
-  gap: 16px;
-  padding: 4px 0;
+  gap: 16rpx;
+  padding: 4rpx 0;
 }
 
 .recipe-tab {
   display: inline-flex;
+  min-height: 88rpx;
+  box-sizing: border-box;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  padding: 12px 32px;
-  border-radius: 28px;
-  background: #f5f5f5;
+  padding: 12rpx 32rpx;
+  border: 2rpx solid theme.$border;
+  border-radius: 12rpx;
+  background: theme.$card;
+  transition: transform .15s ease, opacity .15s ease;
 
   &.active {
-    background: linear-gradient(135deg, #f5a623, #f7b84e);
-    box-shadow: 0 2px 8px rgba(245, 166, 35, .3);
+    border-color: theme.$ink;
+    background: theme.$ink;
+    box-shadow:
+      inset 0 0 0 2rpx theme.$gold,
+      inset 0 0 0 6rpx theme.$ink,
+      inset 0 0 0 8rpx rgba(184, 147, 78, .5);
+  }
+
+  &:active {
+    transform: scale(.97);
+    opacity: .9;
   }
 }
 
 .recipe-tab-text {
-  color: #888;
-  font-size: 26px;
-  font-weight: 500;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 26rpx;
+  font-weight: 900;
   white-space: nowrap;
 
   &.active {
-    color: #fff;
-    font-weight: bold;
+    color: theme.$gold-text;
   }
 }
 
 .recipe-popup-loading {
-  padding: 60px 0;
+  padding: 60rpx 0;
   text-align: center;
 }
 
 .recipe-popup-loading-text {
-  color: #999;
-  font-size: 30px;
+  color: theme.$weak;
+  font-family: theme.$serif-stack;
+  font-size: 30rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
 }
 
 .recipe-popup-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 0;
-}
-
-.recipe-popup-empty-icon {
-  margin-bottom: 24px;
-  font-size: 80px;
+  padding: 40rpx 0;
 }
 
 .recipe-popup-empty-text {
-  margin-bottom: 32px;
-  color: #888;
-  font-size: 28px;
+  margin-bottom: 32rpx;
+  color: theme.$weak;
+  font-family: theme.$serif-stack;
+  font-size: 28rpx;
 }
 
 .recipe-popup-close-btn {
-  padding: 16px 48px;
-  border-radius: 32px;
-  background: #f0f0f0;
+  min-width: 200rpx;
+  @include popup.chef-capsule;
+
+  &:active {
+    transform: scale(.97);
+    opacity: .8;
+  }
 }
 
 .recipe-popup-close-btn-text {
-  color: #666;
-  font-size: 28px;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 28rpx;
+  font-weight: 900;
+  letter-spacing: 2rpx;
 }
 
 .recipe-popup-content {
@@ -93,48 +123,55 @@
 }
 
 .recipe-popup-title {
-  margin-bottom: 12px;
-  color: #333;
-  font-size: 40px;
-  font-weight: bold;
+  margin-bottom: 12rpx;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 40rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
   text-align: center;
 }
 
 .recipe-popup-summary {
-  margin-bottom: 32px;
-  color: #888;
-  font-size: 26px;
+  margin-bottom: 32rpx;
+  color: theme.$weak;
+  font-size: 26rpx;
   text-align: center;
 }
 
 .recipe-popup-ingredients {
-  margin-bottom: 32px;
+  margin-bottom: 32rpx;
 }
 
 .recipe-popup-label {
-  margin-bottom: 16px;
-  color: #f5a623;
-  font-size: 28px;
-  font-weight: bold;
+  display: block;
+  margin-bottom: 16rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 2rpx solid theme.$divider;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 28rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
 }
 
 .recipe-popup-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 12rpx;
+  margin-top: 12rpx;
 }
 
 .recipe-popup-tag {
-  padding: 8px 20px;
-  border-radius: 20px;
-  background: #fff3e0;
-  color: #555;
-  font-size: 24px;
+  padding: 8rpx 20rpx;
+  border: 2rpx solid theme.$border;
+  border-radius: 20rpx;
+  background: theme.$card;
+  color: theme.$ink-body;
+  font-size: 24rpx;
 
   &.more {
-    background: #fef5e7;
-    color: #f5a623;
+    color: theme.$gold-dim;
   }
 }
 
@@ -142,38 +179,50 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  margin-top: 8px;
+  gap: 20rpx;
+  margin-top: 8rpx;
 }
 
 .recipe-popup-detail-btn {
   display: flex;
   width: 100%;
-  height: 88px;
+  min-height: 96rpx;
+  box-sizing: border-box;
   align-items: center;
   justify-content: center;
-  border-radius: 44px;
-  background: linear-gradient(135deg, #f5a623, #f7b84e);
-  box-shadow: 0 4px 16px rgba(245, 166, 35, .35);
+  border: 0;
+  border-radius: 52rpx;
+  background: theme.$ink;
+  transition: transform .15s ease, opacity .15s ease;
 
   &:active {
-    opacity: .9;
     transform: scale(.97);
+    opacity: .9;
   }
 }
 
 .recipe-popup-detail-btn-text {
-  color: #fff;
-  font-size: 32px;
-  font-weight: bold;
-  letter-spacing: 4px;
+  color: theme.$gold-text;
+  font-family: theme.$serif-stack;
+  font-size: 32rpx;
+  font-weight: 900;
+  letter-spacing: 6rpx;
 }
 
 .recipe-popup-dismiss {
-  padding: 8px 24px;
+  width: 100%;
+  @include popup.chef-capsule;
+
+  &:active {
+    transform: scale(.97);
+    opacity: .8;
+  }
 }
 
 .recipe-popup-dismiss-text {
-  color: #999;
-  font-size: 26px;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 26rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
 }
