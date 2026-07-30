@@ -8,16 +8,10 @@
 .recipe-popup {
   @include popup.sheet;
   padding: 40rpx 40rpx 60rpx;
-
-  &::before {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    border-radius: 24rpx 24rpx 0 0;
-    content: '';
-    @include popup.gold-rule(6rpx);
-  }
+  background-image: linear-gradient(90deg, theme.$gold, #e3c88e, theme.$gold);
+  background-repeat: no-repeat;
+  background-size: 100% 6rpx;
+  background-position: top center;
 }
 
 .recipe-tab-scroll {
