@@ -41,7 +41,7 @@ describe('ingredient recommendation prefetch', () => {
       timeout: 2500,
     })
 
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => {
       expect(screen.getByText('番茄炒蛋')).toBeInTheDocument()
@@ -59,7 +59,7 @@ describe('ingredient recommendation prefetch', () => {
     })
 
     fireEvent.click(screen.getByText('土豆'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     await waitFor(() => expect(mockRequest).toHaveBeenCalledTimes(2))
     expect(mockRequest.mock.calls[1][0].data.ingredients).toEqual([

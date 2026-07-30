@@ -157,9 +157,6 @@ const ALLOWED = [
   { file: 'pages/index/index.wxss', selector: '@keyframes sticks-jiggle 50%', angles: [-18], category: 'animation, holds fan angle' },
   { file: 'pages/index/index.wxss', selector: '@keyframes tube-shake 0%,100%', angles: [-2], category: 'animation, shake cycle' },
   { file: 'pages/index/index.wxss', selector: '@keyframes tube-shake 50%', angles: [2], category: 'animation, shake cycle' },
-  { file: 'pages/ingredient/ingredient.wxss', selector: '@keyframes wobble 0%,100%', angles: [0], category: 'pre-existing, owned by Task 15' },
-  { file: 'pages/ingredient/ingredient.wxss', selector: '@keyframes wobble 25%', angles: [-10], category: 'pre-existing, owned by Task 15' },
-  { file: 'pages/ingredient/ingredient.wxss', selector: '@keyframes wobble 75%', angles: [10], category: 'pre-existing, owned by Task 15' },
   { file: 'pages/result/result.wxss', selector: '.scroll-card__badge', angles: [4], category: 'decorative, NAMED EXCEPTION' },
   { file: 'pages/result/result.wxss', selector: '.seal', angles: [-12], category: 'decorative, NAMED EXCEPTION' },
 ]

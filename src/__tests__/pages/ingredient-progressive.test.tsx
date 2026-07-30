@@ -36,7 +36,7 @@ async function renderQuickResult() {
   })
   render(<IngredientPage />)
   fireEvent.click(screen.getByText('番茄'))
-  fireEvent.click(screen.getByText('开始推荐'))
+  fireEvent.click(screen.getByText('开做！'))
   await waitFor(() => {
     expect(screen.getByText('番茄炒蛋')).toBeInTheDocument()
   })
@@ -51,7 +51,7 @@ describe('Ingredient page progressive recommendation flow', () => {
     mockRequest.mockImplementation(() => new Promise(() => undefined))
     render(<IngredientPage />)
     fireEvent.click(screen.getByText('番茄'))
-    fireEvent.click(screen.getByText('开始推荐'))
+    fireEvent.click(screen.getByText('开做！'))
 
     expect(screen.getByText('正在翻 2 万本菜谱...')).toBeInTheDocument()
     await waitFor(
