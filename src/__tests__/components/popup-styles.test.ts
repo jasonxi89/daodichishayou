@@ -8,14 +8,6 @@ function source(relativePath: string): string {
 }
 
 describe('popup style ownership', () => {
-  it('RecipePopup imports complete baseline styles', () => {
-    expect(source('components/RecipePopup/index.tsx')).toContain("import './index.scss'")
-    const styles = source('components/RecipePopup/index.scss')
-    expect(styles).toContain('.recipe-overlay')
-    expect(styles).toContain('.recipe-popup')
-    expect(styles).toContain('.recipe-popup-actions')
-  })
-
   it('CustomMenuPopup imports complete baseline styles', () => {
     expect(source('components/CustomMenuPopup/index.tsx')).toContain("import './index.scss'")
     const styles = source('components/CustomMenuPopup/index.scss')
@@ -25,18 +17,14 @@ describe('popup style ownership', () => {
   })
 
   it('uses theme tokens without legacy popup colors', () => {
-    const recipeStyles = source('components/RecipePopup/index.scss')
     const customMenuStyles = source('components/CustomMenuPopup/index.scss')
-    const popupStyles = `${recipeStyles}\n${customMenuStyles}`
     const legacyColors = /#f5a623|#f7b84e|#f5f5f5|#f0f0f0|rgba\(\s*245\s*,\s*166\s*,\s*35/i
 
-    expect(recipeStyles).toContain("@use '../../styles/theme' as theme;")
     expect(customMenuStyles).toContain("@use '../../styles/theme' as theme;")
-    expect(recipeStyles).toContain('background: theme.$card')
     expect(customMenuStyles).toContain('background: theme.$card')
-    expect(popupStyles).not.toMatch(legacyColors)
-    expect(popupStyles).not.toMatch(/\brotate(?:[XYZ3d]*)?\s*\(/i)
-    expect(popupStyles).not.toMatch(/(?:0\s+)+#1f1b16|(?:0\s+)+rgba\(\s*31/i)
+    expect(customMenuStyles).not.toMatch(legacyColors)
+    expect(customMenuStyles).not.toMatch(/\brotate(?:[XYZ3d]*)?\s*\(/i)
+    expect(customMenuStyles).not.toMatch(/(?:0\s+)+#1f1b16|(?:0\s+)+rgba\(\s*31/i)
   })
 
   it('keeps the shared popup base paper-themed and mixin-only', () => {
@@ -63,16 +51,11 @@ describe('popup style ownership', () => {
   })
 
   it('pins popup gold rules to their scrolling backgrounds', () => {
-    const popupStyles = [
-      source('components/RecipePopup/index.scss'),
-      source('components/CustomMenuPopup/index.scss'),
-    ]
+    const styles = source('components/CustomMenuPopup/index.scss')
 
-    popupStyles.forEach(styles => {
-      expect(styles).toContain('background-size: 100% 6rpx;')
-      expect(styles).not.toMatch(
-        /&::before\s*\{[\s\S]*?(?:position:\s*absolute|@include popup\.gold-rule)/,
-      )
-    })
+    expect(styles).toContain('background-size: 100% 6rpx;')
+    expect(styles).not.toMatch(
+      /&::before\s*\{[\s\S]*?(?:position:\s*absolute|@include popup\.gold-rule)/,
+    )
   })
 })
