@@ -9,6 +9,7 @@ declare const API_BASE: string
 // Must require after setting API_BASE
 let fetchTrending: typeof import('../../services/api').fetchTrending
 let fetchCategories: typeof import('../../services/api').fetchCategories
+let fetchCategoryNotes: typeof import('../../services/api').fetchCategoryNotes
 let fetchHealth: typeof import('../../services/api').fetchHealth
 let fetchRecipeByName: typeof import('../../services/api').fetchRecipeByName
 let fetchDigest: typeof import('../../services/api').fetchDigest
@@ -17,6 +18,7 @@ beforeAll(() => {
   const api = require('../../services/api')
   fetchTrending = api.fetchTrending
   fetchCategories = api.fetchCategories
+  fetchCategoryNotes = api.fetchCategoryNotes
   fetchHealth = api.fetchHealth
   fetchRecipeByName = api.fetchRecipeByName
   fetchDigest = api.fetchDigest
@@ -85,6 +87,60 @@ describe('API service – fetchTrending', () => {
     mockRequest.mockRejectedValueOnce(new Error('Network failure'))
 
     await expect(fetchTrending()).rejects.toThrow('Network failure')
+  })
+})
+
+describe('API service – fetchCategoryNotes', () => {
+  it('maps annotated categories into a name→note record', async () => {
+    mockRequest.mockResolvedValueOnce({
+      statusCode: 200,
+      data: {
+        categories: [
+          { name: '东南亚', note: '一口入南洋' },
+          { name: '火锅', note: '围炉咕嘟' },
+        ],
+      },
+    })
+
+    const result = await fetchCategoryNotes()
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'http://test-api:8900/api/trending/categories/annotated',
+      })
+    )
+    expect(result).toEqual({ 东南亚: '一口入南洋', 火锅: '围炉咕嘟' })
+  })
+
+  it('drops null, blank and malformed notes so the caller can fall back', async () => {
+    mockRequest.mockResolvedValueOnce({
+      statusCode: 200,
+      data: {
+        categories: [
+          { name: '小吃', note: null },
+          { name: '正餐', note: '   ' },
+          { name: '甜品', note: '  甜蜜陷阱  ' },
+          null,
+          { note: '没有名字' },
+        ],
+      },
+    })
+
+    const result = await fetchCategoryNotes()
+
+    expect(result).toEqual({ 甜品: '甜蜜陷阱' })
+  })
+
+  it('returns an empty record when the payload has no categories array', async () => {
+    mockRequest.mockResolvedValueOnce({ statusCode: 200, data: {} })
+
+    await expect(fetchCategoryNotes()).resolves.toEqual({})
+  })
+
+  it('rejects on non-200 so callers keep their silent fallback', async () => {
+    mockRequest.mockResolvedValueOnce({ statusCode: 500, data: null })
+
+    await expect(fetchCategoryNotes()).rejects.toThrow('API error: 500')
   })
 })
 

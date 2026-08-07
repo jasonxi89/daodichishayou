@@ -69,6 +69,15 @@ export interface QuickRecommendResponse {
   input_ingredients: string[]
 }
 
+export interface AnnotatedCategory {
+  name: string
+  note: string | null
+}
+
+export interface AnnotatedCategoriesResponse {
+  categories: AnnotatedCategory[]
+}
+
 export interface FoodDigest {
   id: number
   digest_date: string
@@ -104,6 +113,21 @@ export async function fetchTrending(limit = 20, category?: string): Promise<Tren
 
 export async function fetchCategories(): Promise<string[]> {
   return request<string[]>('/api/trending/categories')
+}
+
+// 后端 v1.15.0 起提供分类小注；note 可能为 null，此处直接剔除交给前端兜底
+export async function fetchCategoryNotes(): Promise<Record<string, string>> {
+  const res = await request<AnnotatedCategoriesResponse>('/api/trending/categories/annotated')
+  const notes: Record<string, string> = {}
+  if (!res || !Array.isArray(res.categories)) {
+    return notes
+  }
+  for (const item of res.categories) {
+    if (item && typeof item.name === 'string' && typeof item.note === 'string' && item.note.trim()) {
+      notes[item.name] = item.note.trim()
+    }
+  }
+  return notes
 }
 
 export async function fetchHealth(): Promise<{ status: string; version: string }> {

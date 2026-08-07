@@ -13,6 +13,7 @@ jest.mock('../../services/api', () => ({
   __esModule: true,
   fetchTrending: jest.fn().mockResolvedValue({ total: 0, items: [] }),
   fetchCategories: jest.fn().mockResolvedValue([]),
+  fetchCategoryNotes: jest.fn().mockResolvedValue({}),
   generateFoodsByCategory: jest.fn().mockResolvedValue({ foods: [], category: '' }),
   bulkGenerateFoodsByCategory: jest.fn().mockResolvedValue({ results: {} }),
   fetchDigest: jest.fn().mockResolvedValue(null),
@@ -261,6 +262,74 @@ describe('Index page – AI category cache persistence', () => {
     await waitFor(() => {
       expect(api.generateFoodsByCategory).toHaveBeenCalledWith('过期分类')
     })
+  })
+
+  it('renders backend category notes instead of the repetitive fallback', async () => {
+    const api = require('../../services/api')
+    api.fetchCategories.mockResolvedValueOnce(['东南亚', '早餐'])
+    api.fetchCategoryNotes.mockResolvedValueOnce({ 东南亚: '一口入南洋' })
+
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+    mockGetStorageSync.mockReturnValue({})
+
+    const IndexPage = loadIndexPage()
+    await act(async () => {
+      render(<IndexPage />)
+    })
+    expandMoreCategories()
+
+    await waitFor(() => {
+      expect(screen.getByText('一口入南洋')).toBeInTheDocument()
+    })
+    // 后端没给小注的分类仍走兜底
+    expect(screen.getByText('私房甄选')).toBeInTheDocument()
+  })
+
+  it('falls back silently when the notes endpoint fails', async () => {
+    const api = require('../../services/api')
+    api.fetchCategories.mockResolvedValueOnce(['东南亚'])
+    api.fetchCategoryNotes.mockRejectedValueOnce(new Error('Network error'))
+
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+    mockGetStorageSync.mockReturnValue({})
+
+    const IndexPage = loadIndexPage()
+    await act(async () => {
+      render(<IndexPage />)
+    })
+    expandMoreCategories()
+
+    await waitFor(() => {
+      expect(screen.getByText('东南亚')).toBeInTheDocument()
+    })
+    expect(screen.getByText('私房甄选')).toBeInTheDocument()
+    expect(taroMock.showToast).not.toHaveBeenCalled()
+  })
+
+  it('labels user-defined categories with the fixed custom note', async () => {
+    const api = require('../../services/api')
+    api.fetchCategories.mockResolvedValueOnce([])
+    api.fetchCategoryNotes.mockResolvedValueOnce({ 我的私藏: '后端不该赢' })
+
+    const mockUseLoad = taroMock.useLoad as jest.Mock
+    mockUseLoad.mockImplementationOnce((cb: () => void) => cb())
+    mockGetStorageSync.mockImplementation((key: string) =>
+      key === 'customFoodList' ? { 我的私藏: ['番茄炒蛋'] } : {},
+    )
+
+    const IndexPage = loadIndexPage()
+    await act(async () => {
+      render(<IndexPage />)
+    })
+    expandMoreCategories()
+
+    await waitFor(() => {
+      expect(screen.getByText('我的私藏')).toBeInTheDocument()
+    })
+    expect(screen.getByText('你的地盘听你的')).toBeInTheDocument()
+    expect(screen.queryByText('后端不该赢')).not.toBeInTheDocument()
   })
 
   it('keeps the failed AI category in the chef-tone toast copy', async () => {

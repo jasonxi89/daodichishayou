@@ -2,7 +2,8 @@ import { View, Text, Button } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { defaultFoodList, defaultCategories, AI_CATEGORIES } from '../../data/defaultFoods'
-import { fetchTrending, fetchCategories, generateFoodsByCategory, bulkGenerateFoodsByCategory } from '../../services/api'
+import { CUSTOM_CATEGORY_NOTE } from '../../data/categoryMeta'
+import { fetchTrending, fetchCategories, fetchCategoryNotes, generateFoodsByCategory, bulkGenerateFoodsByCategory } from '../../services/api'
 import useDrawCeremony from '../../hooks/useDrawCeremony'
 import DrawCeremony from '../../components/DrawCeremony'
 import DigestCard from '../../components/DigestCard'
@@ -41,6 +42,7 @@ export default function Index() {
   const [trendingFoods, setTrendingFoods] = useState<string[]>([])
   const [trendingByCategory, setTrendingByCategory] = useState<Record<string, string[]>>({})
   const [backendCategories, setBackendCategories] = useState<string[]>([])
+  const [backendCategoryNotes, setBackendCategoryNotes] = useState<Record<string, string>>({})
 
   // AI 分类缓存
   const [aiCategoryCache, setAiCategoryCache] = useState<Record<string, { foods: string[], expiresAt: number }>>({})
@@ -97,6 +99,15 @@ export default function Index() {
     }
     return base
   }, [customFoodList, backendCategories])
+
+  // 自定义分类固定文案，优先级高于后端小注（用户自己的地盘）
+  const categoryNotes = useMemo(() => {
+    const merged: Record<string, string> = { ...backendCategoryNotes }
+    for (const cat of Object.keys(customFoodList)) {
+      merged[cat] = CUSTOM_CATEGORY_NOTE
+    }
+    return merged
+  }, [backendCategoryNotes, customFoodList])
 
   // 抽取仪式：结果不再留在首页，交给结果页
   const countRef = useRef(count)
@@ -242,6 +253,9 @@ export default function Index() {
     fetchCategories().then(cats => {
       setBackendCategories(cats)
     }).catch(() => {})
+    fetchCategoryNotes().then(notes => {
+      setBackendCategoryNotes(notes)
+    }).catch(() => {})
   })
 
   // 点击分类标签：切换分类 + 按需触发 AI 生成
@@ -334,6 +348,7 @@ export default function Index() {
           categories={allCategories}
           active={activeCategory}
           loadingCategory={categoryLoading}
+          notes={categoryNotes}
           onSelect={handleCategoryClick}
           onCustomize={() => setShowCustomMenu(true)}
         />
