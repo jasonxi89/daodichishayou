@@ -128,6 +128,25 @@
   overflow-wrap: anywhere;
 }
 
+.dish-row__recipe {
+  min-width: 96rpx;
+  min-height: 88rpx;
+  margin: 0 12rpx 0 0;
+  padding: 0 14rpx;
+  border: 2rpx solid theme.$border-2;
+  border-radius: 24rpx;
+  background: theme.$card;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 22rpx;
+  font-weight: 900;
+  line-height: 84rpx;
+
+  &::after {
+    border: 0;
+  }
+}
+
 .dish-row__refresh {
   min-width: 120rpx;
   min-height: 88rpx;
