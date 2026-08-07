@@ -19,7 +19,25 @@ interface RecordedGradient {
   addColorStop: jest.Mock
 }
 
-function createRecordingCtx() {
+function defaultMeasureWidth(text: string): number {
+  return Array.from(text).reduce(
+    (width, character) => width + (/[\u0000-\u007f]/.test(character) ? 10 : 19),
+    0,
+  )
+}
+
+function availableDishNameWidth(cookTime?: string): number {
+  const cardX = 20
+  const cardWidth = 500 - cardX * 2
+  const dishNameX = cardX + 58
+  const rowRight = cardX + cardWidth - 28
+  return rowRight - dishNameX
+    - (cookTime ? defaultMeasureWidth(cookTime) + 12 : 0)
+}
+
+function createRecordingCtx(
+  measureWidth: (text: string) => number = defaultMeasureWidth,
+) {
   const calls: RecordedCall[] = []
   const gradients: RecordedGradient[] = []
   const ctx: any = {
@@ -81,8 +99,16 @@ function createRecordingCtx() {
     })
     return gradient
   })
+  ctx.measureText = jest.fn((text: string) => ({
+    width: measureWidth(text),
+  }))
 
-  return { ctx: ctx as CanvasRenderingContext2D, calls, gradients }
+  return {
+    ctx: ctx as CanvasRenderingContext2D,
+    calls,
+    gradients,
+    measureText: ctx.measureText as jest.Mock,
+  }
 }
 
 const dishes: ShareCardDish[] = [
@@ -93,8 +119,9 @@ const dishes: ShareCardDish[] = [
 
 function draw(
   overrides: Partial<ShareCardOptions> = {},
+  measureWidth?: (text: string) => number,
 ) {
-  const recording = createRecordingCtx()
+  const recording = createRecordingCtx(measureWidth)
   drawShareCard(recording.ctx, {
     dishes,
     ingredients: ['番茄', '鸡蛋', '面条'],
@@ -171,6 +198,50 @@ describe('drawShareCard', () => {
         textAlign: 'right',
       }))
     }
+  })
+
+  it('truncates a long dish name with a measured ellipsis before the cook time', () => {
+    const name = '宫廷秘制金汤花胶鲍鱼海参佛跳墙豪华大拼盘'
+    const cookTime = '15 分钟'
+    const { calls, measureText } = draw({
+      dishes: [{ name, cook_time: cookTime }],
+    })
+    const dishNameCall = calls.find(call => (
+      call.fn === 'fillText'
+      && call.fillStyle === '#2f261a'
+      && call.font === 'bold 19px serif'
+    ))
+    const renderedName = dishNameCall?.args[0] as string
+    const maxWidth = availableDishNameWidth(cookTime)
+
+    expect(renderedName).not.toBe(name)
+    expect(renderedName).toMatch(/…$/)
+    expect(defaultMeasureWidth(renderedName)).toBeLessThanOrEqual(maxWidth)
+    expect(measureText).toHaveBeenCalledWith(name)
+  })
+
+  it('leaves a short dish name unchanged', () => {
+    const name = '番茄炒蛋'
+    const { calls } = draw({ dishes: [{ name, cook_time: '10 分钟' }] })
+
+    expect(textCall(calls, name)).toBeDefined()
+    expect(calls.some(call => (
+      call.fn === 'fillText'
+      && typeof call.args[0] === 'string'
+      && call.args[0] !== name
+      && call.args[0].toString().endsWith('…')
+    ))).toBe(false)
+  })
+
+  it('keeps a dish name whose measured width exactly matches the available width', () => {
+    const name = '恰好装下的菜名'
+    const exactAvailableWidth = availableDishNameWidth()
+    const measureWidth = (text: string) => (
+      text === name ? exactAvailableWidth : defaultMeasureWidth(text)
+    )
+    const { calls } = draw({ dishes: [{ name }] }, measureWidth)
+
+    expect(textCall(calls, name)).toBeDefined()
   })
 
   it('draws at most four menu rows', () => {

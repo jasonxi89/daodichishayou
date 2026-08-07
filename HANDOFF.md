@@ -1,5 +1,5 @@
 # HANDOFF — 到底吃啥哟 · 微信小程序前端
-> 跨 agent/IDE 接手文档 | 最后更新: 2026-08-06 | 改动项目后请同步更新此文档
+> 跨 agent/IDE 接手文档 | 最后更新: 2026-08-07 | 改动项目后请同步更新此文档
 
 ## 项目定位
 「到底吃啥哟」帮用户解决"今天吃什么"。核心两块：
@@ -9,11 +9,13 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
+- **v1.10.2（三项 MINOR 清债）待上传微信后台**：`shareCard` 按卡片可用宽度与 `cook_time` 实测宽度动态计算菜名上限，逐字 `measureText` 后以 `…` 截断；食材结果卡与 result 卷轴卡的同源裸色值一并改用语义匹配的 `theme.$border`；result 菜行补齐 0.3s 淡入，并把 key 收窄为「抽取批次 + 槽位 + 菜名」，换菜只重挂变化行、其余行节点保持。新增长/短/刚好贴边菜名及单行重挂回归测试，版本升至 1.10.2。
+  - 验证：**35 suites / 384 jest tests 全绿**；`taro build --type weapp` **Compiled successfully in 3.09s**；`dist` **748K**（预算 2MB）；`tsc --noEmit` 的 `^src/` 错误仍为 **7**（既有 TS6133，本次新增 0）。
 - **v1.10.1（分类小注接入）待上传微信后台**：菜单格小字不再统一「私房甄选」——`services/api.ts` 新增 `fetchCategoryNotes()` 接后端 v1.15.0 的 `GET /api/trending/categories/annotated`（note 为 null/空白/结构异常时剔除），首页把后端小注与自定义分类文案合并为 `categoryNotes` 传给 `MenuGrid`，`getCategoryDisplay(category, notes?)` 优先级为 **覆盖表 > 本地手写 meta > 兜底「私房甄选」**；自定义分类固定「你的地盘听你的」（优先级高于后端小注）。接口失败静默降级，不弹 toast。清偿 HANDOFF 里「批2/批3 顺带」的遗留 TODO。
   - 线上抽查：`GET /api/trending/categories/annotated` 返回 15 个分类小注（东南亚→一口入南洋、火锅→围炉咕嘟、点心→蒸的爱你…）。
   - 踩坑记录：`index.test.tsx` / `index-data.test.tsx` 用 `jest.mock('../../services/api', ...)` **整体替换模块**，新增 API 函数必须同步补进这两处 mock，否则 `useLoad` 里调用未定义函数会静默打断后续 mount 逻辑（表现为不相干的 9 个用例失败）。
 - **v1.10.0（查菜谱链路恢复，issue #4）已合并 main（2026-08-07，PR #5 rebase merge，main=329c1b1），随 v1.9.x 主题批一并待提审**：result 页每道菜「菜谱」入口（墨线按钮，88rpx 热区）→ `pages/recipe`；详情页全套旧橙色重写为 theme tokens、三态落纸面纹理、config 底色 #faf4e8；**RecipePopup 已删除**（裁决：独立页面功能更全且无安卓弹窗滚动坑），popup 测试收敛 CustomMenuPopup-only；新增 recipe-styles.test.ts 源码审计；删 pretest 重复构建（npm test 提速 ~25s）。验证：35 suites / 365 tests 全绿、build:weapp 成功。**真机待验**：result 行内双按钮窄屏不挤压、详情页观感、入口跳转。
-- **v1.9.2（混血主题批 3）已合并 main（2026-08-07，PR #3 rebase merge，main=6002da4），待上传微信后台提审**：合并前经两轮独立深审（7/30 双路 + 8/6 独立复审）均零 CRITICAL/MAJOR。复审 MINOR 备忘（后续顺手清）：pretest 与 jest.globalSetup 重复构建（可删 pretest 省 ~25s）/ shareCard `dish.name` 无 maxWidth 截断 / ingredient.scss:370 裸 hex / result 页「换一换」key 不变致淡入不触发（批 2 遗留）。DigestCard 加载骨架 + 御厨语气错误态与空结果兜底（`src/utils/toastCopy.ts` 集中文案）；食材页「有啥做啥」混血主题延伸（纸面底 / 衬线区块标题 / 墨块金线选中态 / 贴纸黄「开做！」CTA / 御厨纸卡结果卡）；菜谱与自定义菜单弹窗纸面化；分享卡按 3e 稿重绘为「御厨手谕」并抽出 `src/pages/ingredient/shareCard.ts`。
+- **v1.9.2（混血主题批 3）已合并 main（2026-08-07，PR #3 rebase merge，main=6002da4），待上传微信后台提审**：合并前经两轮独立深审（7/30 双路 + 8/6 独立复审）均零 CRITICAL/MAJOR。复审 MINOR 备忘**已全部清偿**：pretest 与 jest.globalSetup 重复构建已于 v1.10.0 清理；shareCard `dish.name` 截断、ingredient.scss:370 裸 hex、result 页「换一换」淡入已于 v1.10.2 清理。DigestCard 加载骨架 + 御厨语气错误态与空结果兜底（`src/utils/toastCopy.ts` 集中文案）；食材页「有啥做啥」混血主题延伸（纸面底 / 衬线区块标题 / 墨块金线选中态 / 贴纸黄「开做！」CTA / 御厨纸卡结果卡）；菜谱与自定义菜单弹窗纸面化；分享卡按 3e 稿重绘为「御厨手谕」并抽出 `src/pages/ingredient/shareCard.ts`。
   - 上传前验证：**34 suites / 363 jest tests 全绿**、`build:weapp` Compiled successfully、`dist` 740K（预算 2MB）、`npx tsc --noEmit` 的 `^src/` 错误仍为 7（本批新增 0）。
   - 批 3 删除了加载态装饰 emoji（🤔）与空态装饰 emoji（🤷），并清理了 `tilt-policy.test.ts` 里 `@keyframes wobble` 的三条陈旧例外；该债务由 Task 15 承接并已清偿。
   - Canvas 分享卡此前零测试覆盖：`src/__mocks__/taro.ts` 的 `createSelectorQuery` 恒返回 `[null]`，绘制代码在测试中从未执行；本批补齐了 `shareCard` 单测与管道集成测试。

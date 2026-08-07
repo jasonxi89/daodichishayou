@@ -367,7 +367,7 @@
 .dish-card {
   margin-bottom: 24rpx;
   padding: 28rpx;
-  border: 2rpx solid #e6d9bf;
+  border: 2rpx solid theme.$border;
   border-radius: 12rpx;
   background: theme.$card;
   @include theme.paper-shadow;

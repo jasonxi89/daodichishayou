@@ -14,6 +14,25 @@ export interface ShareCardOptions {
   height: number
 }
 
+const ELLIPSIS = '…'
+
+function truncateText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): string {
+  if (ctx.measureText(text).width <= maxWidth) return text
+  if (ctx.measureText(ELLIPSIS).width > maxWidth) return ''
+
+  let visibleText = ''
+  for (const character of Array.from(text)) {
+    const candidate = `${visibleText}${character}${ELLIPSIS}`
+    if (ctx.measureText(candidate).width > maxWidth) break
+    visibleText += character
+  }
+  return `${visibleText}${ELLIPSIS}`
+}
+
 function roundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -86,15 +105,27 @@ export function drawShareCard(
   const rowHeight = 45
   visibleDishes.forEach((dish, index) => {
     const baseline = rowTop + index * rowHeight + 28
+    const dishNameX = cardX + 58
+    const rowRight = cardX + cardWidth - 28
+    let dishNameMaxWidth = rowRight - dishNameX
 
     ctx.textAlign = 'left'
     ctx.fillStyle = '#b8934e'
     ctx.font = 'bold 15px serif'
     ctx.fillText(toZhNumber(index + 1), cardX + 28, baseline)
 
+    if (dish.cook_time) {
+      ctx.font = '12px sans-serif'
+      dishNameMaxWidth -= ctx.measureText(dish.cook_time).width + 12
+    }
+
     ctx.fillStyle = '#2f261a'
     ctx.font = 'bold 19px serif'
-    ctx.fillText(dish.name, cardX + 58, baseline)
+    ctx.fillText(
+      truncateText(ctx, dish.name, Math.max(0, dishNameMaxWidth)),
+      dishNameX,
+      baseline,
+    )
 
     if (dish.cook_time) {
       ctx.textAlign = 'right'
