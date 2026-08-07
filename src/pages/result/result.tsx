@@ -80,6 +80,10 @@ export default function Result() {
     Taro.navigateBack()
   }, [])
 
+  const openRecipe = useCallback((food: string) => {
+    Taro.navigateTo({ url: `/pages/recipe/recipe?name=${encodeURIComponent(food)}` })
+  }, [])
+
   useShareAppMessage(() => ({
     title: foods.length > 0 ? `今晚吃：${foods.join('、')}` : '不知道吃啥？来抽一签',
     path: HOME_PAGE,
@@ -107,6 +111,13 @@ export default function Result() {
                 {getFoodEmoji(food)}
               </Text>
               <Text className='dish-row__name'>{food}</Text>
+              <Button
+                className='dish-row__recipe'
+                aria-label={`查看${food}的菜谱`}
+                onClick={() => openRecipe(food)}
+              >
+                菜谱
+              </Button>
               <Button
                 className='dish-row__refresh'
                 aria-label={`换掉${food}`}

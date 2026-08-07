@@ -21,6 +21,7 @@ const mockIncrementWeekly = require('../../utils/drawStats').incrementWeeklyDraw
 
 const mockGetStorageSync = taroMock.getStorageSync as jest.Mock
 const mockNavigateBack = taroMock.navigateBack as jest.Mock
+const mockNavigateTo = taroMock.navigateTo as jest.Mock
 const mockReLaunch = taroMock.reLaunch as jest.Mock
 const mockShowToast = taroMock.showToast as jest.Mock
 const mockUseLoad = taroMock.useLoad as jest.Mock
@@ -192,6 +193,25 @@ describe('Result page', () => {
     expect(names).toEqual(['红烧肉', '糖醋排骨', '番茄蛋汤'])
     expect(screen.queryByText('清炒西兰花')).not.toBeInTheDocument()
     expect(container.querySelectorAll('.dish-row')).toHaveLength(3)
+  })
+
+  it('opens the recipe page for the tapped dish', () => {
+    mountResult()
+
+    fireEvent.click(screen.getByRole('button', { name: '查看红烧肉的菜谱' }))
+
+    expect(mockNavigateTo).toHaveBeenCalledWith(
+      expect.objectContaining({ url: `/pages/recipe/recipe?name=${encodeURIComponent('红烧肉')}` }),
+    )
+  })
+
+  it('renders a recipe entry for every dish and keeps it enabled with an exhausted pool', () => {
+    mountResult({ ...DRAW, pool: DRAW.foods })
+
+    DRAW.foods.forEach(food => {
+      // Swap dies with the pool; the recipe entry must not.
+      expect(screen.getByRole('button', { name: `查看${food}的菜谱` })).not.toBeDisabled()
+    })
   })
 
   it('asks the home page to redraw and goes back', () => {

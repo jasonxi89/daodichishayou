@@ -1,184 +1,186 @@
+@use '../../styles/theme' as theme;
+
 .recipe-page {
   min-height: 100vh;
-  background-color: #f5f8fd;
-  padding: 0 32px 32px;
+  box-sizing: border-box;
+  padding: 0 32rpx 48rpx;
 }
 
-/* 顶部橙色装饰条 */
 .recipe-top-bar {
-  height: 6px;
-  margin: 0 -32px 24px;
-  background: linear-gradient(90deg, #f5a623, #f7b84e, #f5a623);
-  border-radius: 0 0 3px 3px;
+  height: 6rpx;
+  margin: 0 -32rpx 32rpx;
+  @include theme.gold-line;
 }
 
-/* 标题卡片 */
 .recipe-header-card {
+  margin-bottom: 28rpx;
+  padding: 36rpx 32rpx;
+  border: 2rpx solid theme.$border;
+  border-radius: 12rpx;
+  background: theme.$card;
   text-align: center;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 24px;
-  padding: 36px 32px;
-  margin-bottom: 28px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  @include theme.paper-shadow;
 }
 
 .recipe-header {
+  margin-bottom: 40rpx;
   text-align: center;
-  margin-bottom: 40px;
 }
 
 .recipe-title {
-  font-size: 48px;
-  font-weight: bold;
-  color: #333;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 48rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
 }
 
 .recipe-summary {
-  font-size: 28px;
-  color: #888;
-  margin-top: 12px;
+  display: block;
+  margin-top: 12rpx;
+  color: theme.$ink-sub;
+  font-size: 26rpx;
 }
 
-/* 元数据标签 */
 .recipe-meta {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-top: 20px;
+  gap: 16rpx;
+  margin-top: 20rpx;
 }
 
 .meta-tag {
-  font-size: 22px;
-  color: #f5a623;
-  background: #fff3e0;
-  border-radius: 20px;
-  padding: 6px 20px;
-  font-weight: 500;
+  padding: 6rpx 20rpx;
+  border: 2rpx solid theme.$border-2;
+  border-radius: 20rpx;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 22rpx;
+  font-weight: 900;
 }
 
-/* 食材区域 */
 .recipe-section {
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 24px;
-  padding: 32px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  margin-bottom: 24rpx;
+  padding: 32rpx;
+  border: 2rpx solid theme.$border;
+  border-radius: 12rpx;
+  background: theme.$card;
+  @include theme.paper-shadow;
 }
 
 .section-title {
-  font-size: 32px;
-  font-weight: bold;
-  color: #f5a623;
-  margin-bottom: 24px;
+  display: block;
+  margin-bottom: 24rpx;
+  color: theme.$ink;
+  font-family: theme.$serif-stack;
+  font-size: 32rpx;
+  font-weight: 900;
+  letter-spacing: 6rpx;
 }
 
-/* 食材列表 */
 .ingredient-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 16rpx;
 }
 
 .ingredient-tag {
-  font-size: 26px;
-  color: #555;
-  background: #fff3e0;
-  border-radius: 24px;
-  padding: 10px 24px;
+  padding: 10rpx 24rpx;
+  border-radius: 24rpx;
+  background: theme.$divider;
+  color: theme.$ink-body;
+  font-size: 26rpx;
 }
 
-/* 步骤列表 */
 .step-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 20rpx;
 }
 
-/* 步骤卡片 */
 .step-card {
   display: flex;
-  background: #fafafa;
-  border-radius: 16px;
   overflow: hidden;
+  border: 2rpx solid theme.$divider;
+  border-radius: 16rpx;
+  background: theme.$card;
 }
 
 .step-card-accent {
-  width: 6px;
+  width: 6rpx;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #f5a623, #f7b84e);
-  border-radius: 3px 0 0 3px;
+  background: linear-gradient(180deg, theme.$gold, #e3c88e, theme.$gold);
 }
 
 .step-card-body {
   display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  padding: 20px 24px;
   flex: 1;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 20rpx 24rpx;
 }
 
 .step-number {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #f5a623, #f7b84e);
-  color: #fff;
-  font-size: 26px;
-  font-weight: bold;
   display: flex;
+  width: 48rpx;
+  height: 48rpx;
+  min-width: 48rpx;
   align-items: center;
   justify-content: center;
+  border: 2rpx solid theme.$gold-dim;
+  border-radius: 50%;
+  color: theme.$gold-dim;
+  font-family: theme.$serif-stack;
+  font-size: 26rpx;
+  font-weight: 900;
 }
 
 .step-text {
-  font-size: 28px;
-  color: #444;
+  padding-top: 4rpx;
+  color: theme.$ink-body;
+  font-size: 28rpx;
   line-height: 1.6;
-  padding-top: 8px;
 }
 
-/* 底部 */
 .recipe-footer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
-  margin-top: 48px;
-  padding-bottom: 48px;
+  gap: 24rpx;
+  margin-top: 48rpx;
+  padding-bottom: 48rpx;
 }
 
 .share-recipe-btn {
-  width: 400px;
-  height: 80px;
-  background: linear-gradient(135deg, #f5a623, #f7b84e);
-  border-radius: 40px;
   display: flex;
+  width: 400rpx;
+  min-height: 96rpx;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(245, 166, 35, 0.3);
-  border: none;
+  margin: 0 8rpx 8rpx 0;
   padding: 0;
-  margin: 0;
+  border: 5rpx solid theme.$outline-black;
+  border-radius: 48rpx;
+  background: theme.$sticker-orange;
+  @include theme.sticker-shadow(8rpx, 8rpx);
 
   &::after {
-    border: none;
+    border: 0;
   }
 
   &:active {
-    transform: scale(0.96);
-    opacity: 0.9;
+    transform: scale(.96);
   }
 }
 
 .share-recipe-btn-text {
-  font-size: 30px;
-  color: #fff;
-  font-weight: bold;
-  letter-spacing: 4px;
+  color: theme.$outline-black;
+  font-family: theme.$happy-stack;
+  font-size: 30rpx;
+  letter-spacing: 4rpx;
 }
 
 .footer-text {
-  font-size: 24px;
-  color: #bbb;
+  color: theme.$weak;
+  font-size: 24rpx;
 }

@@ -32,7 +32,7 @@ export default function RecipePage() {
 
   if (loading) {
     return (
-      <View className='recipe-page'>
+      <View className='recipe-page paper-texture'>
         <View className='recipe-top-bar' />
         <View className='recipe-header'>
           <Text className='recipe-title'>加载中...</Text>
@@ -43,7 +43,7 @@ export default function RecipePage() {
 
   if (!recipe) {
     return (
-      <View className='recipe-page'>
+      <View className='recipe-page paper-texture'>
         <View className='recipe-top-bar' />
         <View className='recipe-header'>
           <Text className='recipe-title'>暂无菜谱</Text>
@@ -54,7 +54,7 @@ export default function RecipePage() {
   }
 
   return (
-    <View className='recipe-page'>
+    <View className='recipe-page paper-texture'>
       <View className='recipe-top-bar' />
 
       <View className='recipe-header-card'>
