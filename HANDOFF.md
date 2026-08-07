@@ -9,7 +9,7 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
-- **v1.9.2（混血主题批 3）待上传微信后台**：对应 PR #3；DigestCard 加载骨架 + 御厨语气错误态与空结果兜底（`src/utils/toastCopy.ts` 集中文案）；食材页「有啥做啥」混血主题延伸（纸面底 / 衬线区块标题 / 墨块金线选中态 / 贴纸黄「开做！」CTA / 御厨纸卡结果卡）；菜谱与自定义菜单弹窗纸面化；分享卡按 3e 稿重绘为「御厨手谕」并抽出 `src/pages/ingredient/shareCard.ts`。
+- **v1.9.2（混血主题批 3）已合并 main（2026-08-07，PR #3 rebase merge，main=6002da4），待上传微信后台提审**：合并前经两轮独立深审（7/30 双路 + 8/6 独立复审）均零 CRITICAL/MAJOR。复审 MINOR 备忘（后续顺手清）：pretest 与 jest.globalSetup 重复构建（可删 pretest 省 ~25s）/ shareCard `dish.name` 无 maxWidth 截断 / ingredient.scss:370 裸 hex / result 页「换一换」key 不变致淡入不触发（批 2 遗留）。DigestCard 加载骨架 + 御厨语气错误态与空结果兜底（`src/utils/toastCopy.ts` 集中文案）；食材页「有啥做啥」混血主题延伸（纸面底 / 衬线区块标题 / 墨块金线选中态 / 贴纸黄「开做！」CTA / 御厨纸卡结果卡）；菜谱与自定义菜单弹窗纸面化；分享卡按 3e 稿重绘为「御厨手谕」并抽出 `src/pages/ingredient/shareCard.ts`。
   - 上传前验证：**34 suites / 363 jest tests 全绿**、`build:weapp` Compiled successfully、`dist` 740K（预算 2MB）、`npx tsc --noEmit` 的 `^src/` 错误仍为 7（本批新增 0）。
   - 批 3 删除了加载态装饰 emoji（🤔）与空态装饰 emoji（🤷），并清理了 `tilt-policy.test.ts` 里 `@keyframes wobble` 的三条陈旧例外；该债务由 Task 15 承接并已清偿。
   - Canvas 分享卡此前零测试覆盖：`src/__mocks__/taro.ts` 的 `createSelectorQuery` 恒返回 `[null]`，绘制代码在测试中从未执行；本批补齐了 `shareCard` 单测与管道集成测试。
