@@ -162,6 +162,19 @@ describe('Result page', () => {
     random.mockRestore()
   })
 
+  it('remounts only the swapped row so its fade-in animation restarts', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0)
+    const { container } = mountResult()
+    const rowsBefore = Array.from(container.querySelectorAll('.dish-row'))
+
+    fireEvent.click(screen.getByRole('button', { name: '换掉清炒西兰花' }))
+
+    const rowsAfter = Array.from(container.querySelectorAll('.dish-row'))
+    expect(rowsAfter[1]).not.toBe(rowsBefore[1])
+    expect(rowsAfter[0]).toBe(rowsBefore[0])
+    expect(rowsAfter[2]).toBe(rowsBefore[2])
+  })
+
   it('keeps the menu intact when the pool is exhausted', () => {
     const { container } = mountResult({ ...DRAW, pool: DRAW.foods })
 

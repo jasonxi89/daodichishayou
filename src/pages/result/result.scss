@@ -29,7 +29,7 @@
   box-sizing: border-box;
   margin-top: 32rpx;
   padding: 36rpx 32rpx 28rpx;
-  border: 2rpx solid #e6d9bf;
+  border: 2rpx solid theme.$border;
   border-radius: 12rpx;
   background: theme.$card;
   @include theme.paper-shadow;
@@ -80,10 +80,16 @@
   min-height: 116rpx;
   align-items: center;
   border-bottom: 2rpx solid theme.$divider;
+  animation: dish-row-fade-in .3s ease-out;
 
   &:last-child {
     border-bottom: 0;
   }
+}
+
+@keyframes dish-row-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .dish-row__index {

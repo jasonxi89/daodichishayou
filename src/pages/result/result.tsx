@@ -105,7 +105,7 @@ export default function Result() {
 
         <ScrollView scrollY className='dish-list'>
           {foods.map((food, index) => (
-            <View className='dish-row' key={`${draw.drawIndex}-${index}`}>
+            <View className='dish-row' key={`${draw.drawIndex}-${index}-${food}`}>
               <Text className='dish-row__index'>{toZhNumber(index + 1)}</Text>
               <Text className={`dish-chip dish-chip--${PROTEIN_CLASS[classifyProtein(food)]}`} aria-hidden>
                 {getFoodEmoji(food)}
