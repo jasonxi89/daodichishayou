@@ -9,6 +9,7 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
+- **v1.11.0（依赖清理与 audit 收敛）待上传微信后台**：确认仓库仅支持 weapp 后，移除 7 个未被源码或构建配置引用的 Taro 平台插件（alipay / h5 / harmony-hybrid / jd / qq / swan / tt），同步删除非 weapp 的脚手架构建命令、配置段与 README 平台声明；执行非 breaking `npm audit fix`（未用 `--force`、overrides、resolutions 或 audit ignore）。`npm audit` 从 **97（14 critical / 42 high / 39 moderate / 2 low）→ 52（5 critical / 24 high / 23 moderate）**；其中 39 个仅在 devDependency 树，`--omit=dev` 剩余 13 个均来自 Taro 构建链或不进入 weapp 的 H5 Swiper 链。验证：**35 suites / 380 tests 全绿**、`^src/` TypeScript 错误仍为 7（新增 0）、weapp `Compiled successfully`、`dist` 748K；清理前后 `diff -r` 为 exit 0（35 个文件字节级一致）。
 - **v1.10.2（三项 MINOR 清债）待上传微信后台**：`shareCard` 按卡片可用宽度与 `cook_time` 实测宽度动态计算菜名上限，逐字 `measureText` 后以 `…` 截断；食材结果卡与 result 卷轴卡的同源裸色值一并改用语义匹配的 `theme.$border`；result 菜行补齐 0.3s 淡入，并把 key 收窄为「抽取批次 + 槽位 + 菜名」，换菜只重挂变化行、其余行节点保持。新增长/短/刚好贴边菜名及单行重挂回归测试，版本升至 1.10.2。
   - 验证：**35 suites / 384 jest tests 全绿**；`taro build --type weapp` **Compiled successfully in 3.09s**；`dist` **748K**（预算 2MB）；`tsc --noEmit` 的 `^src/` 错误仍为 **7**（既有 TS6133，本次新增 0）。
 - **v1.10.1（分类小注接入）待上传微信后台**：菜单格小字不再统一「私房甄选」——`services/api.ts` 新增 `fetchCategoryNotes()` 接后端 v1.15.0 的 `GET /api/trending/categories/annotated`（note 为 null/空白/结构异常时剔除），首页把后端小注与自定义分类文案合并为 `categoryNotes` 传给 `MenuGrid`，`getCategoryDisplay(category, notes?)` 优先级为 **覆盖表 > 本地手写 meta > 兜底「私房甄选」**；自定义分类固定「你的地盘听你的」（优先级高于后端小注）。接口失败静默降级，不弹 toast。清偿 HANDOFF 里「批2/批3 顺带」的遗留 TODO。
@@ -86,13 +87,13 @@ npx jest              # 跑测试（package.json 的 test 脚本是 jest --cover
 - **真机待验证（批1 合并时未逐项确认）**：tab 双行效果与图标清晰度（如糊升 2x）、反馈钮 bottom 300rpx 新位置、菜单展开滚动手感
 - 零等待改造已收尾：v1.8.0 于 2026-07-20 发布，线上抽查通过。发布后留意小程序后台「运维中心」反馈。
 
-**已知非阻塞告警**：Jest 仍有历史 React `act(...)` warning；npm audit 报告 86 个依赖漏洞（14 critical / 32 high），未使用 ignore 或强制 audit fix 掩盖，需单独评估 Taro 依赖升级兼容性。
+**已知非阻塞告警**：Jest 仍有历史 React `act(...)` warning；npm audit 报告 52 个依赖漏洞（5 critical / 24 high / 23 moderate）。其中 39 个为 devDependency-only；`npm audit --omit=dev` 的 13 个（3 critical / 10 moderate）仍由 Taro 4.1.11 的构建依赖及仅供 H5 的 `swiper` 传递链触发，未发现对应漏洞模块进入 weapp `dist`。非 breaking `npm audit fix` 已执行至无进一步变更；未使用 ignore、`--force` 或依赖覆盖掩盖，余项需等待 Taro 上游升级并做大版本兼容验证。Taro 自带的 `types/index.d.ts` 会无条件引用各平台 shim；清理后曾有 7 条 `node_modules` TS2688，其中 weapp / h5 / rn 3 条在清理前已存在，移除依赖实际新增 alipay / jd / swan / tt 4 条。现已启用 `"skipLibCheck": true`，将 `node_modules` 声明噪音从 101 条降为 0、TS2688 从 7 条降为 0，同时 `^src/` 的 7 条 TS6133 原样保留，未掩盖业务源码类型问题。`tsc --noEmit` 仍预期 exit 2，原因是这 7 条既有 src TS6133 加上 `config/` 的 1 条既有 TS6198，与 `skipLibCheck` 无关；本次刻意不处理 config TS6198，避免范围继续蔓延。
 
 **审核上线前 · 代码质量清单**（微信包体/性能门槛）：
-- [ ] 分包加载：把 recipe 页拆到子包，减小主包体积（主包限制 2M）。
-- [ ] 图片上 CDN：>200K 图片不打包，改网络加载。
-- [ ] 用时注入：为自定义组件配置占位组件（placeholder），延迟到渲染时注入。
-- [ ] 依赖清理：微信开发者工具「代码依赖分析」排查未用依赖/文件。
+- [x] 分包加载评估：**经实测判定无需执行**——完整 `dist` 748K（2M 上限的 36.5%），全部 `dist/pages` 156K，recipe 仅 20K；拆包收益小于跳转与首次加载成本。
+- [x] 图片上 CDN 评估：**经实测判定无需执行**——运行时仅打包 4 个 tab PNG，内容共 6,495 bytes（`dist/assets` 占盘 16K），最大 2,062 bytes，远低于 200K 门槛；`docs/` 内设计截图不进入产物。
+- [x] 用时注入评估：**经实测判定不实施**——Taro 将页面统一映射到仅约 0.2K 的 `comp` 包装组件，placeholder 无法拆出 290K 的 `app.js`；该包主要受约 195K 内嵌字体源影响，配置占位收益不明确且有首屏替换风险。
+- [x] 依赖清理：移除 7 个未使用的非 weapp 平台插件与 48 个传递包，执行安全 audit fix，并用构建产物字节级一致性验证。
 - [x] 启用 `lazyCodeLoading: 'requiredComponents'`（已完成）。
 
 **功能增强**（未排期）：
