@@ -1,6 +1,6 @@
 # What to Eat — Food Decision Helper
 
-A cross-platform app that helps indecisive eaters decide what to eat today.
+A WeChat Mini Program that helps indecisive eaters decide what to eat today.
 
 ## Features
 
@@ -19,9 +19,6 @@ A cross-platform app that helps indecisive eaters decide what to eat today.
 ## Supported Platforms
 
 - WeChat Mini Program
-- iOS (React Native)
-- Android (React Native)
-- H5
 
 ## Quick Start
 
@@ -31,12 +28,6 @@ npm install
 
 # WeChat Mini Program dev
 npm run dev:weapp
-
-# H5 dev
-npm run dev:h5
-
-# React Native dev
-npm run dev:rn
 ```
 
 ## Project Structure
@@ -62,19 +53,13 @@ npm run dev:rn
 ```bash
 # WeChat Mini Program
 npm run build:weapp
-
-# H5
-npm run build:h5
-
-# React Native
-npm run build:rn
 ```
 
 ---
 
 # 到底吃啥哟
 
-一款跨平台应用，帮助选择困难症的你决定今天吃什么。
+一款微信小程序，帮助选择困难症的你决定今天吃什么。
 
 ## 功能
 
@@ -93,9 +78,6 @@ npm run build:rn
 ## 支持平台
 
 - 微信小程序
-- iOS（React Native）
-- Android（React Native）
-- H5
 
 ## 快速开始
 
@@ -105,12 +87,6 @@ npm install
 
 # 微信小程序开发
 npm run dev:weapp
-
-# H5 开发
-npm run dev:h5
-
-# React Native 开发
-npm run dev:rn
 ```
 
 ## 项目结构
@@ -136,12 +112,6 @@ npm run dev:rn
 ```bash
 # 微信小程序
 npm run build:weapp
-
-# H5
-npm run build:h5
-
-# React Native
-npm run build:rn
 ```
 
 ## 参考文档
