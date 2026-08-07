@@ -1,6 +1,6 @@
 {
   "name": "daodichishayou-taro",
-  "version": "1.9.2",
+  "version": "1.10.0",
   "private": true,
   "description": "到底吃啥哟",
   "templateInfo": {
@@ -32,8 +32,7 @@
     "dev:qq": "npm run build:qq -- --watch",
     "dev:jd": "npm run build:jd -- --watch",
     "dev:harmony-hybrid": "npm run build:harmony-hybrid -- --watch",
-    "subset-fonts": "node tools/subset-fonts.mjs",
-    "pretest": "npm run build:weapp"
+    "subset-fonts": "node tools/subset-fonts.mjs"
   },
   "browserslist": {
     "development": [
