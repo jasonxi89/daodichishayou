@@ -1,5 +1,5 @@
 # HANDOFF — 到底吃啥哟 · 微信小程序前端
-> 跨 agent/IDE 接手文档 | 最后更新: 2026-07-29 | 改动项目后请同步更新此文档
+> 跨 agent/IDE 接手文档 | 最后更新: 2026-08-06 | 改动项目后请同步更新此文档
 
 ## 项目定位
 「到底吃啥哟」帮用户解决"今天吃什么"。核心两块：
@@ -9,6 +9,9 @@
 前端为纯展示 + 交互层，所有 AI 与热度数据来自自家后端。AppID: `wx5b37ff3cec339cfb`。
 
 ## 当前状态
+- **v1.10.1（分类小注接入）待上传微信后台**：菜单格小字不再统一「私房甄选」——`services/api.ts` 新增 `fetchCategoryNotes()` 接后端 v1.15.0 的 `GET /api/trending/categories/annotated`（note 为 null/空白/结构异常时剔除），首页把后端小注与自定义分类文案合并为 `categoryNotes` 传给 `MenuGrid`，`getCategoryDisplay(category, notes?)` 优先级为 **覆盖表 > 本地手写 meta > 兜底「私房甄选」**；自定义分类固定「你的地盘听你的」（优先级高于后端小注）。接口失败静默降级，不弹 toast。清偿 HANDOFF 里「批2/批3 顺带」的遗留 TODO。
+  - 线上抽查：`GET /api/trending/categories/annotated` 返回 15 个分类小注（东南亚→一口入南洋、火锅→围炉咕嘟、点心→蒸的爱你…）。
+  - 踩坑记录：`index.test.tsx` / `index-data.test.tsx` 用 `jest.mock('../../services/api', ...)` **整体替换模块**，新增 API 函数必须同步补进这两处 mock，否则 `useLoad` 里调用未定义函数会静默打断后续 mount 逻辑（表现为不相干的 9 个用例失败）。
 - **v1.10.0（查菜谱链路恢复，issue #4）已合并 main（2026-08-07，PR #5 rebase merge，main=329c1b1），随 v1.9.x 主题批一并待提审**：result 页每道菜「菜谱」入口（墨线按钮，88rpx 热区）→ `pages/recipe`；详情页全套旧橙色重写为 theme tokens、三态落纸面纹理、config 底色 #faf4e8；**RecipePopup 已删除**（裁决：独立页面功能更全且无安卓弹窗滚动坑），popup 测试收敛 CustomMenuPopup-only；新增 recipe-styles.test.ts 源码审计；删 pretest 重复构建（npm test 提速 ~25s）。验证：35 suites / 365 tests 全绿、build:weapp 成功。**真机待验**：result 行内双按钮窄屏不挤压、详情页观感、入口跳转。
 - **v1.9.2（混血主题批 3）已合并 main（2026-08-07，PR #3 rebase merge，main=6002da4），待上传微信后台提审**：合并前经两轮独立深审（7/30 双路 + 8/6 独立复审）均零 CRITICAL/MAJOR。复审 MINOR 备忘（后续顺手清）：pretest 与 jest.globalSetup 重复构建（可删 pretest 省 ~25s）/ shareCard `dish.name` 无 maxWidth 截断 / ingredient.scss:370 裸 hex / result 页「换一换」key 不变致淡入不触发（批 2 遗留）。DigestCard 加载骨架 + 御厨语气错误态与空结果兜底（`src/utils/toastCopy.ts` 集中文案）；食材页「有啥做啥」混血主题延伸（纸面底 / 衬线区块标题 / 墨块金线选中态 / 贴纸黄「开做！」CTA / 御厨纸卡结果卡）；菜谱与自定义菜单弹窗纸面化；分享卡按 3e 稿重绘为「御厨手谕」并抽出 `src/pages/ingredient/shareCard.ts`。
   - 上传前验证：**34 suites / 363 jest tests 全绿**、`build:weapp` Compiled successfully、`dist` 740K（预算 2MB）、`npx tsc --noEmit` 的 `^src/` 错误仍为 7（本批新增 0）。
@@ -71,12 +74,13 @@ npx jest              # 跑测试（package.json 的 test 脚本是 jest --cover
 - **API 失败静默降级**：接口挂了不弹错，回落到 `data/defaultFoods.ts` / `data/recipes.ts` 的硬编码数据，保证可用。
 - **版本号每次功能更新必须 bump**：`package.json` 的 `version`，遵循 semver。
 - **`rpx` 与 `vh` / `vw` 不可互换**：`rpx` 按屏幕宽度换算，`vh` / `vw` 按视口换算；做 `px → rpx` 统一时不要顺手替换视口单位。批 3 review 曾抓到弹窗抽屉 `max-height: 70vh` 被换成固定 `1120rpx`，会在矮宽屏上顶穿视口；`popup-styles.test.ts` 已加守卫。
+- **新增 API 函数必须同步补进页面测试的 `jest.mock`**：`src/__tests__/pages/index.test.tsx` 与 `index-data.test.tsx` 用工厂形式整体替换 `services/api` 模块，漏补新函数会让 `useLoad` 调到 undefined 而静默打断 mount 后续逻辑，报错指向完全不相干的用例。
 - **git commit 不加 Co-Authored-By 行**，commit message 用 `type: 描述` 祈使句。
 - 上传压缩（es6/postcss/minified）已在 v1.7.0 于 project.config.json 开启。
 
 ## 进行中 / TODO
 **混血主题改版（→ v1.9.0）批1 已合并 main（2026-07-20，PR #1 rebase merge）**：主题 token 层、字体子集管线（真实产物 ~199KB）、MenuGrid（含展开限高内滚）、CountStepper、首页重构、tab 双行（衬线大字 PNG 图标 + 小字，未用 custom-tab-bar）。计划 `docs/plans/2026-07-20-hybrid-theme-redesign.md`，批2（抽取仪式+结果页）、批3（延伸+分享卡+版本 bump）待 Codex 执行。
-- **TODO（批2/批3 顺带）**：菜单格小字 fallback「私房甄选」重复感强 → ① **后端已就绪（v1.15.1 已上线）**：`GET /api/trending/categories/annotated` 返回 `{categories:[{name,note}]}`（note 可能 null，需兜底），前端接入并让 `getCategoryDisplay` 优先用后端 note ② 自定义分类小字固定「你的地盘听你的」（纯前端）
+- **TODO（批2/批3 顺带）**：~~菜单格小字 fallback「私房甄选」重复感强~~ **已于 v1.9.3 完成**：① 后端 `GET /api/trending/categories/annotated`（v1.15.1 已上线）已由 `fetchCategoryNotes()` 接入，`getCategoryDisplay` 优先用后端 note ② 自定义分类固定「你的地盘听你的」
 - **真机待验证（批1 合并时未逐项确认）**：tab 双行效果与图标清晰度（如糊升 2x）、反馈钮 bottom 300rpx 新位置、菜单展开滚动手感
 - 零等待改造已收尾：v1.8.0 于 2026-07-20 发布，线上抽查通过。发布后留意小程序后台「运维中心」反馈。
 

@@ -14,6 +14,9 @@ interface CategoryDisplay {
   note: string
 }
 
+export const CUSTOM_CATEGORY_NOTE = '你的地盘听你的'
+export const FALLBACK_CATEGORY_NOTE = '私房甄选'
+
 const CATEGORY_META: Record<string, CategoryDisplay> = {
   随便: { label: '随便', note: '大厨看着办' },
   热门推荐: { label: '热门', note: '今日爆款' },
@@ -29,6 +32,16 @@ const CATEGORY_META: Record<string, CategoryDisplay> = {
   轻食减脂: { label: '轻食减脂', note: '清爽无负担' },
 }
 
-export function getCategoryDisplay(category: string): CategoryDisplay {
-  return CATEGORY_META[category] ?? { label: category, note: '私房甄选' }
+// notes 为上游合并好的小注覆盖表（后端 annotated 接口 + 自定义分类），
+// 优先级：覆盖表 > 本地手写 meta > 兜底文案。
+export function getCategoryDisplay(
+  category: string,
+  notes?: Record<string, string>,
+): CategoryDisplay {
+  const meta = CATEGORY_META[category]
+  const override = notes?.[category]
+  return {
+    label: meta?.label ?? category,
+    note: override || meta?.note || FALLBACK_CATEGORY_NOTE,
+  }
 }

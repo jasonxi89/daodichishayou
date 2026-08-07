@@ -80,4 +80,34 @@ describe('MenuGrid', () => {
     fireEvent.click(screen.getByRole('button', { name: '自定义菜单' }))
     expect(props.onCustomize).toHaveBeenCalledTimes(1)
   })
+
+  it('renders backend notes instead of the repetitive fallback', () => {
+    renderGrid({
+      categories: [...MENU_PRIMARY, '季节限定'],
+      notes: { 季节限定: '应季而食' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '展开更多分类' }))
+
+    expect(screen.getByText('应季而食')).toBeInTheDocument()
+    expect(screen.queryByText('私房甄选')).not.toBeInTheDocument()
+  })
+
+  it('still falls back when no note is supplied for a category', () => {
+    renderGrid({ categories: [...MENU_PRIMARY, '季节限定'], notes: {} })
+
+    fireEvent.click(screen.getByRole('button', { name: '展开更多分类' }))
+
+    expect(screen.getByText('私房甄选')).toBeInTheDocument()
+  })
+
+  it('keeps the loading copy ahead of the note', () => {
+    renderGrid({
+      categories: [...MENU_PRIMARY],
+      loadingCategory: '随便',
+      notes: { 随便: '大厨随缘' },
+    })
+
+    expect(screen.getByRole('button', { name: /随便/ })).toHaveTextContent('正在备菜')
+  })
 })

@@ -7,6 +7,7 @@ export interface MenuGridProps {
   categories: string[]
   active: string
   loadingCategory: string | null
+  notes?: Record<string, string>
   onSelect: (category: string) => void
   onCustomize: () => void
 }
@@ -15,6 +16,7 @@ export default function MenuGrid({
   categories,
   active,
   loadingCategory,
+  notes,
   onSelect,
   onCustomize,
 }: MenuGridProps) {
@@ -45,7 +47,7 @@ export default function MenuGrid({
       >
       <View className='menu-grid'>
         {visible.map(category => {
-          const display = getCategoryDisplay(category)
+          const display = getCategoryDisplay(category, notes)
           const isLoading = loadingCategory === category
           return (
             <Button

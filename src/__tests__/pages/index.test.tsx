@@ -15,6 +15,7 @@ jest.mock('../../services/api', () => ({
   __esModule: true,
   fetchTrending: jest.fn().mockResolvedValue({ total: 0, items: [] }),
   fetchCategories: jest.fn().mockResolvedValue([]),
+  fetchCategoryNotes: jest.fn().mockResolvedValue({}),
   generateFoodsByCategory: jest.fn().mockResolvedValue({ foods: [], category: '' }),
   bulkGenerateFoodsByCategory: jest.fn().mockResolvedValue({ results: {} }),
   fetchDigest: jest.fn().mockResolvedValue(null),
